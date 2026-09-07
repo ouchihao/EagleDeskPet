@@ -1,0 +1,473 @@
+{
+  "passed": true,
+  "errors": [],
+  "frame_count": 121,
+  "expected_frame_count": 121,
+  "canvas": [
+    384,
+    346
+  ],
+  "target_root": {
+    "torso_x": 191.5,
+    "foot_contact_y": 333.0
+  },
+  "root": {
+    "maximum_torso_x_error": 1.5,
+    "maximum_foot_contact_y_error": 0.0,
+    "maximum_adjacent_torso_x_step": 2.0,
+    "maximum_adjacent_foot_y_step": 0.0,
+    "torso_x_tolerance": 4.0,
+    "foot_y_tolerance": 1.5
+  },
+  "boundary": {
+    "minimum_clear_border_fraction": 1.0,
+    "minimum_margins_left_top_right_bottom": [
+      94,
+      84,
+      104,
+      9
+    ],
+    "detached_edge_contact_allowed": false,
+    "detached_edge_contact_after_frame": null,
+    "minimum_required_margin_pixels": 8,
+    "content_margin_violations": [],
+    "main_character_minimum_clear_border_fraction": 1.0,
+    "main_character_minimum_margins_left_top_right_bottom": [
+      94,
+      84,
+      104,
+      9
+    ],
+    "main_character_margin_violations": [],
+    "edge_contact_classification": [],
+    "disallowed_detached_edge_contacts": []
+  },
+  "dark_background_halo": {
+    "passed": true,
+    "backgrounds": {
+      "black": [
+        0,
+        0,
+        0
+      ],
+      "dark_12151c": [
+        18,
+        21,
+        28
+      ]
+    },
+    "maximum_visible_pixels_per_frame": 16,
+    "maximum_visible_edge_fraction": 0.025,
+    "worst_frame": 105,
+    "worst_frame_measurement": {
+      "outer_edge_pixels": 924,
+      "low_alpha_edge_pixels": 708,
+      "unsupported_low_alpha_pixels": 0,
+      "neutral_bright_edge_pixels": 0,
+      "color_polluted_edge_pixels": 10,
+      "opaque_matte_island_pixels": 0,
+      "opaque_matte_islands": [],
+      "pale_lower_fringe_pixels": 0,
+      "pale_lower_fringe_clusters": [],
+      "maximum_edge_color_residual": 60.0,
+      "edge_color_residual_limit": 48.0,
+      "edge_color_search_radius": 4,
+      "visible_pixels_by_background": {
+        "black": 10,
+        "dark_12151c": 10
+      },
+      "maximum_visible_pixels": 10,
+      "maximum_visible_edge_fraction": 0.010822510822510822
+    },
+    "total_visible_pixels_by_background": {
+      "black": 50,
+      "dark_12151c": 50
+    },
+    "strict_scope": "whole_frame",
+    "whole_frame_diagnostic": {
+      "worst_frame": 105,
+      "worst_frame_measurement": {
+        "outer_edge_pixels": 924,
+        "low_alpha_edge_pixels": 708,
+        "unsupported_low_alpha_pixels": 0,
+        "neutral_bright_edge_pixels": 0,
+        "color_polluted_edge_pixels": 10,
+        "opaque_matte_island_pixels": 0,
+        "opaque_matte_islands": [],
+        "pale_lower_fringe_pixels": 0,
+        "pale_lower_fringe_clusters": [],
+        "maximum_edge_color_residual": 60.0,
+        "edge_color_residual_limit": 48.0,
+        "edge_color_search_radius": 4,
+        "visible_pixels_by_background": {
+          "black": 10,
+          "dark_12151c": 10
+        },
+        "maximum_visible_pixels": 10,
+        "maximum_visible_edge_fraction": 0.010822510822510822
+      },
+      "total_visible_pixels_by_background": {
+        "black": 50,
+        "dark_12151c": 50
+      },
+      "detached_soft_prop_or_smoke_is_not_a_halo_failure": false
+    }
+  },
+  "detached_component_policy": {
+    "enabled": false,
+    "passed": true,
+    "left_side_components": [],
+    "moving_prop_regressions": [],
+    "moving_prop_reappearances": [],
+    "moving_prop_track": []
+  },
+  "endpoints": {
+    "first_exact": true,
+    "last_exact": true,
+    "first_premultiplied_mae": 0.0,
+    "last_premultiplied_mae": 0.0
+  },
+  "stabilization": {
+    "target": {
+      "torso_x": 191.5,
+      "foot_contact_y": 333.0
+    },
+    "raw": {
+      "torso_x_range": 4.5,
+      "foot_contact_y_range": 1.0
+    },
+    "translation": {
+      "maximum_absolute_x": 2.0,
+      "maximum_absolute_y": 1.0,
+      "maximum_adjacent_step_x": 3.25,
+      "maximum_adjacent_step_y": 1.0,
+      "secondary_correction_maximum_x": 1.25,
+      "secondary_correction_maximum_y": 0.0
+    },
+    "stabilized": {
+      "torso_x_range": 2.75,
+      "foot_contact_y_range": 0.0,
+      "maximum_torso_x_error": 1.5,
+      "maximum_foot_contact_y_error": 0.0
+    }
+  },
+  "component_policy_cleanup": {
+    "enabled": false,
+    "removed_left_side_components": 0,
+    "removed_non_monotonic_components": 0,
+    "removed_reappearing_components": 0,
+    "removed_pixels": 0
+  },
+  "key_stabilization": {
+    "target": {
+      "torso_x": 191.5,
+      "foot_contact_y": 333.0
+    },
+    "raw": {
+      "torso_x_range": 20.0,
+      "foot_contact_y_range": 1.0
+    },
+    "translation": {
+      "maximum_absolute_x": 16.0,
+      "maximum_absolute_y": 1.0,
+      "maximum_adjacent_step_x": 16.0,
+      "maximum_adjacent_step_y": 1.0,
+      "secondary_correction_maximum_x": 8.0,
+      "secondary_correction_maximum_y": 1.0
+    },
+    "stabilized": {
+      "torso_x_range": 0.5,
+      "foot_contact_y_range": 0.0,
+      "maximum_torso_x_error": 0.5,
+      "maximum_foot_contact_y_error": 0.0
+    },
+    "component_policy": {
+      "enabled": false,
+      "removed_left_side_components": 0,
+      "removed_non_monotonic_components": 0,
+      "removed_reappearing_components": 0,
+      "removed_pixels": 0
+    }
+  },
+  "source_matte_cleanup": {
+    "source": "DuckDeskPet/Assets/AnimationSources/shy-sheet-v2.png",
+    "removed_pixel_count": 145,
+    "removed_component_count": 18,
+    "maximum_relative_area": 0.02,
+    "maximum_background_distance": 10,
+    "components": [
+      {
+        "area": 35,
+        "bounds": [
+          1552,
+          546,
+          1557,
+          556
+        ],
+        "mean_rgb": [
+          251.114,
+          246.286,
+          239.4
+        ]
+      },
+      {
+        "area": 21,
+        "bounds": [
+          920,
+          393,
+          926,
+          398
+        ],
+        "mean_rgb": [
+          252.762,
+          242.952,
+          234.571
+        ]
+      },
+      {
+        "area": 19,
+        "bounds": [
+          1187,
+          549,
+          1191,
+          556
+        ],
+        "mean_rgb": [
+          251.526,
+          247.421,
+          238.684
+        ]
+      },
+      {
+        "area": 11,
+        "bounds": [
+          1468,
+          174,
+          1469,
+          180
+        ],
+        "mean_rgb": [
+          252.455,
+          241.182,
+          225.636
+        ]
+      },
+      {
+        "area": 10,
+        "bounds": [
+          1266,
+          134,
+          1269,
+          137
+        ],
+        "mean_rgb": [
+          251.2,
+          240.8,
+          232.7
+        ]
+      },
+      {
+        "area": 7,
+        "bounds": [
+          1472,
+          154,
+          1474,
+          156
+        ],
+        "mean_rgb": [
+          245.857,
+          220.286,
+          202.429
+        ]
+      },
+      {
+        "area": 7,
+        "bounds": [
+          259,
+          406,
+          261,
+          409
+        ],
+        "mean_rgb": [
+          252.429,
+          235.714,
+          225.714
+        ]
+      },
+      {
+        "area": 6,
+        "bounds": [
+          1468,
+          153,
+          1469,
+          155
+        ],
+        "mean_rgb": [
+          241.667,
+          209.5,
+          192.0
+        ]
+      },
+      {
+        "area": 6,
+        "bounds": [
+          459,
+          418,
+          460,
+          422
+        ],
+        "mean_rgb": [
+          248.667,
+          227.833,
+          215.333
+        ]
+      },
+      {
+        "area": 5,
+        "bounds": [
+          1468,
+          164,
+          1468,
+          168
+        ],
+        "mean_rgb": [
+          254.6,
+          233.6,
+          206.4
+        ]
+      },
+      {
+        "area": 5,
+        "bounds": [
+          1269,
+          405,
+          1271,
+          406
+        ],
+        "mean_rgb": [
+          252.4,
+          226.0,
+          216.2
+        ]
+      },
+      {
+        "area": 4,
+        "bounds": [
+          1593,
+          128,
+          1594,
+          130
+        ],
+        "mean_rgb": [
+          250.0,
+          232.0,
+          219.0
+        ]
+      },
+      {
+        "area": 4,
+        "bounds": [
+          1603,
+          144,
+          1603,
+          147
+        ],
+        "mean_rgb": [
+          252.0,
+          246.25,
+          234.5
+        ]
+      },
+      {
+        "area": 1,
+        "bounds": [
+          1595,
+          131,
+          1595,
+          131
+        ],
+        "mean_rgb": [
+          249.0,
+          223.0,
+          197.0
+        ]
+      },
+      {
+        "area": 1,
+        "bounds": [
+          1469,
+          162,
+          1469,
+          162
+        ],
+        "mean_rgb": [
+          251.0,
+          226.0,
+          200.0
+        ]
+      },
+      {
+        "area": 1,
+        "bounds": [
+          917,
+          389,
+          917,
+          389
+        ],
+        "mean_rgb": [
+          254.0,
+          217.0,
+          202.0
+        ]
+      },
+      {
+        "area": 1,
+        "bounds": [
+          453,
+          441,
+          453,
+          441
+        ],
+        "mean_rgb": [
+          255.0,
+          255.0,
+          239.0
+        ]
+      },
+      {
+        "area": 1,
+        "bounds": [
+          136,
+          729,
+          136,
+          729
+        ],
+        "mean_rgb": [
+          253.0,
+          234.0,
+          208.0
+        ]
+      }
+    ]
+  },
+  "preview_artifacts": {
+    "contact_sheet": "DuckDeskPet/Assets/AnimationPreviews/Shy.png",
+    "dark_background_contact_sheet": "DuckDeskPet/Assets/AnimationPreviews/Shy-dark.png",
+    "average_60fps_gif": "DuckDeskPet/Assets/AnimationPreviews/Shy-60fps.gif",
+    "authored_keys_dark_contact_sheet": "DuckDeskPet/Assets/AnimationPreviews/Shy-keys-dark.png",
+    "gif_delay_pattern_ms": [
+      20,
+      20,
+      10
+    ],
+    "display_size": [
+      160,
+      174
+    ],
+    "dark_background_rgb": [
+      18,
+      21,
+      28
+    ]
+  }
+}

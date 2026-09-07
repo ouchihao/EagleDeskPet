@@ -1,0 +1,652 @@
+{
+  "target": {
+    "torso_x": 191.5,
+    "foot_contact_y": 336.0
+  },
+  "raw": {
+    "torso_x_range": 7.0,
+    "foot_contact_y_range": 1.0
+  },
+  "translation": {
+    "maximum_absolute_x": 5.5,
+    "maximum_absolute_y": 1.0,
+    "maximum_adjacent_step_x": 4.5,
+    "maximum_adjacent_step_y": 1.0,
+    "secondary_correction_maximum_x": 2.5,
+    "secondary_correction_maximum_y": 0.0,
+    "secondary_correction_passes": 2,
+    "per_frame_offsets": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        1.5,
+        -1.0
+      ],
+      [
+        -3.0,
+        -1.0
+      ],
+      [
+        -5.5,
+        -1.0
+      ],
+      [
+        -1.0,
+        -1.0
+      ],
+      [
+        -1.0,
+        -1.0
+      ],
+      [
+        -3.0,
+        -1.0
+      ],
+      [
+        -4.0,
+        -1.0
+      ],
+      [
+        -4.5,
+        -1.0
+      ],
+      [
+        -5.5,
+        -1.0
+      ],
+      [
+        -4.0,
+        -1.0
+      ],
+      [
+        -2.0,
+        -1.0
+      ],
+      [
+        1.0,
+        -1.0
+      ],
+      [
+        1.0,
+        -1.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "stabilized": {
+    "torso_x_range": 1.0,
+    "foot_contact_y_range": 0.0,
+    "maximum_torso_x_error": 0.5,
+    "maximum_foot_contact_y_error": 0.0
+  },
+  "component_policy": {
+    "enabled": false,
+    "removed_left_side_components": 0,
+    "removed_non_monotonic_components": 0,
+    "removed_reappearing_components": 0,
+    "removed_pixels": 0
+  },
+  "authored_key_preflight": {
+    "passed": true,
+    "errors": [],
+    "minimum_required_margin_pixels": 8,
+    "minimum_margin": 9,
+    "margins": [
+      {
+        "key": 0,
+        "margins_left_top_right_bottom": [
+          111,
+          84,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 1,
+        "margins_left_top_right_bottom": [
+          111,
+          82,
+          79,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 2,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          108,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 3,
+        "margins_left_top_right_bottom": [
+          109,
+          83,
+          107,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 4,
+        "margins_left_top_right_bottom": [
+          114,
+          83,
+          105,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 5,
+        "margins_left_top_right_bottom": [
+          117,
+          89,
+          109,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 6,
+        "margins_left_top_right_bottom": [
+          114,
+          89,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 7,
+        "margins_left_top_right_bottom": [
+          113,
+          89,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 8,
+        "margins_left_top_right_bottom": [
+          112,
+          90,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 9,
+        "margins_left_top_right_bottom": [
+          112,
+          90,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 10,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 11,
+        "margins_left_top_right_bottom": [
+          113,
+          85,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 12,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          83,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 13,
+        "margins_left_top_right_bottom": [
+          111,
+          86,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 14,
+        "margins_left_top_right_bottom": [
+          111,
+          84,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      }
+    ],
+    "character_margins": [
+      {
+        "key": 0,
+        "margins_left_top_right_bottom": [
+          111,
+          84,
+          111,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 1,
+        "margins_left_top_right_bottom": [
+          111,
+          82,
+          79,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 2,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          108,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 3,
+        "margins_left_top_right_bottom": [
+          109,
+          83,
+          107,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 4,
+        "margins_left_top_right_bottom": [
+          114,
+          83,
+          105,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 5,
+        "margins_left_top_right_bottom": [
+          117,
+          89,
+          109,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 6,
+        "margins_left_top_right_bottom": [
+          114,
+          89,
+          112,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 7,
+        "margins_left_top_right_bottom": [
+          113,
+          89,
+          112,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 8,
+        "margins_left_top_right_bottom": [
+          112,
+          90,
+          112,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 9,
+        "margins_left_top_right_bottom": [
+          112,
+          90,
+          112,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 10,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          111,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 11,
+        "margins_left_top_right_bottom": [
+          113,
+          85,
+          111,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 12,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          83,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 13,
+        "margins_left_top_right_bottom": [
+          111,
+          86,
+          111,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 14,
+        "margins_left_top_right_bottom": [
+          111,
+          84,
+          111,
+          9
+        ],
+        "minimum_margin": 9
+      }
+    ],
+    "minimum_character_margin": 9,
+    "bomb_release_margin_policy": null,
+    "bomb_action_keys": [
+      {
+        "key": 4,
+        "margins_left_top_right_bottom": [
+          114,
+          83,
+          105,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 5,
+        "margins_left_top_right_bottom": [
+          117,
+          89,
+          109,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 6,
+        "margins_left_top_right_bottom": [
+          114,
+          89,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 7,
+        "margins_left_top_right_bottom": [
+          113,
+          89,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 8,
+        "margins_left_top_right_bottom": [
+          112,
+          90,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 9,
+        "margins_left_top_right_bottom": [
+          112,
+          90,
+          112,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 10,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 11,
+        "margins_left_top_right_bottom": [
+          113,
+          85,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 12,
+        "margins_left_top_right_bottom": [
+          113,
+          84,
+          83,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      }
+    ],
+    "component_policy": {
+      "enabled": false,
+      "passed": true,
+      "left_side_components": [],
+      "moving_prop_regressions": [],
+      "moving_prop_reappearances": [],
+      "moving_prop_track": []
+    },
+    "detached_bomb_centroid_check": null,
+    "smoke_classification": null
+  }
+}

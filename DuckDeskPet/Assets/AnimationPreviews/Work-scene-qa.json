@@ -1,0 +1,65 @@
+{
+  "clips": {
+    "WorkEnter": {
+      "frames": 211,
+      "unique_frames": 211,
+      "adjacent_duplicates": [],
+      "maximum_foot_x_error": 0.5,
+      "maximum_foot_y_error": 0.0,
+      "maximum_adjacent_premultiplied_mae": 0.007684452459216118
+    },
+    "WorkLoop": {
+      "frames": 121,
+      "unique_frames": 120,
+      "adjacent_duplicates": [],
+      "maximum_foot_x_error": 0.5,
+      "maximum_foot_y_error": 0.0,
+      "maximum_adjacent_premultiplied_mae": 0.007847019471228123
+    },
+    "WorkToBusy": {
+      "frames": 91,
+      "unique_frames": 91,
+      "adjacent_duplicates": [],
+      "maximum_foot_x_error": 0.5,
+      "maximum_foot_y_error": 0.0,
+      "maximum_adjacent_premultiplied_mae": 0.010466251522302628
+    },
+    "BusyLoop": {
+      "frames": 121,
+      "unique_frames": 120,
+      "adjacent_duplicates": [],
+      "maximum_foot_x_error": 0.5,
+      "maximum_foot_y_error": 0.0,
+      "maximum_adjacent_premultiplied_mae": 0.011624959297478199
+    },
+    "WorkExit": {
+      "frames": 121,
+      "unique_frames": 121,
+      "adjacent_duplicates": [],
+      "maximum_foot_x_error": 0.5,
+      "maximum_foot_y_error": 0.0,
+      "maximum_adjacent_premultiplied_mae": 0.007601519115269184
+    },
+    "BusyExit": {
+      "frames": 121,
+      "unique_frames": 121,
+      "adjacent_duplicates": [],
+      "maximum_foot_x_error": 0.5,
+      "maximum_foot_y_error": 0.0,
+      "maximum_adjacent_premultiplied_mae": 0.006820552982389927
+    }
+  },
+  "seams": {
+    "neutral_to_enter": true,
+    "enter_to_work": true,
+    "work_loop": true,
+    "work_to_transition": true,
+    "transition_to_busy": true,
+    "busy_loop": true,
+    "work_to_exit": true,
+    "busy_to_exit": true,
+    "work_exit_to_neutral": true,
+    "busy_exit_to_neutral": true
+  },
+  "passed": true
+}

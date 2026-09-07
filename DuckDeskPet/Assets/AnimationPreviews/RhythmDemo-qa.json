@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "logical_tick_count": 482,
+  "logical_duration_ms": 8040,
+  "logical_delay_pattern_ms": [
+    20,
+    20,
+    10
+  ],
+  "display_size": [
+    160,
+    174
+  ],
+  "transparent_background": true,
+  "segments": [
+    {
+      "name": "Yawn",
+      "ticks": 121
+    },
+    {
+      "name": "neutral",
+      "ticks": 120
+    },
+    {
+      "name": "Bomb",
+      "ticks": 121
+    },
+    {
+      "name": "neutral",
+      "ticks": 120
+    }
+  ],
+  "encoded_gif": {
+    "frame_count": 221,
+    "duration_ms": 8040,
+    "transparent_corner_frames": 221,
+    "identical_ticks_are_duration_coalesced": true
+  }
+}

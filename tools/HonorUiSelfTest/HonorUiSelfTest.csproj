@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>EagleDeskPet</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../DuckDeskPet.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../DuckDeskPet/NativeMethods.cs" Link="NativeMethods.cs" />
+    <Compile Include="../../DuckDeskPet/HonorWallWindow.xaml.cs" Link="HonorWallWindow.xaml.cs" />
+    <Page Include="../../DuckDeskPet/HonorWallWindow.xaml" Link="HonorWallWindow.xaml" />
+    <Resource Include="../../DuckDeskPet/Assets/Badges/*.png" Link="Assets/Badges/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,41 @@
+**/bin/
+**/obj/
+release/
+dist/
+.codex-build/
+.tool-cache/
+__pycache__/
+*.pyc
+*.user
+*.suo
+
+# Local editors and runtime state (never distribute credentials or saves)
+.vs/
+.idea/
+.venv/
+.env
+.env.*
+!.env.example
+*.dpapi
+pet-state.json*
+settings.json.bak
+companion.json
+github-inbox.json*
+github-settings.json*
+hook-state/
+*.eagle-backup-*
+*.eagle-tmp-*
+eagle-desktop-pet.install.json
+
+# Build / release products belong outside source history
+*.exe
+*.dll
+*.pdb
+*.zip
+*.7z
+*.nupkg
+
+# Third-party meme originals remain local until redistribution rights are confirmed
+/References/Memes/
+/docs/references/reference-*.png
+/docs/references/reference-overview.jpg

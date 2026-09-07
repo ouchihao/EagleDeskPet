@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../DuckDeskPet.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../DuckDeskPet/WorkStageMotion.cs" Link="WorkStageMotion.cs" />
+    <Compile Include="../../DuckDeskPet/WorkStageRenderer.cs" Link="WorkStageRenderer.cs" />
+    <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
+    <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
+    <Resource Include="../../DuckDeskPet/Assets/SceneProps/WorkV2/**/*.png" Link="Assets/SceneProps/WorkV2/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/SceneProps/Work/laptop.png" Link="Assets/SceneProps/Work/laptop.png" />
+    <Resource Include="../../DuckDeskPet/Assets/mascot-animated-neutral.png" Link="Assets/mascot-animated-neutral.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/WorkEnter/frame-*.png" Link="Assets/Animations/WorkEnter/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/WorkLoop/frame-*.png" Link="Assets/Animations/WorkLoop/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/WorkToBusyV2/frame-*.png" Link="Assets/Animations/WorkToBusyV2/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/BusyLoop/frame-*.png" Link="Assets/Animations/BusyLoop/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/WorkExit/frame-*.png" Link="Assets/Animations/WorkExit/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/BusyExitV2/frame-*.png" Link="Assets/Animations/BusyExitV2/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

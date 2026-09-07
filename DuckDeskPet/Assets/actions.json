@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "neutral": "Assets/mascot-animated-neutral.png",
+  "actions": [
+    { "id": "yawn", "clip": "Yawn", "name": "困到哈欠", "group": "Idle", "phase": "once", "directory": "Assets/Animations/Yawn", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "shy", "clip": "Shy", "name": "摸头害羞", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/Shy", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "eat", "clip": "Eat", "name": "干饭", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/Eat", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "work-enter", "clip": "WorkEnter", "name": "工位入场", "group": "Interaction", "phase": "enter", "directory": "Assets/Animations/WorkEnter", "frameCount": 211, "durationSeconds": 3.5 },
+    { "id": "work-loop", "clip": "WorkLoop", "name": "办公循环", "group": "Interaction", "phase": "loop", "directory": "Assets/Animations/WorkLoop", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "work-to-busy", "clip": "WorkToBusy", "name": "进入忙碌", "group": "Interaction", "phase": "transition", "directory": "Assets/Animations/WorkToBusyV2", "frameCount": 91, "durationSeconds": 1.5 },
+    { "id": "busy-loop", "clip": "BusyLoop", "name": "忙碌循环", "group": "Interaction", "phase": "loop", "directory": "Assets/Animations/BusyLoop", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "work-exit", "clip": "WorkExit", "name": "工作收场", "group": "Interaction", "phase": "exit", "directory": "Assets/Animations/WorkExit", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "busy-exit", "clip": "BusyExit", "name": "忙碌收场", "group": "Interaction", "phase": "exit", "directory": "Assets/Animations/BusyExitV2", "frameCount": 121, "durationSeconds": 2.0 }
+  ]
+}

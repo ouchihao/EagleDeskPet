@@ -1,0 +1,25 @@
+<Window x:Class="DuckDeskPet.SpeechBubble"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="宠物消息" Width="204" SizeToContent="Height" AllowsTransparency="True"
+        Background="Transparent" WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False"
+        ShowActivated="False" Topmost="True" FontFamily="Microsoft YaHei UI">
+    <Border Background="#FFF9ED" BorderBrush="#D7B984" BorderThickness="1" CornerRadius="12" Padding="9,7">
+        <StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="17"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="MessageText" TextWrapping="Wrap" Foreground="#443527" FontSize="11.5"
+                           LineHeight="17" LineStackingStrategy="BlockLineHeight" MaxHeight="51"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <Button Content="×" Grid.Column="1" Click="Close_OnClick" BorderThickness="0"
+                        Background="Transparent" Foreground="#9C8768" FontSize="13" Width="17" Height="17"
+                        VerticalAlignment="Top" Cursor="Hand" ToolTip="收起这句话" AutomationProperties.Name="收起消息"/>
+            </Grid>
+            <Button x:Name="OpenButton" Content="去看看 ↗" HorizontalAlignment="Left" Padding="6,2" Margin="0,4,0,0"
+                    FontSize="10.5" BorderThickness="0" Background="#F0DDAF" Foreground="#654B2D" Cursor="Hand" Click="Open_OnClick"/>
+        </StackPanel>
+    </Border>
+</Window>

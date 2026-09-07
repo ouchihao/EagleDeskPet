@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>EagleDeskPet</AssemblyName>
+    <RootNamespace>DuckDeskPet</RootNamespace>
+    <AssemblyTitle>小鹰桌宠</AssemblyTitle>
+    <Product>小鹰桌宠</Product>
+    <Description>一只会逐帧表演搞怪动作的 60 FPS Windows 小鹰桌宠</Description>
+    <Version>1.8.0</Version>
+    <FileVersion>1.8.0.0</FileVersion>
+    <InformationalVersion>1.8.0</InformationalVersion>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DuckDeskPet.Core\DuckDeskPet.Core.csproj" />
+    <PackageReference Include="Tomlyn" Version="0.19.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\mascot-animated-neutral.png" />
+    <None Remove="Assets\actions.json" />
+    <Resource Include="Assets\actions.json" />
+    <None Remove="Assets\Animations\**\frame-*.png" />
+    <Resource Include="Assets\mascot-animated-neutral.png" />
+    <Resource Include="Assets\Animations\**\frame-*.png"
+              Exclude="Assets\Animations\Bomb\**;Assets\Animations\SideEye\**;Assets\Animations\WorkToBusy\**;Assets\Animations\BusyExit\**" />
+    <None Remove="Assets\SceneProps\**\*.png" />
+    <Resource Include="Assets\SceneProps\**\*.png" Exclude="Assets\SceneProps\Work\Fire\**;Assets\SceneProps\Work\desk.png;Assets\SceneProps\Work\desk-back.png;Assets\SceneProps\Work\desk-front.png" />
+    <None Remove="Assets\Badges\*.png" />
+    <Resource Include="Assets\Badges\*-v2.png" />
+  </ItemGroup>
+
+</Project>

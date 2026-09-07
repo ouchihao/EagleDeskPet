@@ -1,0 +1,21 @@
+{
+  "canvas": [
+    384,
+    346
+  ],
+  "desk_bounds": [
+    39,
+    249,
+    345,
+    345
+  ],
+  "split_y": 276,
+  "desk_baseline": 345,
+  "avatar_foot_anchor_unchanged": [
+    191.5,
+    336
+  ],
+  "occlusion": "Generated closed-front modesty panel naturally occludes seated lower body and feet.",
+  "laptop": "../Work/laptop.png",
+  "fire": "Fire/frame-NNNN.png"
+}

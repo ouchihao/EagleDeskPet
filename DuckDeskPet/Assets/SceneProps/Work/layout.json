@@ -1,0 +1,64 @@
+{
+  "canvas": [
+    384,
+    346
+  ],
+  "character_offset": [
+    0,
+    0
+  ],
+  "character_foot_anchor": [
+    191.5,
+    336.0
+  ],
+  "layers_back_to_front": [
+    "desk-back",
+    "character",
+    "desk-front",
+    "laptop"
+  ],
+  "desk_bounds": [
+    39,
+    241,
+    345,
+    337
+  ],
+  "laptop_bounds": [
+    141,
+    210,
+    243,
+    275
+  ],
+  "desk_split_y": 276,
+  "entry": {
+    "desk_slide_seconds": [
+      0.15,
+      1.0
+    ],
+    "laptop_drop_seconds": [
+      0.9,
+      1.8
+    ]
+  },
+  "exit": {
+    "laptop_lift_seconds": [
+      0.35,
+      1.15
+    ],
+    "desk_slide_seconds": [
+      0.9,
+      1.95
+    ],
+    "desk_direction": "left"
+  },
+  "fire": {
+    "growth_seconds": [
+      0.25,
+      1.3
+    ],
+    "exit_shrink_seconds": [
+      0.0,
+      0.85
+    ]
+  }
+}
