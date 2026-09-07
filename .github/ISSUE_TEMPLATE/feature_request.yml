@@ -1,0 +1,69 @@
+name: 功能建议
+description: 描述使用场景、用户价值和可验证的结果，一起确认需求范围。
+title: "[建议] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先想一想：这个变化会让谁在什么场景下更方便或更开心？不需要先决定技术实现。
+        请先查看[需求主文档](https://github.com/ouchihao/EagleDeskPet/blob/main/docs/REQUIREMENTS.md)并搜索现有 Issues。
+        这里是公开讨论区，请勿粘贴 Token、完整客户端配置、私人消息或公司资料。提交建议不代表已排期。
+  - type: textarea
+    id: user-value
+    attributes:
+      label: 使用场景与用户价值
+      description: 现在遇到了什么问题，或者缺少什么乐趣？谁会用到，发生得频繁吗？
+      placeholder: 例如：经常让小鹰工作，希望长期陪伴能换来不同工位装饰，而不是只增加等级数字。
+    validations:
+      required: true
+  - type: textarea
+    id: desired-behavior
+    attributes:
+      label: 希望如何使用
+      description: 描述从触发到结束的过程；复杂想法可以先缩小为一个最有价值的版本。
+      placeholder: 我点击什么 → 小鹰或界面做什么 → 结束后应保持什么状态。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 怎样算完成
+      description: 写出可观察或可测试的结果。不确定的地方可以明确写待讨论。
+      placeholder: |
+        - 进行某个操作后，能观察到……
+        - 取消、重启或条件不足时，应当……
+        - 不应该影响原有的……
+    validations:
+      required: true
+  - type: input
+    id: requirement
+    attributes:
+      label: 已有关联需求或 Issue（可选）
+      description: 填写主文档中已经存在的 REQ 编号或 Issue 链接；没有就留空，不必自行分配编号。
+      placeholder: 已有 REQ 编号 / 已有 Issue 链接
+    validations:
+      required: false
+  - type: textarea
+    id: tradeoffs
+    attributes:
+      label: 范围、取舍与隐私（可选）
+      description: 哪部分最重要，哪些可以以后做？是否需要联网、账号或新数据？会不会增加打扰、挂机压力或资源消耗？也可说明“不确定”。
+      placeholder: 最小版本是……；暂不做……；数据尽量只留本机；允许关闭提醒……
+    validations:
+      required: false
+  - type: textarea
+    id: references
+    attributes:
+      label: 参考资料或示意图（可选）
+      description: 可附公开链接或你有权公开的素材。先裁剪、脱敏，不要上传完整工作桌面或配置备份。
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已查看需求主文档并搜索现有 Issues；如有关联内容，已在上面说明。
+          required: true
+        - label: 我已检查正文和附件，不包含凭据、私人消息或其他未经允许公开的信息。
+          required: true

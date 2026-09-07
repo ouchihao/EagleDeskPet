@@ -1,0 +1,75 @@
+name: 缺陷报告
+description: 提供复现步骤和期望表现，帮助定位小鹰的问题。
+title: "[缺陷] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先搜索现有 Issues。偶发问题也可以报告，说明发生频率即可。
+        这里是公开讨论区：不要上传 Token、个人存档、真实 AI 对话、完整配置或配置备份。
+        涉及敏感安全细节时，请使用可用的私密报告入口或已知的维护者私下渠道，不在此公开细节。
+  - type: textarea
+    id: impact
+    attributes:
+      label: 问题影响
+      description: 影响了哪项使用？是否每次发生、能否绕过？先说明现象，不需要猜原因。
+      placeholder: 例如：取消工作时桌子会穿过身体；每次可复现，但喂饭仍能正常使用。
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 版本与环境
+      description: 填版本号或源码提交号、Windows 版本、使用打包程序还是自行构建。动画问题补充刷新率、缩放和多屏情况；接入问题只填客户端名称/版本，不贴配置。
+      placeholder: |
+        大头鹰版本 / 提交号：
+        Windows 版本：
+        打包程序 / 自行构建：
+        显示器刷新率、缩放、多屏（如相关）：
+        AI 客户端名称和版本（如相关）：
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 说明开始时小鹰的状态、点击了什么、何时出现问题。不稳定复现也可以写观察到的条件。
+      placeholder: |
+        1. 启动后让小鹰进入……
+        2. 点击……
+        3. 等待……后出现……
+    validations:
+      required: true
+  - type: textarea
+    id: actual-expected
+    attributes:
+      label: 实际表现与期望结果
+      description: 修复后应该看到什么？如果有已约定的验收标准，可以引用。
+      placeholder: |
+        实际表现：
+        期望结果：
+    validations:
+      required: true
+  - type: input
+    id: requirement
+    attributes:
+      label: 关联需求或 Issue（可选）
+      description: 填已有 REQ 编号、Issue 链接或相关 PR；不确定可以留空。
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏截图、录屏或最小日志（可选）
+      description: 动画切换建议短录屏，白边/穿模可用截图。仅保留必要片段，隐藏个人路径、私人仓库、通知内容和公司地址；不要上传配置备份。无法安全提供时用文字描述。
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索现有 Issues；如有关联问题，已在上面说明。
+          required: true
+        - label: 我已检查正文和附件，不包含凭据、私人消息或其他未经允许公开的信息。
+          required: true

@@ -6,7 +6,7 @@
 
 **Windows x64 · C# / WPF · v1.8.0 · 60 Hz 动画时间轴**
 
-[快速上手](docs/QUICK-START.md) · [AI 一键接入](docs/AI-AUTO-SETUP.md) · [GitHub 通知](docs/GITHUB-NOTIFICATIONS.md) · [MCP 文档](docs/MCP.md)
+[快速上手](docs/QUICK-START.md) · [AI 一键接入](docs/AI-AUTO-SETUP.md) · [GitHub 通知](docs/GITHUB-NOTIFICATIONS.md) · [MCP 文档](docs/MCP.md) · [需求与路线图](docs/REQUIREMENTS.md)
 
 <img src="docs/images/work-preview.gif" width="360" alt="大头鹰从工位入场、办公、进入忙碌到收工的动画预览">
 
@@ -149,6 +149,8 @@ dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 
 ## 素材与贡献
 
-欢迎通过 [Issues](https://github.com/ouchihao/EagleDeskPet/issues) 反馈问题或提出动作创意。报告动画问题时，附动作名称、版本、截图或短录屏会更容易定位；请先隐藏通知里的私人内容。
+新想法、优先顺序和验收标准持续记录在[需求与路线图](docs/REQUIREMENTS.md)：优先规划情绪互动、成长解锁、小场景与猜拳，随后增强任务通知；工作赚游戏币、商店和桌子 / 电脑换装属于后续方向，尚未实现。
+
+欢迎通过 [Issues](https://github.com/ouchihao/EagleDeskPet/issues/new/choose) 反馈问题或提出动作创意；新手可直接填写“功能建议”或“缺陷报告”表单。如何补需求、拆任务和提交改动见[参与指南](CONTRIBUTING.md)。报告动画问题时，附动作名称、版本、截图或短录屏会更容易定位；请先隐藏通知里的私人内容。
 
 代码、AI 生成资源和原始表情包参考不是同一种授权对象。原始角色与表情包版权归相应权利人；原始 GIF 及其拼图仅在本机保留，不随 Git 仓库分发。公开代码和生成资源不代表授予原角色素材的商用许可，本仓库暂未指定统一的开源许可证。第三方库说明见 [THIRD-PARTY-NOTICES](docs/THIRD-PARTY-NOTICES.md)，参考素材见 [References](References/README.md)。
