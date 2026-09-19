@@ -38,7 +38,7 @@ public partial class PetWindow
     internal bool NotificationsEnabled => _companion.NotificationsEnabled;
     internal bool ActiveBanterEnabled => _companion.ActiveBanterEnabled;
     internal bool WorkInProgress => CareState.IsWorking || _behavior.IsWorkSceneActive || _behavior.IsWorkRequested || _preparingWork;
-    internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsGameActive || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
+    internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsGameActive || IsFeeding || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
     internal bool CanStartWork => !InteractionsUnavailable && CareState.Fullness > 0;
     internal string WorkStatus => _preparingWork ? "搬工位中…" : CareState.IsWorking
         ? $"{(CareState.IsBusy ? "忙碌中" : "办公中")} · {(int)(CareState.WorkSessionSeconds / 60)} 分 {((int)CareState.WorkSessionSeconds % 60):00} 秒"
@@ -102,6 +102,7 @@ public partial class PetWindow
         _honorWall?.Close();
         _clientSetupWindow?.Close();
         StopTaskNotifications();
+        StopFeeding();
         StopContent();
         _hungryScenePreview?.Close();
     }
@@ -137,28 +138,6 @@ public partial class PetWindow
             _nextHungryHint = now.AddMinutes(20);
             Say("饿得前胸贴后脑勺了……饭呢？");
         }
-    }
-
-    internal void FeedPet()
-    {
-        if (InteractionsUnavailable) { Say(WorkInProgress ? "先点取消工作，收工再开饭。" : _assetsReady ? "先恢复动作，再开饭吧。" : "饭搭子正在热身，稍等一下。 "); return; }
-        if (_behavior.IsHungrySceneActive || _behavior.IsHungryRequested)
-        {
-            _pendingFeed = true;
-            _behavior.CancelAutomaticEmotions();
-            Say("收到！先把空碗和桌子收好，马上开饭。");
-            return;
-        }
-        _pendingFeed = false;
-        var result = _care.Feed(DateTimeOffset.UtcNow);
-        if (result.Success)
-        {
-            _behavior.QueueReaction(PetBehaviorKind.Fed);
-            _store.Save(CareState);
-        }
-        CareStatus = _store.Warning ?? result.Message.Trim();
-        _carePanel?.Refresh();
-        Say(CareStatus);
     }
 
     internal async void PetHead()

@@ -119,6 +119,32 @@ public sealed class PetBehaviorController
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
+    /// <summary>
+    /// Read-only admission check for a deliberate reaction. A caller may perform
+    /// a synchronous care transaction and enqueue on the same owner thread, with
+    /// no await or message pump between these operations. Coalesced is not a new
+    /// animation and must not authorize another consumable.
+    /// </summary>
+    public PetBehaviorRequestResult PreviewReaction(PetBehaviorKind kind)
+    {
+        var behavior = kind switch
+        {
+            PetBehaviorKind.Fed => new PendingBehavior(kind, ClipKind.Eat),
+            PetBehaviorKind.Petted => new PendingBehavior(kind, ClipKind.Shy),
+            PetBehaviorKind.Notification => new PendingBehavior(kind, ClipKind.SideEye),
+            PetBehaviorKind.Annoyed => new PendingBehavior(kind, ClipKind.Annoyed),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+        if (IsPaused) return PetBehaviorRequestResult.RejectedPaused;
+        if (_workDesired || _workScene.IsActive) return PetBehaviorRequestResult.RejectedWorking;
+        if (_pending.Contains(behavior)) return PetBehaviorRequestResult.Coalesced;
+        var effective = kind == PetBehaviorKind.Annoyed
+            ? _pending.Where(x => x.Kind != PetBehaviorKind.Petted) : _pending;
+        if (effective.Count() >= MaximumPendingBehaviors && !effective.Any(x => Priority(x.Kind) < Priority(kind)))
+            return PetBehaviorRequestResult.RejectedFull;
+        return PetBehaviorRequestResult.Queued;
+    }
+
     public ClipSample Advance(double deltaSeconds)
     {
         if (!double.IsFinite(deltaSeconds) || deltaSeconds < 0.0)

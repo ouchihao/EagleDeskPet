@@ -112,6 +112,7 @@ public partial class PetWindow : Window
             return;
         }
         if (!TryCloseGameForPetExit()) e.Cancel = true;
+        if (!TryCloseFeedingForPetExit()) e.Cancel = true;
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -173,6 +174,7 @@ public partial class PetWindow : Window
         ApplyPose(_behavior.CurrentProceduralPose);
         _framePlayer.Apply(sample);
         _workStage.Apply(sample, deltaSeconds);
+        TickFeeding();
         RefreshContentAtSafeBoundary();
         ReleaseUnusedTransientResources();
         if (wasWorking && !_behavior.IsWorkSceneActive)
@@ -294,7 +296,7 @@ public partial class PetWindow : Window
         BanterMenuItem.IsChecked = ActiveBanterEnabled;
         EmotionMenuItem.IsChecked = _emotions.Enabled;
         GameMenuItem.IsEnabled = IsGameActive || !InteractionsUnavailable;
-        PauseMenuItem.IsEnabled = !WorkInProgress && !_pauseChanging && !IsContentEquipmentApplying && !_preparingOwnedAction;
+        PauseMenuItem.IsEnabled = !WorkInProgress && !IsFeeding && !_pauseChanging && !IsContentEquipmentApplying && !_preparingOwnedAction;
         PauseMenuItem.IsChecked = _settings.IsPaused;
         TopmostMenuItem.IsChecked = _settings.IsTopmost;
         FpsMenuItem.IsChecked = _settings.ShowFps;
@@ -305,7 +307,7 @@ public partial class PetWindow : Window
 
     private async void PauseMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_pauseChanging || IsContentEquipmentApplying || _preparingOwnedAction) return;
+        if (_pauseChanging || IsContentEquipmentApplying || _preparingOwnedAction || IsFeeding) return;
         if (WorkInProgress) { Say("先取消工作，再暂停待机动作。 "); return; }
         bool targetPaused = !_settings.IsPaused;
         _pauseChanging = true;

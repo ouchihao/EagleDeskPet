@@ -18,7 +18,7 @@ public partial class PetWindow
         _framePlayer.ReleaseClips(TransientContentClips);
         _transientResourcesWereInUse = false;
     }
-    internal bool IsContentInteractionBusy => IsGameActive || _preparingReaction || _preparingOwnedAction || _outfitApplying || IsContentEquipmentApplying;
+    internal bool IsContentInteractionBusy => IsGameActive || IsFeeding || _preparingReaction || _preparingOwnedAction || _outfitApplying || IsContentEquipmentApplying;
     internal bool IsContentResourceAvailable(ContentDefinition item) => _contentResources.GetValueOrDefault(item.Id);
 
     private async Task InitializeContentResourcesAsync()
