@@ -16,6 +16,7 @@ public sealed class PetState
     public DateTimeOffset LastUpdatedUtc { get; set; }
     public DateTimeOffset? LastFedUtc { get; set; }
     public DateTimeOffset? LastPettedUtc { get; set; }
+    public DateTimeOffset? LastGameRewardUtc { get; set; }
     public int TotalMeals { get; set; }
     public int TotalPets { get; set; }
     public bool IsWorking { get; set; }
@@ -27,6 +28,7 @@ public sealed class PetState
     public double WageSettledWorkSeconds { get; set; }
     public DateTimeOffset WageLastUpdatedUtc { get; set; }
     public Dictionary<string, int> AppliedWalletDebits { get; set; } = new(StringComparer.Ordinal);
+    public ContentOwnershipState Content { get; set; } = new();
     public List<string> Achievements { get; set; } = new();
 
     /// <summary>A detached candidate for an atomic save, never the live mutable lists.</summary>
@@ -35,6 +37,7 @@ public sealed class PetState
         var copy = (PetState)MemberwiseClone();
         copy.Achievements = new(Achievements);
         copy.AppliedWalletDebits = new(AppliedWalletDebits, StringComparer.Ordinal);
+        copy.Content = Content.CreateSnapshot();
         return copy;
     }
 
@@ -50,6 +53,7 @@ public sealed class PetState
         LastUpdatedUtc = committed.LastUpdatedUtc;
         LastFedUtc = committed.LastFedUtc;
         LastPettedUtc = committed.LastPettedUtc;
+        LastGameRewardUtc = committed.LastGameRewardUtc;
         TotalMeals = committed.TotalMeals;
         TotalPets = committed.TotalPets;
         IsWorking = committed.IsWorking;
@@ -61,6 +65,7 @@ public sealed class PetState
         WageSettledWorkSeconds = committed.WageSettledWorkSeconds;
         WageLastUpdatedUtc = committed.WageLastUpdatedUtc;
         AppliedWalletDebits = new(committed.AppliedWalletDebits, StringComparer.Ordinal);
+        Content = committed.Content.CreateSnapshot();
         Achievements = new(committed.Achievements);
     }
 

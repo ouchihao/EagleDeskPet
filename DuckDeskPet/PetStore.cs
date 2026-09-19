@@ -72,6 +72,7 @@ internal sealed class PetStore
                 if (state.Version != PetState.CurrentVersion)
                     throw new InvalidDataException("Only current, migrated states can be saved.");
                 EconomyPolicy.ValidateWalletLedger(state);
+                ContentOwnershipService.ValidateForSave(state.Content);
                 byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(state,
                     new JsonSerializerOptions { WriteIndented = true });
                 if (bytes.Length > 1_048_576) throw new InvalidDataException("Save too large.");
@@ -180,6 +181,7 @@ internal sealed class PetStore
         if (state.Version is not 1 && state.Version != PetState.CurrentVersion)
             throw new InvalidDataException("Unsupported save version.");
         EconomyPolicy.ValidateWalletLedger(state);
+        if (state.Version == PetState.CurrentVersion) ContentOwnershipService.ValidateForSave(state.Content);
         return state;
     }
 

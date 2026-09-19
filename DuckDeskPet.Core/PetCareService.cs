@@ -220,6 +220,7 @@ public sealed class PetCareService
         {
             Unlock("level-2");
         }
+        ContentOwnershipService.GrantEligibleRewards(State.Content, State);
     }
 
     private void Unlock(string id)
@@ -249,7 +250,7 @@ public sealed class PetCareService
         bool migrating = saved.Version == 1;
         EconomyPolicy.ValidateWalletLedger(saved);
         double totalWorkSeconds = FiniteClamp(saved.TotalWorkSeconds, 0.0, 1e12, 0.0);
-        return new PetState
+        var state = new PetState
         {
             Fullness = FiniteClamp(saved.Fullness, 0.0, 100.0, 75.0),
             Mood = FiniteClamp(saved.Mood, 0.0, 100.0, 70.0),
@@ -259,6 +260,9 @@ public sealed class PetCareService
             LastUpdatedUtc = futureSave ? now : lastUpdated,
             LastFedUtc = NormalizeInteraction(saved.LastFedUtc, futureSave, now),
             LastPettedUtc = NormalizeInteraction(saved.LastPettedUtc, futureSave, now),
+            // A future game-reward timestamp is a persisted high-water mark.
+            // Rebasing it on restart would shorten the anti-spam cooldown.
+            LastGameRewardUtc = saved.LastGameRewardUtc?.ToUniversalTime(),
             TotalMeals = Math.Clamp(saved.TotalMeals, 0, 1_000_000),
             TotalPets = Math.Clamp(saved.TotalPets, 0, 1_000_000),
             IsWorking = saved.IsWorking && FiniteClamp(saved.Fullness, 0.0, 100.0, 75.0) > 0.0,
@@ -275,8 +279,11 @@ public sealed class PetCareService
                 (saved.WageLastUpdatedUtc == default ? lastUpdated : saved.WageLastUpdatedUtc.ToUniversalTime()),
             AppliedWalletDebits = migrating ? new(StringComparer.Ordinal) :
                 new(saved.AppliedWalletDebits, StringComparer.Ordinal),
+            Content = ContentOwnershipService.Normalize(saved.Content),
             Achievements = (saved.Achievements ?? new()).Where(KnownAchievements.Contains).Distinct(StringComparer.Ordinal).ToList(),
         };
+        ContentOwnershipService.GrantEligibleRewards(state.Content, state);
+        return state;
     }
 
     private static DateTimeOffset? NormalizeInteraction(DateTimeOffset? time, bool futureSave, DateTimeOffset now)
