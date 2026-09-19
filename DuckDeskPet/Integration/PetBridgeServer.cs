@@ -13,6 +13,7 @@ public sealed class PetBridgeServer : IDisposable
     private readonly SemaphoreSlim _notifyGate = new(1, 1);
     private readonly Dictionary<string, DateTimeOffset> _recent = new(StringComparer.Ordinal);
     private readonly Queue<DateTimeOffset> _accepted = new();
+    private readonly Queue<DateTimeOffset> _taskAccepted = new();
     private readonly Task[] _workers = new Task[4];
     private int _started;
     private int _disposed;
@@ -92,18 +93,24 @@ public sealed class PetBridgeServer : IDisposable
         {
             var now = DateTimeOffset.UtcNow;
             foreach (var key in _recent.Where(p => now - p.Value > TimeSpan.FromMinutes(10)).Select(p => p.Key).ToArray()) _recent.Remove(key);
-            var identity = JsonSerializer.Serialize(new[] { notification.Source, notification.SessionId, notification.EventId });
+            var identity = notification.TaskId is null
+                ? JsonSerializer.Serialize(new[] { notification.Source, notification.SessionId, notification.EventId })
+                : JsonSerializer.Serialize(new[] { "task", notification.Source, notification.TaskId, notification.EventId });
             if (_recent.ContainsKey(identity)) return new(true, "duplicate", "This event was already accepted; no second bubble was created.");
             while (_accepted.TryPeek(out var time) && now - time >= TimeSpan.FromMinutes(1)) _accepted.Dequeue();
-            if (_accepted.Count >= 20 || (_accepted.Count > 0 && now - _accepted.Last() < TimeSpan.FromSeconds(3)))
+            while (_taskAccepted.TryPeek(out var taskTime) && now - taskTime >= TimeSpan.FromMinutes(1)) _taskAccepted.Dequeue();
+            if (notification.TaskId is not null && _taskAccepted.Count >= 120)
+                return new(false, "rate_limited", "At most 120 task updates per minute are accepted; UI announcements have a separate lower limit.");
+            if (notification.TaskId is null && (_accepted.Count >= 20 || (_accepted.Count > 0 && now - _accepted.Last() < TimeSpan.FromSeconds(3))))
                 return new(false, "rate_limited", "Wait at least 3 seconds between notifications; at most 20 per minute are accepted.");
             bool accepted;
             try { accepted = await _onNotification(notification, deadline.Token).WaitAsync(deadline.Token).ConfigureAwait(false); }
             catch (Exception ex) when (ex is not OperationCanceledException) { return new(false, "unavailable", "Pet notification handling is temporarily unavailable."); }
             if (!accepted) return new(false, "busy", "Pet notification queue is full or notifications are disabled.");
-            if (_recent.Count >= 256) _recent.Remove(_recent.MinBy(p => p.Value).Key);
+            if (_recent.Count >= 512) _recent.Remove(_recent.MinBy(p => p.Value).Key);
             _recent[identity] = now;
-            _accepted.Enqueue(now);
+            if (notification.TaskId is null) _accepted.Enqueue(now);
+            else _taskAccepted.Enqueue(now);
             return new(true, "accepted", "Notification accepted by the desktop pet.");
         }
         finally { _notifyGate.Release(); }

@@ -6,7 +6,9 @@ namespace DuckDeskPet.Core;
 /// Display-only notification data. Source comes from the configured adapter, not
 /// a model guess. No arbitrary command or launch target is carried by this type.
 /// </summary>
-public sealed record PetNotification(string Source, string Message, string? EventId = null, string? SessionId = null)
+public sealed record PetNotification(string Source, string Message, string? EventId = null, string? SessionId = null,
+    string? TaskId = null, long? Revision = null, string? Status = null,
+    DateTimeOffset? OccurredAt = null, bool IsReplay = false)
 {
     public static PetNotification Create(string? source, string? message, string? eventId = null, string? sessionId = null) =>
         new(

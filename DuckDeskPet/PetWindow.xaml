@@ -62,6 +62,7 @@
                     <MenuItem Header="我的饭搭子…" Click="CareMenu_OnClick" />
                     <MenuItem Header="荣誉展览馆…" Click="HonorMenu_OnClick" />
                     <MenuItem x:Name="GitHubMenuItem" Header="GitHub 消息…" Click="GitHubMenu_OnClick" />
+                    <MenuItem x:Name="TaskInboxMenuItem" Header="AI 任务消息…" Click="TaskInboxMenu_OnClick" />
                     <MenuItem x:Name="ClientSetupMenuItem" Header="AI 自动传话 · 一键接入…" Click="ClientSetupMenu_OnClick" />
                     <Separator />
                     <MenuItem x:Name="TouchMenuItem" Header="摸摸头 · 害羞" Click="PetMenu_OnClick" />

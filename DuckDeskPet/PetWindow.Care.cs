@@ -70,12 +70,13 @@ public partial class PetWindow
             async token => await Dispatcher.InvokeAsync<object>(() => new
             {
                 name = "大头鹰", level = CareState.Level, fullness = Math.Round(CareState.Fullness),
-                mood = Math.Round(CareState.Mood), food = CareState.Food,
+                mood = Math.Round(CareState.Mood), food = CareState.Food, coins = CareState.Coins,
                 paused = _behavior.IsPaused, notificationsEnabled = NotificationsEnabled,
                 isWorking = CareState.IsWorking, isBusy = CareState.IsBusy,
                 workSessionSeconds = Math.Round(CareState.WorkSessionSeconds, 1), activeBanterEnabled = ActiveBanterEnabled,
                 githubConnected = _github.IsConnected, githubUnread = _github.UnreadCount,
-                pendingNotifications = _notices.Count, currentAction = _behavior.CurrentSample.Kind.ToString(),
+                pendingNotifications = _notices.Count, taskUnread = TaskUnreadCount,
+                trackedTasks = TaskNotificationItems.Count, currentAction = _behavior.CurrentSample.Kind.ToString(),
                 smokeTest = Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_DIR") is not null,
                 smokeProcessId = Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_DIR") is not null ? Environment.ProcessId : (int?)null,
                 smokeDataDirectory = Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_DIR") is not null ? AppPaths.DataDirectory : null
@@ -98,6 +99,7 @@ public partial class PetWindow
         _githubWindow?.Close();
         _honorWall?.Close();
         _clientSetupWindow?.Close();
+        StopTaskNotifications();
     }
 
     private void TickCare()
@@ -121,6 +123,7 @@ public partial class PetWindow
         _honorWall?.Refresh();
         if (_bubble?.IsVisible == true && now >= _bubbleUntil) DismissBubble();
         TryShowGitHubNotice();
+        TickTaskNotifications();
         TickBanter((now - _lastBanterTick).TotalSeconds);
         _lastBanterTick = now;
         if (CareState.IsHungry && now >= _nextHungryHint && _activeNotice is null && _notices.Count == 0)
@@ -280,7 +283,7 @@ public partial class PetWindow
             Say("提醒已关闭，或消息队列暂时满了。 ");
     }
 
-    private bool ReceiveNotice(PetNotification notice) => ReceivePetNotice(new(notice));
+    private bool ReceiveNotice(PetNotification notice) => ReceiveTaskNotice(notice) ?? ReceivePetNotice(new(notice));
 
     private bool ReceivePetNotice(PetNotice notice)
     {
@@ -351,6 +354,7 @@ public partial class PetWindow
     {
         var envelope = _activeNotice ?? _lastNotice;
         if (envelope is null) { OpenCarePanel(); return; }
+        if (TryOpenTaskNotice(envelope)) return;
         if (envelope.GitHubLink is Uri githubLink)
         {
             if (OpenGitHubLink(githubLink.AbsoluteUri, envelope.GitHubThreadId, envelope.GitHubVersionKey)) DismissBubble();
