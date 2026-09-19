@@ -20,16 +20,19 @@ public partial class PetWindow
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(280));
         var elapsed = Stopwatch.StartNew();
         bool isolated = false;
+        const int expectedCases = 9;
         string? fatal = null;
+        object? renderCadence = null;
         string reportPath = Path.Combine(output, "expansion-smoke.json");
         void Report() => File.WriteAllText(reportPath, JsonSerializer.Serialize(new
         {
-            passed = fatal is null && results.All(x => x.Status is "passed" or "skipped") && results.Count >= 8,
-            fullAcceptance = fatal is null && results.Count >= 8 && results.All(x => x.Status == "passed"),
-            completed = fatal is not null || results.Count >= 8,
+            passed = fatal is null && results.All(x => x.Status is "passed" or "skipped") && results.Count == expectedCases,
+            fullAcceptance = fatal is null && results.Count == expectedCases && results.All(x => x.Status == "passed"),
+            completed = fatal is not null || results.Count == expectedCases,
             mode = "expansion", elapsedSeconds = Math.Round(elapsed.Elapsed.TotalSeconds, 2),
             cases = results, error = fatal, dataDirectory = AppPaths.DataDirectory,
             realHost = true, realRenderClock = true, ownWindowRenderingOnly = true,
+            renderCadence,
             limitations = new[]
             {
                 "Shop purchase uses the real transaction coordinator; the human confirmation MessageBox is not automated.",
@@ -158,6 +161,26 @@ public partial class PetWindow
                 ExpansionCheck(CareState.Food == food - 1 && CareState.TotalMeals == meals + 1 && !_pendingFeed,
                     "Repeated feed requests consumed more than one meal.");
                 EmotionMenuItem.IsChecked = false; EmotionMenu_OnClick(EmotionMenuItem, new RoutedEventArgs(MenuItem.ClickEvent));
+
+                // A feed accepted during another authored action owns its queued Eat.
+                // Crossing the two-second care cooldown must not merge two paid meals.
+                await ExpansionIdleAsync(timeout.Token);
+                CareState.Fullness = 10;
+                _behavior.RequestAction(ClipKind.Yawn);
+                await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.Yawn, timeout.Token, "yawn before feeding handoff");
+                long beforeEat = _behavior.CurrentSample.Sequence;
+                int beforeFood = CareState.Food, beforeMeals = CareState.TotalMeals;
+                FeedPet();
+                ExpansionCheck(IsFeeding && CareState.Food == beforeFood - 1, "Accepted meal did not own its queued reaction.");
+                await StartWorkingAsync().WaitAsync(timeout.Token);
+                PauseMenuItem_OnClick(PauseMenuItem, new RoutedEventArgs(MenuItem.ClickEvent));
+                ExpansionCheck(!CareState.IsWorking && !_behavior.IsPaused, "Work or pause discarded the paid-for Eat.");
+                await Task.Delay(2100, timeout.Token);
+                FeedPet();
+                ExpansionCheck(IsFeeding && CareState.Food == beforeFood - 1 && CareState.TotalMeals == beforeMeals + 1,
+                    "A second meal bypassed the reaction ownership after the care cooldown.");
+                await ExpansionObserveClipAsync(ClipKind.Eat, beforeEat, output, "expansion-feeding-handoff.png", timeout.Token);
+                ExpansionCheck(!IsFeeding, "Feeding ownership did not release after the real Eat completed.");
             });
 
             await Case("work holds desk and computer until full exit, then applies pending", async () =>
@@ -233,6 +256,68 @@ public partial class PetWindow
                 await EquipContentAsync(ContentCatalog.DefaultOutfitId).WaitAsync(timeout.Token);
                 await ExpansionWaitAsync(() => _framePlayer.CurrentOutfitId == ContentCatalog.DefaultOutfitId, timeout.Token, "default outfit restore");
             });
+
+            if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_SKIP_OUTFIT") == "1")
+            {
+                results.Add(new("expanded shop props and complete hoodie outfit", "skipped", 0,
+                    "Explicit outfit skip also excludes the complete new wardrobe combination.")); Report();
+            }
+            else await Case("expanded shop props and complete hoodie outfit", async () =>
+            {
+                await ExpansionIdleAsync(timeout.Token);
+                string[] additions = [ContentCatalog.WalnutDeskId, ContentCatalog.RetroComputerId,
+                    ContentCatalog.ArcadeDeskId, ContentCatalog.ArcadeComputerId, ContentCatalog.HoodieOutfitId];
+                foreach (string id in additions)
+                {
+                    var definition = ContentCatalog.Get(id);
+                    ExpansionCheck(IsContentResourceAvailable(definition), id + " is not fully available.");
+                    string before = ExpansionContentFingerprint();
+                    await PreviewContentAsync(id).WaitAsync(timeout.Token);
+                    await Task.Delay(150, timeout.Token);
+                    ExpansionCheck(before == ExpansionContentFingerprint(), id + " preview changed the live pet.");
+                    RenderOwnVisual(_contentPreviewWindow!, Path.Combine(output, "expansion-preview-" + id + ".png"));
+                    _contentPreviewWindow!.Close();
+                    int coins = CareState.Coins;
+                    var purchase = _contentTransactions!.Purchase(id);
+                    ExpansionCheck(purchase.Success && purchase.Changed && CareState.Coins == coins - definition.Price,
+                        id + " did not atomically charge its listed price.");
+                    var duplicate = _contentTransactions.Purchase(id);
+                    ExpansionCheck(!duplicate.Changed && CareState.Coins == coins - definition.Price,
+                        id + " duplicate purchase charged again.");
+                    var equip = await EquipContentAsync(id).WaitAsync(timeout.Token);
+                    ExpansionCheck(equip.Success, id + " did not equip.");
+                    // A prepared desk commits on the next render sample. Do not
+                    // misattribute the previous explicit equip to the next preview.
+                    await ExpansionWaitAsync(() => !IsContentEquipmentApplying && definition.Type switch
+                    {
+                        ContentType.Desk => _workStage.ActiveSelection.DeskId == definition.ScenePropId,
+                        ContentType.Computer => _workStage.ActiveSelection.ComputerId == definition.ScenePropId,
+                        ContentType.Outfit => _framePlayer.CurrentOutfitId == definition.OutfitId,
+                        _ => true,
+                    }, timeout.Token, id + " actual safe-boundary application");
+                }
+                await ExpansionWaitAsync(() => !IsContentEquipmentApplying && _framePlayer.CurrentOutfitId == ContentCatalog.HoodieOutfitId,
+                    timeout.Token, "complete hoodie switch");
+                long sequence = _behavior.CurrentSample.Sequence;
+                _behavior.RequestAction(ClipKind.Yawn);
+                await ExpansionObserveClipAsync(ClipKind.Yawn, sequence, output, "expansion-hoodie-yawn.png", timeout.Token);
+                CareState.Fullness = 80;
+                await StartWorkingAsync().WaitAsync(timeout.Token);
+                await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, timeout.Token, "hoodie arcade work");
+                ExpansionCheck(_workStage.ActiveSelection.DeskId == ContentCatalog.ArcadeDeskId &&
+                    _workStage.ActiveSelection.ComputerId == ContentCatalog.ArcadeComputerId, "New work props did not stay equipped.");
+                RenderOwnVisual(Root, Path.Combine(output, "expansion-hoodie-arcade-work.png"));
+                // Observe, do not assert a physical panel rate from WPF callback timing.
+                // No screenshot capture or UI manipulation during this short warm-loop sample.
+                await Task.Delay(2100, timeout.Token);
+                renderCadence = await ExpansionMeasureRenderCadenceAsync(timeout.Token);
+                StopWorking(); await ExpansionIdleAsync(timeout.Token);
+                var saved = new PetStore(AppPaths.DataDirectory).Load();
+                ExpansionCheck(saved is not null && additions.All(x => ContentOwnershipService.Owns(saved.Content, x)),
+                    "New wardrobe purchases did not persist.");
+                await EquipContentAsync(ContentCatalog.DefaultOutfitId).WaitAsync(timeout.Token);
+                await ExpansionWaitAsync(() => _framePlayer.CurrentOutfitId == ContentCatalog.DefaultOutfitId, timeout.Token, "default restore after hoodie");
+            });
         }
         catch (Exception ex) { fatal = ex.ToString(); }
         finally
@@ -278,6 +363,30 @@ public partial class PetWindow
 
     private static void ExpansionCheck(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
+
+    private static async Task<object> ExpansionMeasureRenderCadenceAsync(CancellationToken token)
+    {
+        var timestamps = new List<double>(300);
+        void Observe(object? sender, EventArgs e)
+        {
+            if (e is RenderingEventArgs frame && (timestamps.Count == 0 || frame.RenderingTime.TotalMilliseconds > timestamps[^1]))
+                timestamps.Add(frame.RenderingTime.TotalMilliseconds);
+        }
+        CompositionTarget.Rendering += Observe;
+        try { await Task.Delay(3000, token); }
+        finally { CompositionTarget.Rendering -= Observe; }
+        double[] intervals = timestamps.Zip(timestamps.Skip(1), (a, b) => b - a).Order().ToArray();
+        return new
+        {
+            scenario = "warm hoodie + arcade desk + arcade computer WorkLoop",
+            callbacks = timestamps.Count,
+            meanCallbackHz = timestamps.Count > 1 ? Math.Round((timestamps.Count - 1) * 1000 / (timestamps[^1] - timestamps[0]), 2) : (double?)null,
+            p95IntervalMs = intervals.Length > 0 ? Math.Round(intervals[(int)Math.Floor((intervals.Length - 1) * .95)], 2) : (double?)null,
+            maxIntervalMs = intervals.Length > 0 ? Math.Round(intervals[^1], 2) : (double?)null,
+            physicalDisplayCertified = false,
+            note = "WPF rendering callback observation on this host, not a panel Present or long-session FPS guarantee.",
+        };
+    }
 
     private async Task ExpansionWaitAsync(Func<bool> condition, CancellationToken token, string label, double seconds = 35)
     {
