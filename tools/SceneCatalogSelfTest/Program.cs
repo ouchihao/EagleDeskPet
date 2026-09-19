@@ -47,6 +47,7 @@ internal static class Program
             ("Latest asynchronous selection wins", LatestSelectionWins),
             ("Apply never loads images and release clears fire sources", RenderPathAndRelease),
             ("Fire anchor follows image scale without adding letterboxing", FireAnchor),
+            ("White work clothing is never a bowl and cached masks follow the action family", SemanticForeground),
         };
         int failures = 0;
         foreach (var (name, body) in cases)
@@ -59,6 +60,36 @@ internal static class Program
     }
 
     private static JsonObject Document() => JsonNode.Parse(_json)!.AsObject();
+    private static void SemanticForeground()
+    {
+        var panel = new Grid { Width = 160, Height = 174 };
+        var back = Layer(); var front = Layer(); var computer = Layer(); var fire = Layer(); var actor = Layer();
+        foreach (var layer in new[] { fire, back, actor, front, computer }) panel.Children.Add(layer);
+        var renderer = new WorkStageRenderer(back, front, computer, fire, AlternateCatalog(), _ => Pixel(), actor);
+        var pixels = Enumerable.Repeat((byte)255, 384 * 346 * 4).ToArray();
+        var whiteShirt = BitmapSource.Create(384, 346, 96, 96, PixelFormats.Pbgra32, null, pixels, 384 * 4);
+        whiteShirt.Freeze(); actor.Source = whiteShirt;
+        renderer.Apply(new(ClipKind.WorkEnter, ClipPlaybackPhase.Playing, .5, 1));
+        Geometry work = renderer.ForegroundLayer!.Clip;
+        var torso = new Point(192 * 160.0 / 384, 260 * 160.0 / 384);
+        Check(!work.FillContains(torso), "White work clothing was classified as a bowl.");
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < 10000; i++) renderer.Apply(new(ClipKind.WorkLoop, ClipPlaybackPhase.Playing, .5, 1));
+        watch.Stop();
+        Check(ReferenceEquals(work, renderer.ForegroundLayer.Clip), "Repeated rendered frame rebuilt its foreground mask.");
+        renderer.Apply(new(ClipKind.HungryLoop, ClipPlaybackPhase.Playing, .5, 2));
+        Check(renderer.ForegroundLayer.Clip.FillContains(torso), "Explicit hungry bowl foreground was not enabled.");
+        Check(!ReferenceEquals(work, renderer.ForegroundLayer.Clip), "Work and hungry masks shared an incompatible cache entry.");
+        renderer.Apply(new(ClipKind.WorkLoop, ClipPlaybackPhase.Playing, .5, 3));
+        Check(ReferenceEquals(work, renderer.ForegroundLayer.Clip), "Returning to work did not reuse its own cached geometry.");
+        Check(Panel.GetZIndex(back) == 1 && Panel.GetZIndex(actor) == 0 && Panel.GetZIndex(renderer.ForegroundLayer) == 2,
+            "Semantic layer order does not match the catalog.");
+        renderer.ReleaseFireFrames();
+        Check(renderer.ForegroundLayer.Source is null && renderer.ForegroundLayer.Clip is null, "Release retained foreground frame/mask references.");
+        renderer.Apply(new(ClipKind.WorkLoop, ClipPlaybackPhase.Playing, .5, 4));
+        Check(!ReferenceEquals(work, renderer.ForegroundLayer.Clip), "Release retained the mask cache.");
+        Console.WriteLine($"  cached Apply: {watch.Elapsed.TotalMilliseconds / 10000:F6} ms average over 10000 ticks");
+    }
     private static JsonObject Scene(JsonObject document) => document["scenes"]![0]!.AsObject();
     private static SceneCatalog Parse(JsonObject document, Func<string, bool>? exists = null)
     {
@@ -110,6 +141,7 @@ internal static class Program
         Reject(d => Scene(d)["characterFootAnchor"]!["y"] = 330);
         Reject(d => Scene(d)["deskSurfaceAnchor"]!["y"] = 250);
         Reject(d => Scene(d)["layerOrder"]![0] = "character");
+        Reject(d => Scene(d)["layerOrder"] = new JsonArray("fire", "desk-back", "character", "desk-front", "computer"));
     }
     private static void TimelineContract()
     {

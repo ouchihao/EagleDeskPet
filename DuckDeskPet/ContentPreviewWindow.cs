@@ -48,7 +48,7 @@ internal sealed class ContentPreviewWindow : Window
         // A short/narrow window scales this self-contained stage instead of cropping feet or controls.
         var viewport = new Viewbox { Child = scene, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly };
         Grid.SetRow(viewport, 1); root.Children.Add(viewport);
-        _stage = new WorkStageRenderer(back, front, computer, fire);
+        _stage = new WorkStageRenderer(back, front, computer, fire, character: _pet);
         var footer = new StackPanel { Margin = new(0, 12, 0, 0) };
         _status = new TextBlock { Text = "正在准备预览…", TextWrapping = TextWrapping.Wrap, FontSize = 11, Foreground = Brush("#81745F"), Margin = new(0, 0, 0, 10) };
         footer.Children.Add(_status);

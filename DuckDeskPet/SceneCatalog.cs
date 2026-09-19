@@ -127,7 +127,7 @@ internal sealed class SceneCatalog
             Require(scene.CharacterFootAnchor is { X: 191.5, Y: 336 }, "Work scene character anchor mismatch.");
             Require(scene.DeskSurfaceAnchor is { X: 192, Y: 276 }, "Work scene tabletop anchor mismatch.");
             Require(scene.LayerOrder is not null && scene.LayerOrder.SequenceEqual(
-                new[] { "fire", "desk-back", "character", "desk-front", "computer" }), "Unsupported work scene layer order.");
+                new[] { "fire", "character-body", "desk-back", "character-foreground", "desk-front", "computer" }), "Unsupported work scene semantic layer order.");
             Require(scene.Phases is { Count: 6 }, "Work scene must declare all six authored phases.");
             var phases = new HashSet<ClipKind>();
             foreach (var phase in scene.Phases)

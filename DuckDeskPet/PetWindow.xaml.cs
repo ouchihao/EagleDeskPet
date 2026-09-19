@@ -41,7 +41,7 @@ public partial class PetWindow : Window
         Closing += OnClosing;
 
         _framePlayer = new RasterFramePlayer(PetImage);
-        _workStage = new WorkStageRenderer(DeskBackImage, DeskFrontImage, LaptopImage, BusyFireImage);
+        _workStage = new WorkStageRenderer(DeskBackImage, DeskFrontImage, LaptopImage, BusyFireImage, character: PetImage);
         _settings = PetSettings.Load();
         ApplySize(_settings.SizeScale, persist: false);
         Topmost = _settings.IsTopmost;

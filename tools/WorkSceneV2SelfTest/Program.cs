@@ -20,7 +20,7 @@ internal static class Program
         var stage = new Grid { Width = 160, Height = 174, Background = dark, ClipToBounds = true };
         var fire = Layer(); var back = Layer(); var eagle = Layer(); var front = Layer(); var laptop = Layer();
         foreach (var image in new[] { fire, back, eagle, front, laptop }) stage.Children.Add(image);
-        var renderer = new WorkStageRenderer(back, front, laptop, fire);
+        var renderer = new WorkStageRenderer(back, front, laptop, fire, character: eagle);
         renderer.WarmFireAsync().GetAwaiter().GetResult();
         var assertions = new List<string>();
         var selected = new List<(string Label, BitmapSource Frame)>();
@@ -47,6 +47,9 @@ internal static class Program
                         double expectedY = back.TransformToAncestor(stage).Transform(authoredBase).Y;
                         Check(Math.Abs(baseY - expectedY) < 0.01,
                             "fire growth keeps the image-local baseline fixed (no double letterbox red rug)", once: true);
+                        if (fire.Clip.Bounds.Height > 0)
+                            Check(Math.Abs(fire.RenderTransform.Transform(new Point(0, fire.Clip.Bounds.Bottom)).Y - 276 * (160.0 / 384)) < .001,
+                                "fire clip stays on the fixed tabletop line through every growth/shrink frame", once: true);
                     }
                     var rendered = Render(stage);
                     if (frame % 3 == 0 && frame < frameCount - 1)

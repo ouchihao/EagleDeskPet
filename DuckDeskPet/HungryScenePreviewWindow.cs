@@ -75,7 +75,7 @@ internal sealed class HungryScenePreviewWindow : Window
     {
         try
         {
-            var stage = _stage = new WorkStageRenderer(_back, _front, _computer, _fire);
+            var stage = _stage = new WorkStageRenderer(_back, _front, _computer, _fire, character: _pet);
             var player = _player = new RasterFramePlayer(_pet);
             var warnings = new List<string>();
             if (!string.Equals(_requestedOutfit, OutfitCatalog.DefaultId, StringComparison.Ordinal))

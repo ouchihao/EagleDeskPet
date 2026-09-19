@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../DuckDeskPet.Core/DuckDeskPet.Core.csproj" />
+    <Compile Include="../../DuckDeskPet/WorkStageRenderer.cs" Link="WorkStageRenderer.cs" />
+    <Compile Include="../../DuckDeskPet/WorkStageMotion.cs" Link="WorkStageMotion.cs" />
+    <Compile Include="../../DuckDeskPet/SceneDefinition.cs" Link="SceneDefinition.cs" />
+    <Compile Include="../../DuckDeskPet/SceneCatalog.cs" Link="SceneCatalog.cs" />
+    <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
+    <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
+    <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
+  </ItemGroup>
+</Project>

@@ -114,6 +114,7 @@ internal static class Program
     {
         var stage = new Stage(1, Brushes.Transparent); stage.Show(ClipKind.HungryLoop, 48);
         byte[] composed = Pixels(stage.Render());
+        stage.Renderer.ForegroundLayer!.Visibility = Visibility.Hidden;
         stage.Back.Visibility = stage.Front.Visibility = Visibility.Hidden; byte[] actor = Pixels(stage.Render());
         stage.Pet.Visibility = Visibility.Hidden; stage.Front.Visibility = Visibility.Visible; byte[] front = Pixels(stage.Render());
         int overlap = 0, visibleBowl = 0;
@@ -126,7 +127,8 @@ internal static class Program
             }
             double nativeX = x * 384.0 / 160, nativeY = (y - (174 - 346.0 * 160 / 384) / 2) * 384 / 160;
             if (nativeX is > 150 and < 235 && nativeY is > 220 and < 270 && actor[p + 3] > 240 && actor[p + 2] > 160 && actor[p + 1] > 140 && actor[p] > 100 && front[p + 3] < 5)
-            { visibleBowl++; Check(Enumerable.Range(0, 3).All(c => Math.Abs(composed[p + c] - actor[p + c]) <= 2), "Desk hid the held bowl."); }
+            { visibleBowl++; Check(Enumerable.Range(0, 3).All(c => Math.Abs(composed[p + c] - actor[p + c]) <= 2),
+                $"Desk hid the held bowl at {nativeX:F1},{nativeY:F1}: BGRA actor {actor[p]}/{actor[p + 1]}/{actor[p + 2]}/{actor[p + 3]}, composed {composed[p]}/{composed[p + 1]}/{composed[p + 2]}/{composed[p + 3]}."); }
         }
         Check(overlap >= 20, $"Occlusion test lacks actual lower-body/front overlap ({overlap}).");
         Check(visibleBowl >= 10, $"Held bowl is not visible above the table ({visibleBowl}).");
@@ -393,7 +395,7 @@ internal static class Program
             Root = new() { Width = Math.Ceiling(160 * scale), Height = Math.Ceiling(174 * scale), Background = background, ClipToBounds = true };
             var layers = new Grid { Width = 160, Height = 174, LayoutTransform = new ScaleTransform(scale, scale) };
             foreach (var image in new[] { Fire, Back, Pet, Front, Laptop }) layers.Children.Add(image);
-            Root.Children.Add(layers); Renderer = new(Back, Front, Laptop, Fire);
+            Root.Children.Add(layers); Renderer = new(Back, Front, Laptop, Fire, character: Pet);
         }
         internal void Show(ClipKind kind, int frame)
         { Pet.Source = Frame(kind, frame); Renderer.Apply(Sample(kind, ClipCatalog.GetProgressAtFrame(kind, frame)), 1.0 / 60); Layout(); }

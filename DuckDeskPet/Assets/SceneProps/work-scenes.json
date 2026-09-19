@@ -9,7 +9,7 @@
       "canvas": { "width": 384, "height": 346 },
       "characterFootAnchor": { "x": 191.5, "y": 336 },
       "deskSurfaceAnchor": { "x": 192, "y": 276 },
-      "layerOrder": ["fire", "desk-back", "character", "desk-front", "computer"],
+      "layerOrder": ["fire", "character-body", "desk-back", "character-foreground", "desk-front", "computer"],
       "phases": [
         { "clip": "WorkEnter", "frameCount": 211, "durationSeconds": 3.5 },
         { "clip": "WorkLoop", "frameCount": 121, "durationSeconds": 2.0 },
