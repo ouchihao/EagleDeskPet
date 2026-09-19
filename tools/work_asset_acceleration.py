@@ -12,8 +12,8 @@ from pathlib import Path
 import numpy as np
 
 
-def enable(pipeline) -> bool:
-    optional = Path(__file__).resolve().parents[1] / ".tool-cache/work-animation-python"
+def enable(pipeline, dependency_root: Path | None = None) -> bool:
+    optional = dependency_root or (Path(__file__).resolve().parents[1] / ".tool-cache/work-animation-python")
     if not (optional / "scipy").is_dir():
         return False
     sys.path.insert(0, str(optional))

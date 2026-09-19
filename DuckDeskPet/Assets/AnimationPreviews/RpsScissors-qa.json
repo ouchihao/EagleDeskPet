@@ -1,0 +1,735 @@
+{
+  "passed": true,
+  "errors": [],
+  "frame_count": 121,
+  "expected_frame_count": 121,
+  "canvas": [
+    384,
+    346
+  ],
+  "target_root": {
+    "torso_x": 191.5,
+    "foot_contact_y": 336.0
+  },
+  "root": {
+    "measurement_source": "composited frame",
+    "maximum_torso_x_error": 0.5,
+    "maximum_foot_contact_y_error": 0.0,
+    "maximum_adjacent_torso_x_step": 0.5,
+    "maximum_adjacent_foot_y_step": 0.0,
+    "torso_x_tolerance": 4.0,
+    "foot_y_tolerance": 1.5
+  },
+  "boundary": {
+    "minimum_clear_border_fraction": 1.0,
+    "minimum_margins_left_top_right_bottom": [
+      103,
+      84,
+      110,
+      8
+    ],
+    "detached_edge_contact_allowed": false,
+    "detached_edge_contact_after_frame": null,
+    "minimum_required_margin_pixels": 8,
+    "content_margin_violations": [],
+    "main_character_minimum_clear_border_fraction": 1.0,
+    "main_character_minimum_margins_left_top_right_bottom": [
+      103,
+      84,
+      110,
+      8
+    ],
+    "main_character_margin_violations": [],
+    "edge_contact_classification": [],
+    "disallowed_detached_edge_contacts": []
+  },
+  "dark_background_halo": {
+    "passed": true,
+    "backgrounds": {
+      "black": [
+        0,
+        0,
+        0
+      ],
+      "dark_12151c": [
+        18,
+        21,
+        28
+      ]
+    },
+    "maximum_visible_pixels_per_frame": 16,
+    "maximum_visible_edge_fraction": 0.025,
+    "maximum_neutral_bright_pixels_per_frame": 4,
+    "maximum_unsupported_low_alpha_pixels_per_frame": 2,
+    "failed_frames": [],
+    "worst_frame": 12,
+    "worst_frame_measurement": {
+      "outer_edge_pixels": 954,
+      "low_alpha_edge_pixels": 714,
+      "unsupported_low_alpha_pixels": 0,
+      "neutral_bright_edge_pixels": 0,
+      "color_polluted_edge_pixels": 5,
+      "opaque_matte_island_pixels": 0,
+      "opaque_matte_islands": [],
+      "pale_lower_fringe_pixels": 0,
+      "pale_lower_fringe_clusters": [],
+      "maximum_edge_color_residual": 73.0,
+      "edge_color_residual_limit": 48.0,
+      "edge_color_search_radius": 4,
+      "visible_pixels_by_background": {
+        "black": 4,
+        "dark_12151c": 3
+      },
+      "maximum_visible_pixels": 4,
+      "maximum_visible_edge_fraction": 0.0041928721174004195
+    },
+    "total_visible_pixels_by_background": {
+      "black": 10,
+      "dark_12151c": 9
+    },
+    "strict_scope": "whole_frame",
+    "whole_frame_diagnostic": {
+      "worst_frame": 12,
+      "worst_frame_measurement": {
+        "outer_edge_pixels": 954,
+        "low_alpha_edge_pixels": 714,
+        "unsupported_low_alpha_pixels": 0,
+        "neutral_bright_edge_pixels": 0,
+        "color_polluted_edge_pixels": 5,
+        "opaque_matte_island_pixels": 0,
+        "opaque_matte_islands": [],
+        "pale_lower_fringe_pixels": 0,
+        "pale_lower_fringe_clusters": [],
+        "maximum_edge_color_residual": 73.0,
+        "edge_color_residual_limit": 48.0,
+        "edge_color_search_radius": 4,
+        "visible_pixels_by_background": {
+          "black": 4,
+          "dark_12151c": 3
+        },
+        "maximum_visible_pixels": 4,
+        "maximum_visible_edge_fraction": 0.0041928721174004195
+      },
+      "total_visible_pixels_by_background": {
+        "black": 10,
+        "dark_12151c": 9
+      },
+      "detached_soft_prop_or_smoke_is_not_a_halo_failure": false
+    }
+  },
+  "detached_component_policy": {
+    "enabled": false,
+    "passed": true,
+    "left_side_components": [],
+    "moving_prop_regressions": [],
+    "moving_prop_reappearances": [],
+    "moving_prop_track": []
+  },
+  "endpoints": {
+    "first_exact": true,
+    "last_exact": true,
+    "first_premultiplied_mae": 0.0,
+    "last_premultiplied_mae": 0.0
+  },
+  "stabilization": {
+    "target": {
+      "torso_x": 191.5,
+      "foot_contact_y": 336.0
+    },
+    "raw": {
+      "torso_x_range": 1.0,
+      "foot_contact_y_range": 1.0
+    },
+    "translation": {
+      "maximum_absolute_x": 0.5,
+      "maximum_absolute_y": 1.0,
+      "maximum_adjacent_step_x": 0.5,
+      "maximum_adjacent_step_y": 1.0,
+      "secondary_correction_maximum_x": 0.5,
+      "secondary_correction_maximum_y": 0.0,
+      "secondary_correction_passes": 1,
+      "per_frame_offsets": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          -0.5,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          -0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    "stabilized": {
+      "torso_x_range": 1.0,
+      "foot_contact_y_range": 0.0,
+      "maximum_torso_x_error": 0.5,
+      "maximum_foot_contact_y_error": 0.0
+    }
+  },
+  "final_root_residual_correction": {
+    "locked_authored_frames": [
+      0,
+      120
+    ],
+    "corrected_frame_count": 0,
+    "corrections": [],
+    "maximum_torso_x_error": 0.5,
+    "maximum_foot_contact_y_error": 0.0,
+    "method": "integer whole-frame residual translation without resampling"
+  },
+  "interpolated_matte_cleanup": {
+    "enabled": false
+  },
+  "component_policy_cleanup": {
+    "enabled": false,
+    "removed_left_side_components": 0,
+    "removed_non_monotonic_components": 0,
+    "removed_reappearing_components": 0,
+    "removed_pixels": 0,
+    "post_root_residual_policy": {
+      "enabled": false,
+      "passed": true,
+      "left_side_components": [],
+      "moving_prop_regressions": [],
+      "moving_prop_reappearances": [],
+      "moving_prop_track": []
+    }
+  },
+  "authored_key_frames": {
+    "locked": false,
+    "frame_indices": [
+      0,
+      24,
+      58,
+      93,
+      120
+    ],
+    "frame_intervals": [
+      24,
+      34,
+      35,
+      27
+    ],
+    "all_exact": false,
+    "frames": [
+      {
+        "key": 0,
+        "frame": 0,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 1,
+        "frame": 24,
+        "exact": false,
+        "premultiplied_mae": 0.007377526257187128
+      },
+      {
+        "key": 2,
+        "frame": 58,
+        "exact": false,
+        "premultiplied_mae": 0.0066918544471263885
+      },
+      {
+        "key": 3,
+        "frame": 93,
+        "exact": false,
+        "premultiplied_mae": 0.00663725845515728
+      },
+      {
+        "key": 4,
+        "frame": 120,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      }
+    ]
+  },
+  "temporal_sampling": {
+    "unique_pixel_frames": 120,
+    "adjacent_duplicate_indexes": [],
+    "rife_directory_pair_sampling": "2*(segment_count-1) outputs; keep first segment_count inclusive t=0..1 samples"
+  },
+  "provenance": {
+    "generator": "built-in imagegen",
+    "sheet": "rps-sheet-v1.png",
+    "source_sha256": "cfc757b39ccc6dbc33917cc3e0f1f30f86d5bf3e1d65c8a4fbfe51260f8f89f1",
+    "method": "authored keys, paired RIFE RGB/alpha, planted-foot stabilization",
+    "neutral_sha256": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc"
+  }
+}
