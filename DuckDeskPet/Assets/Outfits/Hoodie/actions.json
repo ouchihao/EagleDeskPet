@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "neutral": "Assets/Outfits/Hoodie/neutral.png",
+  "actions": [
+    {
+      "id": "yawn",
+      "clip": "Yawn",
+      "name": "困到哈欠",
+      "group": "Idle",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/Yawn",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "shy",
+      "clip": "Shy",
+      "name": "摸头害羞",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/Shy",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "eat",
+      "clip": "Eat",
+      "name": "干饭",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/Eat",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "work-enter",
+      "clip": "WorkEnter",
+      "name": "工位入场",
+      "group": "Interaction",
+      "phase": "enter",
+      "directory": "Assets/Outfits/Hoodie/Animations/WorkEnter",
+      "frameCount": 211,
+      "durationSeconds": 3.5
+    },
+    {
+      "id": "work-loop",
+      "clip": "WorkLoop",
+      "name": "办公循环",
+      "group": "Interaction",
+      "phase": "loop",
+      "directory": "Assets/Outfits/Hoodie/Animations/WorkLoop",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "work-to-busy",
+      "clip": "WorkToBusy",
+      "name": "进入忙碌",
+      "group": "Interaction",
+      "phase": "transition",
+      "directory": "Assets/Outfits/Hoodie/Animations/WorkToBusyV2",
+      "frameCount": 91,
+      "durationSeconds": 1.5
+    },
+    {
+      "id": "busy-loop",
+      "clip": "BusyLoop",
+      "name": "忙碌循环",
+      "group": "Interaction",
+      "phase": "loop",
+      "directory": "Assets/Outfits/Hoodie/Animations/BusyLoop",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "work-exit",
+      "clip": "WorkExit",
+      "name": "工作收场",
+      "group": "Interaction",
+      "phase": "exit",
+      "directory": "Assets/Outfits/Hoodie/Animations/WorkExit",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "busy-exit",
+      "clip": "BusyExit",
+      "name": "忙碌收场",
+      "group": "Interaction",
+      "phase": "exit",
+      "directory": "Assets/Outfits/Hoodie/Animations/BusyExitV2",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "hungry-enter",
+      "clip": "HungryEnter",
+      "name": "端出空碗",
+      "group": "Interaction",
+      "phase": "enter",
+      "directory": "Assets/Outfits/Hoodie/Animations/HungryEnter",
+      "frameCount": 91,
+      "durationSeconds": 1.5
+    },
+    {
+      "id": "hungry-loop",
+      "clip": "HungryLoop",
+      "name": "等饭小剧场",
+      "group": "Interaction",
+      "phase": "loop",
+      "directory": "Assets/Outfits/Hoodie/Animations/HungryLoop",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "hungry-exit",
+      "clip": "HungryExit",
+      "name": "收好空碗",
+      "group": "Interaction",
+      "phase": "exit",
+      "directory": "Assets/Outfits/Hoodie/Animations/HungryExit",
+      "frameCount": 91,
+      "durationSeconds": 1.5
+    },
+    {
+      "id": "tea",
+      "clip": "Tea",
+      "name": "喝茶缓一缓",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/Tea",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "rps-rock",
+      "clip": "RpsRock",
+      "name": "出石头",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/RpsRock",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "rps-paper",
+      "clip": "RpsPaper",
+      "name": "出布",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/RpsPaper",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "rps-scissors",
+      "clip": "RpsScissors",
+      "name": "出剪刀",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/RpsScissors",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "rps-win",
+      "clip": "RpsWin",
+      "name": "得意小鹰",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/RpsWin",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "rps-lose",
+      "clip": "RpsLose",
+      "name": "输后捂脸",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/RpsLose",
+      "frameCount": 121,
+      "durationSeconds": 2
+    },
+    {
+      "id": "annoyed",
+      "clip": "Annoyed",
+      "name": "护头龇牙",
+      "group": "Interaction",
+      "phase": "once",
+      "directory": "Assets/Outfits/Hoodie/Animations/Annoyed",
+      "frameCount": 121,
+      "durationSeconds": 2
+    }
+  ]
+}

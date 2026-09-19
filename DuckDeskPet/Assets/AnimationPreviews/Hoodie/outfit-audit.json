@@ -1,0 +1,581 @@
+{
+  "passed": true,
+  "errors": [],
+  "outfit": "outfit.hoodie",
+  "clips": {
+    "Yawn": {
+      "frames": 121,
+      "bytes": 8153623,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        9,
+        17,
+        26,
+        34,
+        43,
+        51,
+        60,
+        69,
+        77,
+        86,
+        94,
+        103,
+        111,
+        120
+      ]
+    },
+    "Shy": {
+      "frames": 121,
+      "bytes": 7748641,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        9,
+        17,
+        26,
+        34,
+        43,
+        51,
+        60,
+        69,
+        77,
+        86,
+        94,
+        103,
+        111,
+        120
+      ]
+    },
+    "Eat": {
+      "frames": 121,
+      "bytes": 8208033,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        90,
+        100,
+        110,
+        120
+      ]
+    },
+    "WorkEnter": {
+      "frames": 211,
+      "bytes": 13848413,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 211,
+      "authored_frame_indices": [
+        0,
+        35,
+        74,
+        112,
+        157,
+        210
+      ]
+    },
+    "WorkLoop": {
+      "frames": 121,
+      "bytes": 8081142,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        92,
+        106,
+        120
+      ]
+    },
+    "WorkToBusyV2": {
+      "frames": 91,
+      "bytes": 6103537,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 91,
+      "authored_frame_indices": [
+        0,
+        18,
+        42,
+        90
+      ]
+    },
+    "BusyLoop": {
+      "frames": 121,
+      "bytes": 8082271,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 0.5,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        52,
+        64,
+        76,
+        88,
+        104,
+        120
+      ]
+    },
+    "WorkExit": {
+      "frames": 121,
+      "bytes": 7938592,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 121,
+      "authored_frame_indices": [
+        0,
+        38,
+        80,
+        120
+      ]
+    },
+    "BusyExitV2": {
+      "frames": 121,
+      "bytes": 7989304,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 0.5,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 121,
+      "authored_frame_indices": [
+        0,
+        15,
+        33,
+        66,
+        92,
+        120
+      ]
+    },
+    "HungryEnter": {
+      "frames": 91,
+      "bytes": 6069903,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 91,
+      "authored_frame_indices": [
+        0,
+        12,
+        25,
+        40,
+        56,
+        73,
+        90
+      ]
+    },
+    "HungryLoop": {
+      "frames": 121,
+      "bytes": 8269649,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        24,
+        48,
+        72,
+        96,
+        120
+      ]
+    },
+    "HungryExit": {
+      "frames": 91,
+      "bytes": 6245481,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 91,
+      "authored_frame_indices": [
+        0,
+        23,
+        46,
+        67,
+        90
+      ]
+    },
+    "Tea": {
+      "frames": 121,
+      "bytes": 8373966,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        90,
+        100,
+        110,
+        120
+      ]
+    },
+    "RpsRock": {
+      "frames": 121,
+      "bytes": 7909274,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 0.5,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        24,
+        58,
+        93,
+        120
+      ]
+    },
+    "RpsPaper": {
+      "frames": 121,
+      "bytes": 8085839,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 0.5,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        24,
+        58,
+        93,
+        120
+      ]
+    },
+    "RpsScissors": {
+      "frames": 121,
+      "bytes": 8017123,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        24,
+        58,
+        93,
+        120
+      ]
+    },
+    "RpsWin": {
+      "frames": 121,
+      "bytes": 8305953,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 0.5,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        24,
+        58,
+        93,
+        120
+      ]
+    },
+    "RpsLose": {
+      "frames": 121,
+      "bytes": 8041834,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 0.5,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        24,
+        58,
+        93,
+        120
+      ]
+    },
+    "Annoyed": {
+      "frames": 121,
+      "bytes": 8308809,
+      "qa_passed": true,
+      "root": {
+        "measurement_source": "composited frame",
+        "maximum_torso_x_error": 0.5,
+        "maximum_foot_contact_y_error": 0.0,
+        "maximum_adjacent_torso_x_step": 1.0,
+        "maximum_adjacent_foot_y_step": 0.0,
+        "torso_x_tolerance": 4.0,
+        "foot_y_tolerance": 1.5
+      },
+      "halo": true,
+      "unique_pixel_frames": 120,
+      "authored_frame_indices": [
+        0,
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        90,
+        100,
+        110,
+        120
+      ]
+    }
+  },
+  "scene_seams": [
+    {
+      "from": "WorkEnter:end",
+      "to": "WorkLoop:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "WorkLoop:end",
+      "to": "WorkLoop:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "WorkLoop:end",
+      "to": "WorkToBusyV2:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "WorkToBusyV2:end",
+      "to": "BusyLoop:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "BusyLoop:end",
+      "to": "BusyLoop:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "WorkLoop:end",
+      "to": "WorkExit:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "BusyLoop:end",
+      "to": "BusyExitV2:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "HungryEnter:end",
+      "to": "HungryLoop:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "HungryLoop:end",
+      "to": "HungryLoop:start",
+      "pixel_exact": true
+    },
+    {
+      "from": "HungryLoop:end",
+      "to": "HungryExit:start",
+      "pixel_exact": true
+    }
+  ],
+  "frame_count": 2299,
+  "clip_count": 19,
+  "packaged_png_bytes": 153846587,
+  "canvas": [
+    384,
+    346
+  ],
+  "neutral_sha256": "fa26126513bbcaa16397767ef888b217a7920968ef4f4d081773a5641b6a2c2d",
+  "source_art": "Built-in ImageGen full-body outfit poses; no programmatically drawn clothing or character parts",
+  "native_alpha_policy": {
+    "opaque_core_min_alpha": 240,
+    "final_resample_cleanup": "existing selective_matte_defringe",
+    "qa_thresholds_relaxed": false,
+    "character_redrawn_by_code": false
+  },
+  "decoded_common_three_bytes": 133816320,
+  "decoded_work_phases_bytes": 289751040,
+  "decoded_all_clips_bytes": 847503360,
+  "shipping_gate": "Requires this automated audit and human inspection; does not register shop availability."
+}

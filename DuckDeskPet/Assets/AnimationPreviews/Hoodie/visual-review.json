@@ -1,0 +1,30 @@
+{
+  "outfit": "outfit.hoodie",
+  "assetReviewPassed": true,
+  "sourceArtwork": "Nine built-in ImageGen outputs: one neutral and eight full-body pose sheets; prompts and original copies retained in AnimationSources/hoodie-*.",
+  "reviewed": {
+    "sourceSheets": 8,
+    "neutral": true,
+    "allClipContactPreviews": 19,
+    "workToBusyQuarterSamples": [23, 45, 68],
+    "busyExitQuarterSamples": [30, 60, 90]
+  },
+  "findings": [
+    "Pale lavender hoodie, cream cuffs/hem/drawstrings and fish chest emblem remain present on all full-body authored poses.",
+    "Approved eagle head stays uncovered; sleeves and garment move with the existing gestures.",
+    "Registered sprites and final dark-background samples have no visible white matte blocks; unchanged strict full-frame alpha QA passed every sequence.",
+    "Working eye transitions use normal eyes, fully closed eyelids, angry closed eyelids and yellow glare; reverse exit also passes through closed eyelids.",
+    "All generated feet remain registered to the same baseline. Work and hungry scene endpoints are pixel-exact across all ten audited joins."
+  ],
+  "automatedAudit": "outfit-audit.json",
+  "automatedResults": {
+    "clips": 19,
+    "frames": 2299,
+    "lockedAuthoredKeys": 161,
+    "maximumFootYErrorPixels": 0.0,
+    "maximumTorsoXErrorPixels": 0.5,
+    "adjacentDuplicateFrames": 0,
+    "allHaloChecksPassed": true
+  },
+  "scope": "Asset-only review; root integrator separately validates actual WPF outfit switching and desk/computer scene composition before release."
+}
