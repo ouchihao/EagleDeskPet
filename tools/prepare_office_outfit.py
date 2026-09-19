@@ -171,7 +171,13 @@ def build(assets:Path,args):
 
 def props(assets:Path):
     target = assets/'SceneProps/Shop'; target.mkdir(parents=True,exist_ok=True)
-    for source,name,width,x,bottom in [('mint-desk-v1.png','desk-mint',306,39,345),('midnight-computer-v1.png','computer-midnight',102,141,275)]:
+    definitions = [('mint-desk-v2.png','desk-mint',306,39,345),
+                   ('walnut-desk-v1.png','desk-walnut',306,39,345),
+                   ('arcade-desk-v1.png','desk-arcade',306,39,345),
+                   ('midnight-computer-v1.png','computer-midnight',102,141,275),
+                   ('retro-computer-v1.png','computer-retro',102,141,275),
+                   ('arcade-computer-v1.png','computer-arcade',102,141,275)]
+    for source,name,width,x,bottom in definitions:
         rgba = Image.open(assets/'AnimationSources'/source).convert('RGBA')
         # Ignore nearly transparent export noise when finding a prop's physical size.
         # Fitting a whole canvas instead of the visible laptop made it only ~30 px wide.
@@ -179,13 +185,20 @@ def props(assets:Path):
         ys,xs = np.where(alpha >= 32)
         if not len(xs): raise ValueError(f'{source}: no visible prop')
         crop = rgba.crop((int(xs.min()),int(ys.min()),int(xs.max())+1,int(ys.max())+1))
-        image = place_prop(crop,width,x,bottom)
+        if name.startswith('desk-'):
+            # All table surfaces and feet share the authored classic desk bounds.
+            # Small source aspect variations must not lift the laptop off its table.
+            art = pipeline.add_rgb_edge_bleed(crop, iterations=12).resize((306,96),Image.Resampling.LANCZOS)
+            image = Image.new('RGBA',pipeline.CANVAS_SIZE)
+            image.alpha_composite(art,(39,249))
+        else:
+            image = place_prop(crop,width,x,bottom)
         image.save(target/f'{name}.png',optimize=True)
-        if name=='desk-mint':
+        if name.startswith('desk-'):
             back,front=np.array(image),np.array(image)
             back[276:,:,3]=0; front[:276,:,3]=0
-            Image.fromarray(back).save(target/'desk-mint-back.png',optimize=True)
-            Image.fromarray(front).save(target/'desk-mint-front.png',optimize=True)
+            Image.fromarray(back).save(target/f'{name}-back.png',optimize=True)
+            Image.fromarray(front).save(target/f'{name}-front.png',optimize=True)
 
 def audit(assets:Path):
     """Read every output and audit scene seams without modifying artwork."""

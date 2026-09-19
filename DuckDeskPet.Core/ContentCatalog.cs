@@ -39,6 +39,11 @@ public static class ContentCatalog
     public const string MidnightComputerId = "computer.midnight";
     public const string TeaActionId = "action.tea";
     public const string OfficeOutfitId = "outfit.office";
+    public const string WalnutDeskId = "desk.walnut";
+    public const string ArcadeDeskId = "desk.arcade";
+    public const string RetroComputerId = "computer.retro";
+    public const string ArcadeComputerId = "computer.arcade";
+    public const string HoodieOutfitId = "outfit.hoodie";
 
     public static IReadOnlyList<ContentDefinition> Definitions { get; } = Array.AsReadOnly(new[]
     {
@@ -56,6 +61,16 @@ public static class ContentCatalog
             Reward: new("level-2", "升到 2 级免费解锁"), AnimationId: "tea"),
         new ContentDefinition(OfficeOutfitId, ContentType.Outfit, "认真上班装", "穿得很专业，心里想下班。", 40,
             OutfitId: OfficeOutfitId),
+        new ContentDefinition(WalnutDeskId, ContentType.Desk, "暖木复古桌", "桌子很沉稳，内心很想溜。", 25,
+            ScenePropId: WalnutDeskId),
+        new ContentDefinition(ArcadeDeskId, ContentType.Desk, "闪电电竞桌", "工位像开黑，日报照样追。", 35,
+            ScenePropId: ArcadeDeskId),
+        new ContentDefinition(RetroComputerId, ContentType.Computer, "奶油复古电脑", "外壳很复古，下班很准时。", 25,
+            ScenePropId: RetroComputerId),
+        new ContentDefinition(ArcadeComputerId, ContentType.Computer, "闪电小电脑", "看着性能强，只想点关机。", 35,
+            ScenePropId: ArcadeComputerId),
+        new ContentDefinition(HoodieOutfitId, ContentType.Outfit, "摸鱼卫衣", "帽子放背后，小鱼放心头。", 45,
+            OutfitId: HoodieOutfitId),
     });
 
     private static readonly IReadOnlyDictionary<string, ContentDefinition> ById =

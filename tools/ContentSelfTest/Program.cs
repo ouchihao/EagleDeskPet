@@ -22,7 +22,7 @@ internal static class Program
         Directory.CreateDirectory(root);
         var cases = new (string Name, Action Test)[]
         {
-            ("stable-seven-entry-catalog", Catalog),
+            ("stable-twelve-entry-catalog", Catalog),
             ("three-free-defaults-forever-owned", Defaults),
             ("resource-links-match-content-types", Links),
             ("no-content-is-automatically-played", ManualActions),
@@ -99,7 +99,11 @@ internal static class Program
     }
     private static void Catalog()
     {
-        Equal(7, ContentCatalog.Definitions.Count); Equal(7, ContentCatalog.Definitions.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count());
+        Equal(12, ContentCatalog.Definitions.Count); Equal(12, ContentCatalog.Definitions.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count());
+        Equal(4, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Desk));
+        Equal(4, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Computer));
+        Equal(3, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Outfit));
+        Equal(45, ContentCatalog.Get(ContentCatalog.HoodieOutfitId).Price);
         Equal(20, ContentCatalog.Get("desk.mint").Price); Equal(30, ContentCatalog.Get("computer.midnight").Price);
         Equal(15, ContentCatalog.Get("action.tea").Price); Equal(40, ContentCatalog.Get("outfit.office").Price);
         foreach (var entry in ContentCatalog.Definitions) Check(entry.Price >= 0 && entry.Price <= EconomyPolicy.MaximumCoins);
@@ -319,8 +323,8 @@ internal static class Program
         for (int i = 0; i < unknownLimit; i++) c.OwnedContentIds.Add("future." + i);
         c = ContentOwnershipService.Normalize(c);
         ContentOwnershipService.GrantEligibleRewards(c, Progress(10, 100));
-        ContentOwnershipService.GrantPurchase(c, "computer.midnight", Progress(), Available);
-        ContentOwnershipService.GrantPurchase(c, "outfit.office", Progress(), Available);
+        foreach (var item in ContentCatalog.Definitions.Where(x => !x.IsDefault && x.Reward is null))
+            ContentOwnershipService.GrantPurchase(c, item.Id, Progress(), Available);
         Equal(ContentOwnershipService.MaximumOwnedContents, c.OwnedContentIds.Count); ContentOwnershipService.ValidateForSave(c);
         c.OwnedContentIds.Add("future.overflow"); Throws<InvalidDataException>(() => ContentOwnershipService.Normalize(c)); Check(c.OwnedContentIds.Contains("future.overflow"));
     }
