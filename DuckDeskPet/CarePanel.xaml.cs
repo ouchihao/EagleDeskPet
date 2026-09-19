@@ -30,6 +30,10 @@ public partial class CarePanel : Window
         var remaining = TimeSpan.FromSeconds(Math.Max(0, 300 - state.FoodProgressSeconds));
         IncomeText.Text = state.Food >= 99 ? "粮袋满啦，先吃一点再攒。" : $"下一份粮食 {remaining:mm\\:ss} · 离线最多积累 2 小时";
         StatusText.Text = message ?? _pet.CareStatus;
+        WalletText.Text = $"{state.Coins:N0} 鹰币";
+        WageText.Text = state.Coins >= EconomyPolicy.MaximumCoins
+            ? "钱包已满；满额期间不积压可补领工资。"
+            : $"每有效工作分钟 +1 · 下枚还需 {Math.Ceiling(EconomyPolicy.WageIntervalSeconds - state.WageProgressSeconds):0} 秒工作";
         var honors = HonorCatalog.Evaluate(state);
         AchievementsText.Text = $"已点亮 {honors.Count(x => x.IsEarned)} / {honors.Count} 枚 · 铜 / 银 / 金";
         GitHubStatusText.Text = _pet.GitHub.IsConnected ? $"@{_pet.GitHub.Login} · {_pet.GitHub.UnreadCount} 条本地未读" : "可选连接，不需要 GitHub 密码。";

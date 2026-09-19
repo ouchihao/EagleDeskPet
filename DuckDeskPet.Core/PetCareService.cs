@@ -64,7 +64,8 @@ public sealed class PetCareService
             return false;
         }
 
-        double seconds = Math.Min((now - State.LastUpdatedUtc).TotalSeconds, MaximumCatchUpSeconds);
+        DateTimeOffset previousUpdate = State.LastUpdatedUtc;
+        double seconds = Math.Min((now - previousUpdate).TotalSeconds, MaximumCatchUpSeconds);
         State.LastUpdatedUtc = now;
         double workSeconds = State.IsWorking
             ? Math.Min(seconds, State.Fullness * 3600.0 / WorkFullnessLossPerHour)
@@ -83,7 +84,14 @@ public sealed class PetCareService
             State.WorkExperienceProgressSeconds = Math.Max(0.0,
                 accumulatedWork - workExperience * WorkExperienceIntervalSeconds);
             AddExperience(workExperience);
+            // The effective work interval starts at the prior simulation timestamp.
+            // Keeping a separate wage high-water mark prevents clock rollback plus
+            // a restart from paying that same wall-clock interval again. A v1
+            // migration starts this mark at 'now', so old catch-up earns no wages.
+            double unpaidPrefix = Math.Max(0, (State.WageLastUpdatedUtc - previousUpdate).TotalSeconds);
+            EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix));
         }
+        if (now > State.WageLastUpdatedUtc) State.WageLastUpdatedUtc = now;
 
         if (State.Fullness <= 1e-9)
         {
@@ -226,10 +234,10 @@ public sealed class PetCareService
     {
         if (saved is null)
         {
-            return new PetState { LastUpdatedUtc = now };
+            return new PetState { LastUpdatedUtc = now, WageLastUpdatedUtc = now };
         }
 
-        if (saved.Version != PetState.CurrentVersion)
+        if (saved.Version is not 1 && saved.Version != PetState.CurrentVersion)
         {
             throw new NotSupportedException($"Unsupported pet save version: {saved.Version}.");
         }
@@ -238,6 +246,9 @@ public sealed class PetCareService
         // On a new process, a save from a future system clock is rebased without
         // awarding anything. Within a process Advance retains a UTC high-water mark.
         bool futureSave = lastUpdated > now;
+        bool migrating = saved.Version == 1;
+        EconomyPolicy.ValidateWalletLedger(saved);
+        double totalWorkSeconds = FiniteClamp(saved.TotalWorkSeconds, 0.0, 1e12, 0.0);
         return new PetState
         {
             Fullness = FiniteClamp(saved.Fullness, 0.0, 100.0, 75.0),
@@ -254,7 +265,16 @@ public sealed class PetCareService
             WorkSessionSeconds = FiniteClamp(saved.WorkSessionSeconds, 0.0, 1e12, 0.0),
             WorkExperienceProgressSeconds = FiniteClamp(saved.WorkExperienceProgressSeconds,
                 0.0, WorkExperienceIntervalSeconds - 0.001, 0.0),
-            TotalWorkSeconds = FiniteClamp(saved.TotalWorkSeconds, 0.0, 1e12, 0.0),
+            TotalWorkSeconds = totalWorkSeconds,
+            Coins = migrating ? 0 : Math.Clamp(saved.Coins, 0, EconomyPolicy.MaximumCoins),
+            WageProgressSeconds = migrating ? 0 : FiniteClamp(saved.WageProgressSeconds,
+                0, EconomyPolicy.WageIntervalSeconds - 0.0000001, 0),
+            WageSettledWorkSeconds = migrating ? totalWorkSeconds :
+                FiniteClamp(saved.WageSettledWorkSeconds, 0, 1e12, totalWorkSeconds),
+            WageLastUpdatedUtc = migrating ? now :
+                (saved.WageLastUpdatedUtc == default ? lastUpdated : saved.WageLastUpdatedUtc.ToUniversalTime()),
+            AppliedWalletDebits = migrating ? new(StringComparer.Ordinal) :
+                new(saved.AppliedWalletDebits, StringComparer.Ordinal),
             Achievements = (saved.Achievements ?? new()).Where(KnownAchievements.Contains).Distinct(StringComparer.Ordinal).ToList(),
         };
     }

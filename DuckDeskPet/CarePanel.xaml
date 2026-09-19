@@ -54,13 +54,20 @@
         <TextBlock Text="点开饭，或把饭拖到桌面上的小鹰身上。" FontSize="11" Foreground="#8D7961"/>
         <TextBlock x:Name="IncomeText" FontSize="11" Foreground="#8D7961" Margin="0,5,0,12"/>
         <TextBlock x:Name="StatusText" MinHeight="38" TextWrapping="Wrap" FontSize="12" Foreground="#846648"/>
+        <Border Background="#F5E8CB" CornerRadius="12" Padding="12" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="WalletText" FontSize="18" FontWeight="Bold"/>
+                <TextBlock x:Name="WageText" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
+                <TextBlock Text="鹰币只用于本地商店，无真实货币价值；旧档不补发历史工资。" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
         <Border Background="#ECE9E1" CornerRadius="12" Padding="12" Margin="0,0,0,12">
             <StackPanel>
                 <DockPanel>
                     <Button x:Name="WorkButton" DockPanel.Dock="Right" Content="开始工作" Padding="11,7" Background="#D9DFC9" Click="Work_OnClick"/>
                     <TextBlock x:Name="WorkText" Text="工位空着" VerticalAlignment="Center" FontSize="12" TextWrapping="Wrap" Margin="0,0,8,0"/>
                 </DockPanel>
-                <TextBlock Text="每分钟额外 +1 经验；工作时每小时饱食 −12、心情 −10。30 分钟进入忙碌中，饿到 0 自动收工。" FontSize="10" TextWrapping="Wrap" Foreground="#8D7961" Margin="0,7,0,0"/>
+                <TextBlock Text="每有效工作分钟 +1 经验、+1 鹰币；每小时饱食 −12、心情 −10。30 分钟进入忙碌中，饿到 0 自动收工；隐藏 / 锁屏仍计时，离线最多 2 小时。" FontSize="10" TextWrapping="Wrap" Foreground="#8D7961" Margin="0,7,0,0"/>
             </StackPanel>
         </Border>
         <CheckBox x:Name="BanterCheck" Content="主动职场骚话 · 每分钟随机一句" Click="Banter_OnClick" Foreground="#806F58" FontSize="11" Margin="0,0,0,8"/>
