@@ -149,7 +149,7 @@ dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 
 ## 素材与贡献
 
-新想法、优先顺序和验收标准持续记录在[需求与路线图](docs/REQUIREMENTS.md)：优先规划情绪互动、成长解锁、小场景与猜拳，随后增强任务通知；工作赚游戏币、商店和桌子 / 电脑换装属于后续方向，尚未实现。
+新想法、优先顺序和验收标准持续记录在[需求与路线图](docs/REQUIREMENTS.md)：优先做工作赚游戏币，并准备可替换场景与内容的基础；情绪互动、成长解锁、小场景等继续按规划推进。后续商店分批上架新动作、桌子、电脑和衣服外观。以上均为未实现的规划，不是当前版本已有功能。
 
 欢迎通过 [Issues](https://github.com/ouchihao/EagleDeskPet/issues/new/choose) 反馈问题或提出动作创意；新手可直接填写“功能建议”或“缺陷报告”表单。如何补需求、拆任务和提交改动见[参与指南](CONTRIBUTING.md)。报告动画问题时，附动作名称、版本、截图或短录屏会更容易定位；请先隐藏通知里的私人内容。
 
