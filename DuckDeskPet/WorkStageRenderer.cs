@@ -102,7 +102,7 @@ internal sealed class WorkStageRenderer
 
     internal void Apply(ClipSample clip, double deltaSeconds = 0)
     {
-        if (_pending is not null && (!ClipCatalog.IsWorkScene(clip.Kind) ||
+        if (_pending is not null && (clip.Kind == ClipKind.Idle ||
             (clip.Kind == ClipKind.WorkEnter && clip.Progress == 0 && !ClipCatalog.IsWorkScene(_previous.Kind))))
         {
             _active = _pending;
@@ -112,6 +112,22 @@ internal sealed class WorkStageRenderer
             ShowPreparedProps();
         }
         var scene = CurrentScene;
+        if (ClipCatalog.IsHungryScene(clip.Kind))
+        {
+            // Same replaceable table and occlusion contract, but no computer or flames.
+            // The actor stays planted while the table slides into its own layer.
+            double t = clip.Kind == ClipKind.HungryEnter ? Math.Clamp(clip.ElapsedSeconds / 0.65, 0, 1) :
+                clip.Kind == ClipKind.HungryExit ? 1 - Math.Clamp((clip.ElapsedSeconds - 0.75) / 0.75, 0, 1) : 1;
+            double ease = t * t * (3 - 2 * t);
+            double pixels = -scene.Motion.DeskTravelPixels * (1 - ease);
+            double tableScale = Math.Min(_back.Width / scene.Canvas.Width, _back.Height / scene.Canvas.Height);
+            _deskBackMotion.X = _deskFrontMotion.X = pixels * tableScale;
+            _back.Visibility = _front.Visibility = Visibility.Visible;
+            _laptop.Visibility = _fire.Visibility = Visibility.Collapsed;
+            _fireSeconds = 0;
+            _previous = clip;
+            return;
+        }
         var motion = WorkStageMotion.Sample(clip, scene);
         var visibility = motion.Visible ? Visibility.Visible : Visibility.Collapsed;
         _back.Visibility = _front.Visibility = _laptop.Visibility = visibility;
@@ -152,7 +168,7 @@ internal sealed class WorkStageRenderer
         using var stream = Application.GetResourceStream(
             new Uri($"pack://application:,,,/{SceneCatalog.ResourcePath}", UriKind.Absolute))?.Stream
             ?? throw new InvalidDataException("Missing work scene catalog.");
-        return SceneCatalog.Parse(stream, path =>
+        return SceneCatalog.ParseRuntime(stream, path =>
         {
             try
             {

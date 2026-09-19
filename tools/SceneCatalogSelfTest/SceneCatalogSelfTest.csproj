@@ -14,5 +14,6 @@
     <Compile Include="../../DuckDeskPet/WorkStageRenderer.cs" Link="WorkStageRenderer.cs" />
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
+    <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
   </ItemGroup>
 </Project>

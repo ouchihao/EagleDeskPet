@@ -13,12 +13,13 @@ internal sealed class SceneCatalog
     private readonly IReadOnlyDictionary<string, SceneDefinition> _scenes;
     private readonly IReadOnlyDictionary<string, SceneDeskDefinition> _desks;
     private readonly IReadOnlyDictionary<string, SceneComputerDefinition> _computers;
+    private readonly IReadOnlyDictionary<string, string> _unavailable;
 
     internal SceneSelection DefaultSelection { get; }
     internal IReadOnlyCollection<SceneDeskDefinition> Desks { get; }
     internal IReadOnlyCollection<SceneComputerDefinition> Computers { get; }
 
-    private SceneCatalog(CatalogDocument document)
+    private SceneCatalog(CatalogDocument document, IReadOnlySet<string> missingResources)
     {
         DefaultSelection = document.DefaultSelection;
         _scenes = document.Scenes.Select(x => x with
@@ -28,11 +29,33 @@ internal sealed class SceneCatalog
         }).ToDictionary(x => x.Id, StringComparer.Ordinal);
         _desks = document.Desks.ToDictionary(x => x.Id, StringComparer.Ordinal);
         _computers = document.Computers.ToDictionary(x => x.Id, StringComparer.Ordinal);
+        // Built-in pack resources are immutable. Resolve is a dictionary lookup, not a file probe.
+        var unavailable = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var scene in document.Scenes)
+        {
+            string? missing = Enumerable.Range(0, scene.Fire.FrameCount).Select(scene.Fire.FramePath).FirstOrDefault(missingResources.Contains);
+            if (missing is not null) unavailable[scene.Id] = missing;
+        }
+        foreach (var desk in document.Desks)
+        {
+            string? missing = new[] { desk.Back, desk.Front }.FirstOrDefault(missingResources.Contains);
+            if (missing is not null) unavailable[desk.Id] = missing;
+        }
+        foreach (var computer in document.Computers)
+            if (missingResources.Contains(computer.Image)) unavailable[computer.Id] = computer.Image;
+        _unavailable = unavailable;
         Desks = Array.AsReadOnly(document.Desks.ToArray());
         Computers = Array.AsReadOnly(document.Computers.ToArray());
     }
 
-    internal static SceneCatalog Parse(Stream json, Func<string, bool> resourceExists)
+    /// <summary>Build/audit entry point: every registered resource must be present.</summary>
+    internal static SceneCatalog Parse(Stream json, Func<string, bool> resourceExists) => Parse(json, resourceExists, false);
+
+    /// <summary>Runtime entry point: invalid metadata/defaults still fail closed, but missing optional
+    /// prop sets remain catalogued and unavailable instead of preventing the default pet from starting.</summary>
+    internal static SceneCatalog ParseRuntime(Stream json, Func<string, bool> resourceExists) => Parse(json, resourceExists, true);
+
+    private static SceneCatalog Parse(Stream json, Func<string, bool> resourceExists, bool allowMissingOptionalResources)
     {
         ArgumentNullException.ThrowIfNull(json);
         ArgumentNullException.ThrowIfNull(resourceExists);
@@ -50,8 +73,16 @@ internal sealed class SceneCatalog
         {
             throw new InvalidDataException("Invalid work scene catalog JSON.", exception);
         }
-        Validate(document, resourceExists);
-        var catalog = new SceneCatalog(document);
+        var missingResources = new HashSet<string>(StringComparer.Ordinal);
+        var availability = new Dictionary<string, bool>(StringComparer.Ordinal);
+        Validate(document, path =>
+        {
+            if (!availability.TryGetValue(path, out bool exists)) availability[path] = exists = resourceExists(path);
+            if (!exists) missingResources.Add(path);
+            return exists || allowMissingOptionalResources;
+        });
+        var catalog = new SceneCatalog(document, missingResources);
+        // The fallback is not fabricated: it must be a complete, compatible, real default set.
         catalog.Resolve(catalog.DefaultSelection);
         return catalog;
     }
@@ -66,6 +97,9 @@ internal sealed class SceneCatalog
             throw new InvalidDataException("Unknown work scene or prop selection.");
         if (desk.CompatibilityId != scene.CompatibilityId || computer.CompatibilityId != scene.CompatibilityId)
             throw new InvalidDataException("Work scene prop slots are incompatible.");
+        foreach (string id in new[] { scene.Id, desk.Id, computer.Id })
+            if (_unavailable.TryGetValue(id, out string? missing))
+                throw new InvalidDataException("Work scene selection is unavailable; missing asset: " + missing);
         return new(scene, desk, computer);
     }
 

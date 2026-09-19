@@ -42,9 +42,11 @@
     }
   ],
   "desks": [
-    { "id": "desk.default", "name": "经典木桌", "compatibilityId": "eagle-work-v1", "back": "Assets/SceneProps/WorkV2/desk-back.png", "front": "Assets/SceneProps/WorkV2/desk-front.png" }
+    { "id": "desk.default", "name": "经典木桌", "compatibilityId": "eagle-work-v1", "back": "Assets/SceneProps/WorkV2/desk-back.png", "front": "Assets/SceneProps/WorkV2/desk-front.png" },
+    { "id": "desk.mint", "name": "薄荷小工位", "compatibilityId": "eagle-work-v1", "back": "Assets/SceneProps/Shop/desk-mint-back.png", "front": "Assets/SceneProps/Shop/desk-mint-front.png" }
   ],
   "computers": [
-    { "id": "computer.default", "name": "经典电脑", "compatibilityId": "eagle-work-v1", "image": "Assets/SceneProps/Work/laptop.png" }
+    { "id": "computer.default", "name": "经典电脑", "compatibilityId": "eagle-work-v1", "image": "Assets/SceneProps/Work/laptop.png" },
+    { "id": "computer.midnight", "name": "午夜小电脑", "compatibilityId": "eagle-work-v1", "image": "Assets/SceneProps/Shop/computer-midnight.png" }
   ]
 }
