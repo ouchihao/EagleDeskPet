@@ -33,19 +33,48 @@ internal static class Program
         try
         {
             await RunAsync();
+            Console.WriteLine($"FIXTURE OutfitSelfTest: {_passed} passed, {_failed} failed.");
             if (args is ["--resources-root", var root])
-            {
-                var catalog = OutfitCatalog.Load(new FileResources(root));
-                foreach (var outfit in catalog.Outfits)
-                {
-                    var result = await catalog.GetAvailabilityAsync(outfit.Id);
-                    Console.WriteLine($"REAL {outfit.Id}: available={result.IsAvailable}; {result.Warning}");
-                    if (outfit.Id == OutfitCatalog.DefaultId) Check(result.IsAvailable, "real default resources decode completely");
-                }
-            }
+                await TestRealResourcesAsync(root);
         }
         catch (Exception ex) { _failed++; Console.WriteLine("UNEXPECTED: " + ex); }
         finally { dispatcher.BeginInvokeShutdown(DispatcherPriority.Background); }
+    }
+
+    private static async Task TestRealResourcesAsync(string root)
+    {
+        var resources = new FileResources(root);
+        var catalog = OutfitCatalog.Load(resources);
+        var expected = new HashSet<string>([OutfitCatalog.DefaultId, Office, "outfit.hoodie"], StringComparer.Ordinal);
+        Check(catalog.Warning is null && expected.SetEquals(catalog.Outfits.Select(x => x.Id)),
+            "real registry contains default, office and hoodie without fallback");
+        foreach (var outfit in catalog.Outfits)
+        {
+            // This exercises the production full-PNG validator, not WarmClipsAsync.
+            // It retains only metadata, and each preceding pack's temporary WIC
+            // decoders are reclaimed before the next pack begins.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            int before = resources.PngReads;
+            var result = await catalog.GetAvailabilityAsync(outfit.Id);
+            var validated = await catalog.GetValidatedAsync(outfit.Id);
+            int pngReads = resources.PngReads - before;
+            Check(result.IsAvailable && result.Warning is null,
+                $"real {outfit.Id} resources fully decode without warnings");
+            Check(result.SupportedClips.Count == 20 && result.SupportedClips.Contains(ClipKind.Idle),
+                $"real {outfit.Id} supports all 19 actions plus neutral");
+            Check(validated.Assets is { Actions.Count: 19 } assets && assets.Actions.Sum(x => x.FrameCount) == 2299,
+                $"real {outfit.Id} manifest declares exactly 19 clips and 2299 frames");
+            Check(pngReads == 2300,
+                $"real {outfit.Id} actually reads all 2299 frames and its neutral PNG");
+            Console.WriteLine($"REAL {outfit.Id}: available={result.IsAvailable}; pngReads={pngReads}; warning={result.Warning ?? "none"}");
+        }
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+        Console.WriteLine($"REAL sequential validation peak working set: {process.PeakWorkingSet64 / (1024.0 * 1024):F1} MiB (includes preceding fixture tests).");
     }
 
     private static async Task RunAsync()
@@ -545,13 +574,18 @@ internal static class Program
     private sealed class FileResources(string root) : IAnimationResourceProvider
     {
         private readonly string _root = Path.GetFullPath(root);
+        private int _pngReads;
+        public int PngReads => Volatile.Read(ref _pngReads);
         public Stream? Open(string path)
         {
             AnimationResourcePath.Validate(path);
             var absolute = Path.GetFullPath(Path.Combine(_root, path.Replace('/', Path.DirectorySeparatorChar)));
             if (!absolute.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Resource escaped fixture root.");
-            return File.Exists(absolute) ? File.OpenRead(absolute) : null;
+            if (!File.Exists(absolute)) return null;
+            var stream = File.OpenRead(absolute);
+            if (path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) Interlocked.Increment(ref _pngReads);
+            return stream;
         }
     }
 }
