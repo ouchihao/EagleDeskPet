@@ -51,6 +51,8 @@ public sealed class PetCareService
     }
 
     public PetState State { get; }
+    /// <summary>Actual wages credited during this app run, including eligible startup catch-up; purchases do not reduce it.</summary>
+    public long EarnedCoinsThisRun { get; private set; }
 
     /// <summary>
     /// Returns whether game progress or its saved timestamp changed. A backwards
@@ -89,7 +91,7 @@ public sealed class PetCareService
             // a restart from paying that same wall-clock interval again. A v1
             // migration starts this mark at 'now', so old catch-up earns no wages.
             double unpaidPrefix = Math.Max(0, (State.WageLastUpdatedUtc - previousUpdate).TotalSeconds);
-            EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix));
+            EarnedCoinsThisRun += EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix));
         }
         if (now > State.WageLastUpdatedUtc) State.WageLastUpdatedUtc = now;
 

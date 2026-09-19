@@ -34,10 +34,11 @@ public partial class PetWindow
     private bool _preparingWork;
     private bool _assetsReady;
     internal PetState CareState => _care.State;
+    internal long EarnedCoinsThisRun => _care.EarnedCoinsThisRun;
     internal bool NotificationsEnabled => _companion.NotificationsEnabled;
     internal bool ActiveBanterEnabled => _companion.ActiveBanterEnabled;
     internal bool WorkInProgress => CareState.IsWorking || _behavior.IsWorkSceneActive || _behavior.IsWorkRequested || _preparingWork;
-    internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress;
+    internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsGameActive || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
     internal bool CanStartWork => !InteractionsUnavailable && CareState.Fullness > 0;
     internal string WorkStatus => _preparingWork ? "搬工位中…" : CareState.IsWorking
         ? $"{(CareState.IsBusy ? "忙碌中" : "办公中")} · {(int)(CareState.WorkSessionSeconds / 60)} 分 {((int)CareState.WorkSessionSeconds % 60):00} 秒"
@@ -48,6 +49,7 @@ public partial class PetWindow
     {
         _care = new PetCareService(_store.Load(), DateTimeOffset.UtcNow);
         _banter.Enabled = _companion.ActiveBanterEnabled;
+        _emotions.Enabled = _companion.AutoEmotionScenesEnabled;
         _lastBanterTick = DateTimeOffset.UtcNow;
         if (CareState.IsWorking)
         {
@@ -100,6 +102,8 @@ public partial class PetWindow
         _honorWall?.Close();
         _clientSetupWindow?.Close();
         StopTaskNotifications();
+        StopContent();
+        _hungryScenePreview?.Close();
     }
 
     private void TickCare()
@@ -121,9 +125,11 @@ public partial class PetWindow
         }
         _carePanel?.Refresh();
         _honorWall?.Refresh();
+        RefreshContent();
         if (_bubble?.IsVisible == true && now >= _bubbleUntil) DismissBubble();
         TryShowGitHubNotice();
         TickTaskNotifications();
+        TickEmotions(now);
         TickBanter((now - _lastBanterTick).TotalSeconds);
         _lastBanterTick = now;
         if (CareState.IsHungry && now >= _nextHungryHint && _activeNotice is null && _notices.Count == 0)
@@ -136,6 +142,14 @@ public partial class PetWindow
     internal void FeedPet()
     {
         if (InteractionsUnavailable) { Say(WorkInProgress ? "先点取消工作，收工再开饭。" : _assetsReady ? "先恢复动作，再开饭吧。" : "饭搭子正在热身，稍等一下。 "); return; }
+        if (_behavior.IsHungrySceneActive || _behavior.IsHungryRequested)
+        {
+            _pendingFeed = true;
+            _behavior.CancelAutomaticEmotions();
+            Say("收到！先把空碗和桌子收好，马上开饭。");
+            return;
+        }
+        _pendingFeed = false;
         var result = _care.Feed(DateTimeOffset.UtcNow);
         if (result.Success)
         {
@@ -147,9 +161,16 @@ public partial class PetWindow
         Say(CareStatus);
     }
 
-    internal void PetHead()
+    internal async void PetHead()
     {
         if (InteractionsUnavailable) { Say(WorkInProgress ? "先让我收工，再摸摸头。" : "先让我活动起来，再摸嘛。 "); return; }
+        var decision = _emotions.RegisterPetAttempt(DateTimeOffset.UtcNow);
+        if (!decision.AllowCareReward)
+        {
+            if (decision.Reaction == EmotionReaction.Annoyed) await PlayTouchComplaintAsync();
+            Say("再摸就秃了！鹰也是有发际线的。");
+            return;
+        }
         var result = _care.Pet(DateTimeOffset.UtcNow);
         if (result.Success)
         {
@@ -201,6 +222,7 @@ public partial class PetWindow
     {
         if (!CanStartWork) { Say(WorkInProgress ? "工位还没收好呢。" : "先恢复动作、吃点饭，再开工吧。 "); return; }
         _preparingWork = true;
+        _pendingFeed = false;
         _carePanel?.Refresh();
         try
         {
@@ -244,7 +266,9 @@ public partial class PetWindow
     private void TickBanter(double elapsedSeconds)
     {
         string? line = _banter.Tick(elapsedSeconds, _isClosing || !_assetsReady || _nativeDragInProgress ||
-            _behavior.IsPaused || _bubble?.IsVisible == true || _activeNotice is not null || _notices.Count > 0);
+            _behavior.IsPaused || IsGameActive || _bubble?.IsVisible == true || _activeNotice is not null || _notices.Count > 0,
+            CareState.IsWorking ? BanterContext.Working : _emotions.IsHungry ? BanterContext.Hungry :
+            _emotions.IsLowMood ? BanterContext.LowMood : DateTime.Now.Hour >= 22 ? BanterContext.LateNight : BanterContext.Ordinary);
         if (line is not null) ShowBubble("", line, "", canOpen: false, seconds: 5, isBanter: true);
     }
     private void Food_OnDragOver(object sender, DragEventArgs e)

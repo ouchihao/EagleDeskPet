@@ -137,6 +137,12 @@
                                             <TextBlock Text="{Binding StatusLabel}" Foreground="{Binding StatusBrush}" FontSize="10" DockPanel.Dock="Right"/>
                                             <TextBlock Text="{Binding ProgressLabel}" FontSize="10" Foreground="#8B7B64"/>
                                         </DockPanel>
+                                        <Border Visibility="{Binding RewardVisibility}" Margin="0,10,0,0" Padding="9" Background="#F1EDE2" CornerRadius="7">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding RewardLabel}" FontSize="10" Foreground="#718163" TextWrapping="Wrap"/>
+                                                <Button Content="{Binding RewardActionLabel}" IsEnabled="{Binding CanUseReward}" Click="Reward_OnClick" Padding="9,5" HorizontalAlignment="Left" Margin="0,7,0,0"/>
+                                            </StackPanel>
+                                        </Border>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -152,6 +158,8 @@
                 <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                     <TextBlock Text="铜 · 初识　银 · 熟络　金 · 默契" FontSize="11" Foreground="#88704D" TextWrapping="Wrap"/>
                     <TextBlock Text="悬停欣赏铸纹 · 动效遵循系统设置 · 收藏不消耗粮食或经验" FontSize="10" Foreground="#96917C" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="RewardStatusText" FontSize="10" Foreground="#718163" TextWrapping="Wrap" Margin="0,4,0,0" AutomationProperties.LiveSetting="Polite"/>
+                    <WrapPanel Margin="0,8,0,0"><Button x:Name="ShopButton" Content="逛小商店" Click="Shop_OnClick" Padding="9,5" Margin="0,0,8,0"/><Button x:Name="CollectionButton" Content="我的收藏" Click="Collection_OnClick" Padding="9,5"/></WrapPanel>
                 </StackPanel>
                 <Button Grid.Column="1" Content="看够啦" Click="Close_OnClick" IsCancel="True" VerticalAlignment="Center" AutomationProperties.Name="关闭荣誉展览室"/>
             </Grid>

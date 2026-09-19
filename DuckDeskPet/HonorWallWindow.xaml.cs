@@ -14,6 +14,10 @@ namespace DuckDeskPet;
 public partial class HonorWallWindow : Window
 {
     private readonly Func<PetState> _stateProvider;
+    private readonly Action<bool>? _openShop;
+    private readonly Func<string, string>? _claimReward;
+    private readonly Func<ContentDefinition, bool>? _contentAvailable;
+    private string? _lastContentSignature;
     private IReadOnlyList<HonorProgress>? _lastSnapshot;
     private bool _ready;
     private readonly Dictionary<FrameworkElement, MedalMotion> _medalMotions = new();
@@ -29,10 +33,13 @@ public partial class HonorWallWindow : Window
         private set => SetValue(CardWidthProperty, value);
     }
 
-    internal HonorWallWindow(Func<PetState> stateProvider)
+    internal HonorWallWindow(Func<PetState> stateProvider, Action<bool>? openShop = null,
+        Func<string, string>? claimReward = null, Func<ContentDefinition, bool>? contentAvailable = null)
     {
         _stateProvider = stateProvider ?? throw new ArgumentNullException(nameof(stateProvider));
+        _openShop = openShop; _claimReward = claimReward; _contentAvailable = contentAvailable;
         InitializeComponent();
+        ShopButton.IsEnabled = CollectionButton.IsEnabled = openShop is not null;
         // Work-area units are already DPI-independent; keep native chrome,
         // resizing and keyboard behavior on small screens and high-DPI displays.
         var area = SystemParameters.WorkArea;
@@ -66,9 +73,13 @@ public partial class HonorWallWindow : Window
 
     internal void Refresh()
     {
-        IReadOnlyList<HonorProgress> snapshot = HonorCatalog.Evaluate(_stateProvider());
-        if (_lastSnapshot is not null && snapshot.SequenceEqual(_lastSnapshot)) return;
+        var state = _stateProvider();
+        IReadOnlyList<HonorProgress> snapshot = HonorCatalog.Evaluate(state);
+        string contentSignature = string.Join("|", ContentCatalog.Definitions.Where(x => x.Reward is not null)
+            .Select(x => $"{x.Id}:{ContentOwnershipService.Owns(state.Content, x.Id)}:{ContentAvailable(x)}"));
+        if (_lastSnapshot is not null && snapshot.SequenceEqual(_lastSnapshot) && contentSignature == _lastContentSignature) return;
         _lastSnapshot = snapshot;
+        _lastContentSignature = contentSignature;
         CountText.Text = $"已收藏 {snapshot.Count(x => x.IsEarned)} / {snapshot.Count}";
         ApplyFilter();
     }
@@ -78,7 +89,7 @@ public partial class HonorWallWindow : Window
         if (_lastSnapshot is null) return;
         var cards = _lastSnapshot
             .Where(x => EarnedFilter.IsChecked == true ? x.IsEarned : LockedFilter.IsChecked != true || !x.IsEarned)
-            .Select(x => new HonorCard(x)).ToArray();
+            .Select(x => new HonorCard(x, _stateProvider(), ContentAvailable, _claimReward is not null, _openShop is not null)).ToArray();
         CardsItems.ItemsSource = cards;
         UpdateAnimationActivity();
         EmptyText.Visibility = cards.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -132,6 +143,22 @@ public partial class HonorWallWindow : Window
     }
 
     private void Close_OnClick(object sender, RoutedEventArgs e) => Close();
+    private void Shop_OnClick(object sender, RoutedEventArgs e) => _openShop?.Invoke(false);
+    private void Collection_OnClick(object sender, RoutedEventArgs e) => _openShop?.Invoke(true);
+    private void Reward_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: HonorCard card } || card.RewardContentId is null) return;
+        var item = ContentCatalog.Get(card.RewardContentId); var state = _stateProvider();
+        if (ContentOwnershipService.Owns(state.Content, item.Id)) { _openShop?.Invoke(true); return; }
+        if (!ContentOwnershipService.IsRewardEligible(item, state) || _claimReward is null) return;
+        RewardStatusText.Text = _claimReward(item.Id);
+        Refresh();
+    }
+    private bool ContentAvailable(ContentDefinition item)
+    {
+        if (_contentAvailable is null) return true; // Older standalone galleries have no resource authority.
+        try { return _contentAvailable(item); } catch (Exception ex) when (ex is not OutOfMemoryException) { return false; }
+    }
 
     // No CompositionTarget.Rendering subscription: short, compositor-driven sweeps
     // belong only to the open foreground gallery, not the always-running pet.
@@ -283,7 +310,8 @@ public partial class HonorWallWindow : Window
 
     private sealed class HonorCard
     {
-        public HonorCard(HonorProgress progress)
+        public HonorCard(HonorProgress progress, PetState state, Func<ContentDefinition, bool> isAvailable,
+            bool canClaim, bool canOpenCollection)
         {
             var definition = progress.Definition;
             Name = definition.Name;
@@ -305,6 +333,18 @@ public partial class HonorWallWindow : Window
             StatusBrush = Brush(progress.IsEarned ? "#677D5D" : "#A19680");
             BadgeLabel = $"大头鹰{TierLabel}浮雕纪念币 · {SeriesLabel}";
             AccessibleLabel = $"{Name}，{BadgeLabel}，{StatusLabel}，{ProgressLabel}。{Description}";
+            var reward = ContentCatalog.Definitions.FirstOrDefault(x => x.Reward?.HonorId == definition.Id);
+            RewardContentId = reward?.Id;
+            RewardVisibility = reward is null ? Visibility.Collapsed : Visibility.Visible;
+            if (reward is not null)
+            {
+                bool owned = ContentOwnershipService.Owns(state.Content, reward.Id);
+                RewardLabel = owned ? $"关联奖励：{reward.Name} · 已拥有，不重复发放"
+                    : progress.IsEarned ? $"可免费领取：{reward.Name}" : $"达成奖励：{reward.Name}";
+                if (!isAvailable(reward)) RewardLabel += "\n资源暂未就绪，领取权益仍会保留。";
+                RewardActionLabel = owned ? "查看收藏" : "领取奖励";
+                CanUseReward = owned ? canOpenCollection : progress.IsEarned && canClaim;
+            }
         }
 
         public string Name { get; }
@@ -316,6 +356,11 @@ public partial class HonorWallWindow : Window
         public string ProgressLabel { get; }
         public string StatusLabel { get; }
         public string AccessibleLabel { get; }
+        public string? RewardContentId { get; }
+        public string RewardLabel { get; } = "";
+        public string RewardActionLabel { get; } = "";
+        public bool CanUseReward { get; }
+        public Visibility RewardVisibility { get; }
         public Brush TierTint { get; }
         public Brush RimBrush { get; }
         public Brush StatusBrush { get; }

@@ -29,6 +29,7 @@ public partial class PetWindow : Window
     private bool _nativeDragInProgress;
     private bool _nativeDragObservedMovement;
     private bool _isClosing;
+    private bool _pauseChanging;
     private nint _pendingBottomRightMonitor;
     private NativeMethods.Rect _nativeDragWindowOrigin;
     private double _fpsWindowStartSeconds;
@@ -74,6 +75,8 @@ public partial class PetWindow : Window
         try
         {
             await _framePlayer.WarmAsync();
+            await InitializeContentResourcesAsync();
+            await InitializeContent();
             if (CareState.IsWorking)
             {
                 await _framePlayer.WarmWorkAsync();
@@ -106,7 +109,9 @@ public partial class PetWindow : Window
             e.Cancel = true;
             CareStatus = "AI 配置正在备份和保存，请完成后再退出。";
             _clientSetupWindow.Activate();
+            return;
         }
+        if (!TryCloseGameForPetExit()) e.Cancel = true;
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -115,6 +120,7 @@ public partial class PetWindow : Window
         _isClosing = true;
         UnsubscribeRendering();
         StopCare();
+        _framePlayer.Dispose();
         _windowSource?.RemoveHook(WindowMessageHook);
         _windowSource = null;
         SaveCurrentSettings();
@@ -167,6 +173,8 @@ public partial class PetWindow : Window
         ApplyPose(_behavior.CurrentProceduralPose);
         _framePlayer.Apply(sample);
         _workStage.Apply(sample, deltaSeconds);
+        RefreshContentAtSafeBoundary();
+        ReleaseUnusedTransientResources();
         if (wasWorking && !_behavior.IsWorkSceneActive)
         {
             _framePlayer.ReleaseWorkFrames();
@@ -284,7 +292,9 @@ public partial class PetWindow : Window
         StartWorkMenuItem.IsEnabled = CanStartWork;
         StopWorkMenuItem.IsEnabled = CareState.IsWorking;
         BanterMenuItem.IsChecked = ActiveBanterEnabled;
-        PauseMenuItem.IsEnabled = !WorkInProgress;
+        EmotionMenuItem.IsChecked = _emotions.Enabled;
+        GameMenuItem.IsEnabled = IsGameActive || !InteractionsUnavailable;
+        PauseMenuItem.IsEnabled = !WorkInProgress && !_pauseChanging && !IsContentEquipmentApplying && !_preparingOwnedAction;
         PauseMenuItem.IsChecked = _settings.IsPaused;
         TopmostMenuItem.IsChecked = _settings.IsTopmost;
         FpsMenuItem.IsChecked = _settings.ShowFps;
@@ -293,29 +303,33 @@ public partial class PetWindow : Window
         LargeMenuItem.IsChecked = Math.Abs(_settings.SizeScale - 1.28) < 0.01;
     }
 
-    private void PauseMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private async void PauseMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_pauseChanging || IsContentEquipmentApplying || _preparingOwnedAction) return;
         if (WorkInProgress) { Say("先取消工作，再暂停待机动作。 "); return; }
-        _settings.IsPaused = !_settings.IsPaused;
-        _behavior.SetPaused(_settings.IsPaused);
-        if (_settings.IsPaused)
+        bool targetPaused = !_settings.IsPaused;
+        _pauseChanging = true;
+        try
         {
-            ApplyPose(Pose.Neutral);
+            if (targetPaused) await CancelGameForPauseAsync();
+            if (_isClosing) return;
+            _settings.IsPaused = targetPaused;
+            _behavior.SetPaused(targetPaused);
+            ApplyPose(_behavior.CurrentProceduralPose);
             _framePlayer.Apply(_behavior.CurrentSample);
+            SaveCurrentSettings();
+            if (!targetPaused) ResumeGameAfterPause();
         }
-
-        SaveCurrentSettings();
+        catch (Exception ex) when (ex is not OutOfMemoryException) { Say("动作还没收好，本次没有切换暂停状态。 "); }
+        finally { _pauseChanging = false; }
     }
 
     private void TopmostMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         _settings.IsTopmost = !_settings.IsTopmost;
         Topmost = _settings.IsTopmost;
-        if (_carePanel is not null) _carePanel.Topmost = Topmost;
-        if (_honorWall is not null) _honorWall.Topmost = Topmost;
-        if (_githubWindow is not null) _githubWindow.Topmost = Topmost;
-        if (_clientSetupWindow is not null) _clientSetupWindow.Topmost = Topmost;
-        if (_bubble is not null) _bubble.Topmost = Topmost;
+        foreach (Window child in Application.Current.Windows)
+            if (child.Owner == this) child.Topmost = Topmost;
         if (_windowHandle != nint.Zero)
         {
             NativeMethods.SetWindowPos(

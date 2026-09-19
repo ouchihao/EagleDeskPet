@@ -25,6 +25,14 @@ internal static class Program
         var cases = new (string Name, Action Test)[]
         {
             ("new-wallet-zero", () => { var c = Care(); Equal(2, c.State.Version); Equal(0, c.State.Coins); }),
+            ("run-income-is-independent-of-shopping", () => {
+                var c = Care(); c.StartWork(Start); c.Advance(Start.AddMinutes(3));
+                Equal(3, (int)c.EarnedCoinsThisRun); c.State.Coins -= 2;
+                Equal(3, (int)c.EarnedCoinsThisRun); c.StopWork(Start.AddMinutes(3));
+                c.Advance(Start.AddMinutes(4)); Equal(3, (int)c.EarnedCoinsThisRun);
+                var restarted = new PetCareService(c.State.CreateSnapshot(), Start.AddMinutes(4));
+                Equal(0, (int)restarted.EarnedCoinsThisRun); Equal(1, restarted.State.Coins);
+            }),
             ("idle-does-not-earn", () => { var c = Care(); c.Advance(Start.AddHours(2)); Equal(0, c.State.Coins); }),
             ("whole-minute-boundary", MinuteBoundary),
             ("tick-cadence-independent", TickCadence),

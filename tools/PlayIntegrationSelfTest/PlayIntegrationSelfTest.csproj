@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../DuckDeskPet.Core/DuckDeskPet.Core.csproj" />
+    <Compile Include="../../DuckDeskPet/PetWindow.Play.cs" Link="PetWindow.Play.cs" />
+    <Compile Include="../../DuckDeskPet/PetStore.cs" Link="PetStore.cs" />
+    <Compile Include="../../DuckDeskPet/RpsWindow.xaml.cs" Link="RpsWindow.xaml.cs" />
+    <Page Include="../../DuckDeskPet/RpsWindow.xaml" Link="RpsWindow.xaml" />
+    <Page Include="../../DuckDeskPet/Themes/PetTheme.xaml" Link="Themes/PetTheme.xaml" />
+    <Resource Include="../../DuckDeskPet/Assets/mascot-animated-neutral.png" Link="Assets/mascot-animated-neutral.png" />
+  </ItemGroup>
+</Project>

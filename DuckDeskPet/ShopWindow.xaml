@@ -1,0 +1,71 @@
+<Window x:Class="DuckDeskPet.ShopWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="大头鹰 · 小商店与收藏" Width="760" Height="690" MinWidth="380" MinHeight="440"
+        Background="#FFF9EF" Foreground="#493827" FontFamily="Microsoft YaHei UI"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        SizeChanged="Window_OnSizeChanged" PreviewKeyDown="Window_OnPreviewKeyDown">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Themes/PetTheme.xaml"/></ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource PetButton}"/>
+            <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+            <Style TargetType="RadioButton"><Setter Property="Margin" Value="0,0,20,0"/><Setter Property="FontSize" Value="13"/><Setter Property="Cursor" Value="Hand"/></Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Background="{Binding Background, RelativeSource={RelativeSource AncestorType=Window}}">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Border Background="#E8ECDD" Padding="24,20" BorderBrush="#D4DAC8" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel><TextBlock Text="EAGLE CLUB / 鹰币只在本机流通" FontSize="10" Foreground="#7A826A"/><TextBlock Text="小商店与收藏" FontSize="25" FontWeight="Bold" Margin="0,5,0,0"/></StackPanel>
+                    <Border Grid.Column="1" Background="#FFFDF5" CornerRadius="12" Padding="14,10" VerticalAlignment="Center" Margin="10,0,0,0">
+                        <StackPanel><TextBlock Text="我的鹰币" FontSize="10" Foreground="#8A7A59" HorizontalAlignment="Center"/><TextBlock x:Name="BalanceText" FontSize="23" FontWeight="Bold" HorizontalAlignment="Center" AutomationProperties.LiveSetting="Polite"/></StackPanel>
+                    </Border>
+                </Grid>
+                <TextBlock Text="购买是收藏，装备才上身。预览只在独立小舞台播放。" Foreground="#79806A" FontSize="11" Margin="0,10,0,15"/>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="ShopFilter" Content="逛小商店" GroupName="ContentFilter" IsChecked="True" Checked="Filter_OnChecked"/>
+                    <RadioButton x:Name="OwnedFilter" Content="我的收藏" GroupName="ContentFilter" Checked="Filter_OnChecked"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        <ScrollViewer x:Name="CardScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,12,12,20">
+            <StackPanel>
+                <ItemsControl x:Name="CardsItems">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="{Binding CardWidth, RelativeSource={RelativeSource AncestorType=Window}}" HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#FFFEFA" BorderBrush="#E4D8C2" BorderThickness="1" CornerRadius="13" Padding="17" Margin="6" AutomationProperties.Name="{Binding AccessibleLabel}">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Category}" Foreground="#758263" FontSize="10"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding PriceLabel}" Foreground="#9B7437" FontSize="12" FontWeight="Bold"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="18"/>
+                                    <TextBlock Text="{Binding Description}" Foreground="#81745F" FontSize="11" Margin="0,7,0,10" MinHeight="30"/>
+                                    <TextBlock Text="{Binding Acquisition}" Foreground="#758263" FontSize="11" MinHeight="32"/>
+                                    <Border Background="#F5F0E5" CornerRadius="7" Padding="9,7" Margin="0,8,0,12" MinHeight="45">
+                                        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#81745F"/>
+                                    </Border>
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <Button Content="预览" HorizontalAlignment="Left" Tag="{Binding Id}" IsEnabled="{Binding CanPreview}" Click="Preview_OnClick" Padding="11,7"/>
+                                        <Button Grid.Column="1" Content="{Binding ActionLabel}" Tag="{Binding Id}" IsEnabled="{Binding CanAct}" Click="Action_OnClick" Padding="12,7" Margin="8,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="EmptyText" Text="收藏还在路上，先看看免费默认款吧。" Visibility="Collapsed" Margin="20,35" HorizontalAlignment="Center" Foreground="#8C806A"/>
+            </StackPanel>
+        </ScrollViewer>
+        <Border Grid.Row="2" Background="#F4EFE4" BorderBrush="#E4DCCA" BorderThickness="0,1,0,0" Padding="24,13">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,14,0"><TextBlock x:Name="StatusText" Text="不收费、不联网，不用开通会员。" FontSize="11" Foreground="#7D765F" AutomationProperties.LiveSetting="Polite"/><TextBlock Text="工位更换会等待当前工作或动作安全结束。" FontSize="10" Foreground="#99907B" Margin="0,4,0,0"/></StackPanel>
+                <Button Grid.Column="1" Content="先逛到这" VerticalAlignment="Center" Click="Close_OnClick"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

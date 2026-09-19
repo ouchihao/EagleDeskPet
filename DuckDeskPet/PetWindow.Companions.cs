@@ -85,7 +85,7 @@ public partial class PetWindow
     {
         if (_honorWall is null)
         {
-            var window = new HonorWallWindow(() => CareState) { Owner = this, Topmost = Topmost };
+            var window = new HonorWallWindow(() => CareState, OpenShopWindow, ClaimHonorContent, IsContentResourceAvailable) { Owner = this, Topmost = Topmost };
             _honorWall = window;
             window.Closed += (_, _) => _honorWall = null;
             window.Show();

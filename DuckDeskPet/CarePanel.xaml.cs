@@ -31,6 +31,7 @@ public partial class CarePanel : Window
         IncomeText.Text = state.Food >= 99 ? "粮袋满啦，先吃一点再攒。" : $"下一份粮食 {remaining:mm\\:ss} · 离线最多积累 2 小时";
         StatusText.Text = message ?? _pet.CareStatus;
         WalletText.Text = $"{state.Coins:N0} 鹰币";
+        RunWageText.Text = $"本次启动已赚 {_pet.EarnedCoinsThisRun:N0} 鹰币（含本次离线补算，不扣除购物支出）";
         WageText.Text = state.Coins >= EconomyPolicy.MaximumCoins
             ? "钱包已满；满额期间不积压可补领工资。"
             : $"每有效工作分钟 +1 · 下枚还需 {Math.Ceiling(EconomyPolicy.WageIntervalSeconds - state.WageProgressSeconds):0} 秒工作";

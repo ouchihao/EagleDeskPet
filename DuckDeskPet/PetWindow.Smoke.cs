@@ -20,6 +20,11 @@ public partial class PetWindow
         Directory.CreateDirectory(output);
         try
         {
+            if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") == "expansion")
+            {
+                await RunExpansionSmokeAsync(output);
+                return;
+            }
             if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") == "features")
             {
                 await RunFeaturesSmokeAsync(output);

@@ -58,6 +58,7 @@
             <StackPanel>
                 <TextBlock x:Name="WalletText" FontSize="18" FontWeight="Bold"/>
                 <TextBlock x:Name="WageText" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
+                <TextBlock x:Name="RunWageText" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
                 <TextBlock Text="鹰币只用于本地商店，无真实货币价值；旧档不补发历史工资。" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
             </StackPanel>
         </Border>

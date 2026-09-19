@@ -61,6 +61,7 @@
                     </ContextMenu.Resources>
                     <MenuItem Header="我的饭搭子…" Click="CareMenu_OnClick" />
                     <MenuItem Header="荣誉展览馆…" Click="HonorMenu_OnClick" />
+                    <MenuItem Header="鹰币小卖部 · 我的收藏…" Click="ShopMenu_OnClick" />
                     <MenuItem x:Name="GitHubMenuItem" Header="GitHub 消息…" Click="GitHubMenu_OnClick" />
                     <MenuItem x:Name="TaskInboxMenuItem" Header="AI 任务消息…" Click="TaskInboxMenu_OnClick" />
                     <MenuItem x:Name="ClientSetupMenuItem" Header="AI 自动传话 · 一键接入…" Click="ClientSetupMenu_OnClick" />
@@ -68,12 +69,15 @@
                     <MenuItem x:Name="TouchMenuItem" Header="摸摸头 · 害羞" Click="PetMenu_OnClick" />
                     <MenuItem x:Name="FeedMenuItem" Header="喂一份饭 · 干饭" Click="FeedMenu_OnClick" />
                     <MenuItem x:Name="YawnMenuItem" Header="打个哈欠" Tag="Yawn" Click="ClipMenuItem_OnClick" />
+                    <MenuItem x:Name="GameMenuItem" Header="石头剪刀布 · 逗逗它…" Click="GameMenu_OnClick" />
                     <MenuItem Header="站立 · 默认待机" IsEnabled="False" />
                     <Separator />
                     <MenuItem x:Name="StartWorkMenuItem" Header="开始工作" Click="WorkMenu_OnClick" />
                     <MenuItem x:Name="StopWorkMenuItem" Header="取消工作 · 收工" Click="StopWorkMenu_OnClick" />
                     <Separator />
                     <MenuItem x:Name="BanterMenuItem" Header="主动职场骚话 · 每分钟" IsCheckable="True" Click="BanterMenu_OnClick" />
+                    <MenuItem x:Name="EmotionMenuItem" Header="自主情绪小剧场 · 默认关闭" IsCheckable="True" Click="EmotionMenu_OnClick" />
+                    <MenuItem Header="预览空碗小剧场…" Click="HungryPreviewMenu_OnClick" />
                     <MenuItem x:Name="PauseMenuItem" Header="暂停动作" IsCheckable="True" Click="PauseMenuItem_OnClick" />
                     <MenuItem x:Name="TopmostMenuItem" Header="保持置顶" IsCheckable="True" IsChecked="True" Click="TopmostMenuItem_OnClick" />
                     <MenuItem x:Name="FpsMenuItem" Header="显示帧率" IsCheckable="True" Click="FpsMenuItem_OnClick" />

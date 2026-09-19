@@ -198,6 +198,7 @@ internal sealed class CompanionPreferences
 {
     public bool NotificationsEnabled { get; set; } = true;
     public bool ActiveBanterEnabled { get; set; } = true;
+    public bool AutoEmotionScenesEnabled { get; set; }
     public Dictionary<string, string> Applications { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public static CompanionPreferences Load()
