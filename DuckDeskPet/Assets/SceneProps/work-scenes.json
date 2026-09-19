@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "defaultSelection": { "sceneId": "work.default", "deskId": "desk.default", "computerId": "computer.default" },
+  "scenes": [
+    {
+      "id": "work.default",
+      "name": "大头鹰工位",
+      "compatibilityId": "eagle-work-v1",
+      "canvas": { "width": 384, "height": 346 },
+      "characterFootAnchor": { "x": 191.5, "y": 336 },
+      "deskSurfaceAnchor": { "x": 192, "y": 276 },
+      "layerOrder": ["fire", "desk-back", "character", "desk-front", "computer"],
+      "phases": [
+        { "clip": "WorkEnter", "frameCount": 211, "durationSeconds": 3.5 },
+        { "clip": "WorkLoop", "frameCount": 121, "durationSeconds": 2.0 },
+        { "clip": "WorkToBusy", "frameCount": 91, "durationSeconds": 1.5 },
+        { "clip": "BusyLoop", "frameCount": 121, "durationSeconds": 2.0 },
+        { "clip": "WorkExit", "frameCount": 121, "durationSeconds": 2.0 },
+        { "clip": "BusyExit", "frameCount": 121, "durationSeconds": 2.0 }
+      ],
+      "motion": {
+        "deskTravelPixels": 440,
+        "computerTravelPixels": 440,
+        "deskEnter": { "startSeconds": 0.15, "durationSeconds": 0.85 },
+        "computerEnter": { "startSeconds": 0.9, "durationSeconds": 0.9 },
+        "deskExit": { "startSeconds": 0.9, "durationSeconds": 1.05 },
+        "computerExit": { "startSeconds": 0.35, "durationSeconds": 0.8 },
+        "dropLandingFraction": 0.65,
+        "dropFirstBounceEndFraction": 0.84,
+        "dropFirstBouncePixels": 14,
+        "dropSecondBouncePixels": 4
+      },
+      "fire": {
+        "directory": "Assets/SceneProps/WorkV2/Fire",
+        "frameCount": 121,
+        "loopFrameCount": 120,
+        "sampleRate": 60,
+        "anchor": { "x": 192, "y": 334 },
+        "grow": { "startSeconds": 0.25, "durationSeconds": 1.05 },
+        "shrink": { "startSeconds": 0, "durationSeconds": 0.85 }
+      }
+    }
+  ],
+  "desks": [
+    { "id": "desk.default", "name": "经典木桌", "compatibilityId": "eagle-work-v1", "back": "Assets/SceneProps/WorkV2/desk-back.png", "front": "Assets/SceneProps/WorkV2/desk-front.png" }
+  ],
+  "computers": [
+    { "id": "computer.default", "name": "经典电脑", "compatibilityId": "eagle-work-v1", "image": "Assets/SceneProps/Work/laptop.png" }
+  ]
+}

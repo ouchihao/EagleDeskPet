@@ -29,6 +29,8 @@
     <None Remove="Assets\mascot-animated-neutral.png" />
     <None Remove="Assets\actions.json" />
     <Resource Include="Assets\actions.json" />
+    <None Remove="Assets\SceneProps\work-scenes.json" />
+    <Resource Include="Assets\SceneProps\work-scenes.json" />
     <None Remove="Assets\Animations\**\frame-*.png" />
     <Resource Include="Assets\mascot-animated-neutral.png" />
     <Resource Include="Assets\Animations\**\frame-*.png"

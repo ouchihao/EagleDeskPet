@@ -40,7 +40,7 @@ internal static class Program
                     eagle.Source = RasterFramePlayer.LoadBitmap($"Assets/Animations/{directory}/frame-{frame:0000}.png");
                     renderer.Apply(sample, 1.0 / 60);
                     Layout(stage);
-                    if (WorkStageMotion.FireGrowth(sample) > 0)
+                    if (WorkStageMotion.FireGrowth(sample, renderer.CurrentScene) > 0)
                     {
                         var authoredBase = new Point(80, 334 * (160.0 / 384));
                         double baseY = fire.TransformToAncestor(stage).Transform(authoredBase).Y;

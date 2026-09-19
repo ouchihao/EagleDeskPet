@@ -9,6 +9,9 @@
   <ItemGroup>
     <Compile Include="../../DuckDeskPet.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
     <Compile Include="../../DuckDeskPet/WorkStageMotion.cs" Link="WorkStageMotion.cs" />
+    <Compile Include="../../DuckDeskPet/SceneDefinition.cs" Link="SceneDefinition.cs" />
+    <Compile Include="../../DuckDeskPet/SceneCatalog.cs" Link="SceneCatalog.cs" />
+    <Resource Include="../../DuckDeskPet/Assets/SceneProps/work-scenes.json" Link="Assets/SceneProps/work-scenes.json" />
     <Compile Include="../../DuckDeskPet/WorkStageRenderer.cs" Link="WorkStageRenderer.cs" />
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
