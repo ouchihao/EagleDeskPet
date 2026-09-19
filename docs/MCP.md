@@ -8,13 +8,13 @@ MCP **不是通用的聊天监听器**。客户端须主动调用 `pet_notify`�
 
 ## 手动连接
 
-先打开同一发布目录中的 `EagleDeskPet.exe`（源码发布路径为 `dist/v1.8.0/`）。把下面配置按客户端要求填写到其 MCP 设置中；本段示例不自动执行写入。路径要换成你实际保存的位置。示例是常见的 `mcpServers` 格式，具体配置结构以客户端文档为准：
+先打开同一发布目录中的 `EagleDeskPet.exe`（源码发布路径为 `dist/v1.9.0/`）。把下面配置按客户端要求填写到其 MCP 设置中；本段示例不自动执行写入。路径要换成你实际保存的位置。示例是常见的 `mcpServers` 格式，具体配置结构以客户端文档为准：
 
 ```json
 {
   "mcpServers": {
     "eagle-pet": {
-      "command": "D:\\Apps\\EagleDeskPet-v1.8.0\\EagleDeskPet.Mcp.exe",
+      "command": "D:\\Apps\\EagleDeskPet-v1.9.0\\EagleDeskPet.Mcp.exe",
       "args": ["--source", "Claude Code"]
     }
   }
@@ -114,7 +114,7 @@ v1.7 另增加 `githubConnected` 和 `githubUnread`，仅表示连接状态和�
 对于支持结束事件的客户端，在其 Hook 中调用一次性通知模式即可，不必从 Hook 再建立 MCP 会话：
 
 ```powershell
-& 'D:\Apps\EagleDeskPet-v1.8.0\EagleDeskPet.Mcp.exe' --source 'Claude Code' --notify --event-id 'session-123:turn-8:reply' --event-type reply_ready --message '回复已准备好' --session-id 'session-123'
+& 'D:\Apps\EagleDeskPet-v1.9.0\EagleDeskPet.Mcp.exe' --source 'Claude Code' --notify --event-id 'session-123:turn-8:reply' --event-type reply_ready --message '回复已准备好' --session-id 'session-123'
 ```
 
 或者调用 `tools/pet_notify_hook.ps1`，传入 `BridgeExe`、`Source` 和稳定 `EventId`，其他参数可选。该脚本只是通用示例；需由具体客户端适配它提供的事件字段，不能原样假设所有客户端都支持。请在 Hook 配置中固定应用名称，不从回复文字中解析它。无须也不建议把聊天记录全文发给宠物。每次真实新事件使用新 ID，网络/进程重试使用原 ID。一次性模式退出码：0 已接收/重复，1 未接收，2 参数错误。
@@ -154,9 +154,9 @@ python .\tools\test_mcp_bridge.py --dotnet dotnet --mcp .\EagleDeskPet.Mcp\bin\R
 发布后的实际 WPF 联调可运行：
 
 ```powershell
-python .\tools\test_gui_smoke.py --gui .\dist\v1.8.0\EagleDeskPet.exe --mcp .\dist\v1.8.0\EagleDeskPet.Mcp.exe
-python .\tools\test_work_gui_smoke.py --gui .\dist\v1.8.0\EagleDeskPet.exe --mcp .\dist\v1.8.0\EagleDeskPet.Mcp.exe
-python .\tools\test_features_gui_smoke.py
+python .\tools\test_gui_smoke.py --gui .\dist\v1.9.0\EagleDeskPet.exe --mcp .\dist\v1.9.0\EagleDeskPet.Mcp.exe
+python .\tools\test_work_gui_smoke.py --gui .\dist\v1.9.0\EagleDeskPet.exe --mcp .\dist\v1.9.0\EagleDeskPet.Mcp.exe
+python .\tools\test_features_gui_smoke.py --gui .\dist\v1.9.0\EagleDeskPet.exe
 ```
 
 前两个 GUI runner 为本次 GUI 和 MCP 同时配置随机 `EAGLE_PET_TEST_CHANNEL`，隔离单实例互斥锁和当前用户命名管道，并设置独立的测试存档目录；发送通知前还会比对精确 PID、测试标记和数据目录。普通运行不设置此变量，管道名称和单实例行为保持不变。测试通道只允许 1–64 个 ASCII 字母、数字或短横线，非法值拒绝运行，不回落到正常用户通道。工作联调用加速的测试状态覆盖进场、持续办公、30 分钟忙碌切换、取消和饿空收工；它不是长时间实机 60 FPS 或人工鼠标拖动验收。
