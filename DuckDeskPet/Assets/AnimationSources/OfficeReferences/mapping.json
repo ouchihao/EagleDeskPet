@@ -1,0 +1,265 @@
+{
+  "Yawn": {
+    "columns": 5,
+    "rows": 3,
+    "unique": 14,
+    "mapping": {
+      "Yawn": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Shy": {
+    "columns": 5,
+    "rows": 3,
+    "unique": 14,
+    "mapping": {
+      "Shy": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Eat": {
+    "columns": 5,
+    "rows": 3,
+    "unique": 14,
+    "mapping": {
+      "Eat": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Work": {
+    "columns": 6,
+    "rows": 5,
+    "unique": 29,
+    "mapping": {
+      "WorkEnter": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "WorkLoop": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        5
+      ],
+      "WorkToBusyV2": [
+        5,
+        16,
+        17,
+        18
+      ],
+      "BusyLoop": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        18
+      ],
+      "WorkExit": [
+        5,
+        3,
+        28,
+        0
+      ],
+      "BusyExitV2": [
+        18,
+        17,
+        16,
+        3,
+        28,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Hungry": {
+    "columns": 5,
+    "rows": 3,
+    "unique": 14,
+    "mapping": {
+      "HungryEnter": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "HungryLoop": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        6
+      ],
+      "HungryExit": [
+        6,
+        11,
+        12,
+        13,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Tea": {
+    "columns": 5,
+    "rows": 3,
+    "unique": 14,
+    "mapping": {
+      "Tea": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Rps": {
+    "columns": 5,
+    "rows": 4,
+    "unique": 16,
+    "mapping": {
+      "RpsRock": [
+        0,
+        1,
+        2,
+        3,
+        0
+      ],
+      "RpsPaper": [
+        0,
+        4,
+        5,
+        6,
+        0
+      ],
+      "RpsScissors": [
+        0,
+        7,
+        8,
+        9,
+        0
+      ],
+      "RpsWin": [
+        0,
+        10,
+        11,
+        12,
+        0
+      ],
+      "RpsLose": [
+        0,
+        13,
+        14,
+        15,
+        0
+      ]
+    },
+    "neutral_index": 0
+  },
+  "Annoyed": {
+    "columns": 5,
+    "rows": 3,
+    "unique": 14,
+    "mapping": {
+      "Annoyed": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        0
+      ]
+    },
+    "neutral_index": 0
+  }
+}

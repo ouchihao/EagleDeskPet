@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "defaultOutfitId": "outfit.default",
+  "outfits": [
+    { "id": "outfit.default", "name": "原味大头鹰", "animationManifest": "Assets/actions.json" },
+    { "id": "outfit.office", "name": "认真上班装", "animationManifest": "Assets/Outfits/Office/actions.json" }
+  ]
+}
