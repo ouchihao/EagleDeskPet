@@ -119,12 +119,16 @@ internal static partial class Program
         Brush background = stage.Root.Background; stage.Root.Background = Brushes.Transparent;
         try
         {
+            // Isolate the seated-hand contract from the laptop, which can legitimately cover
+            // all but one fully opaque paw pixel in small outfits at 1x. The ordinary contact
+            // render still includes the real laptop; this diagnostic restores it in finally.
+            if (!foreground) stage.Computer.Visibility = Visibility.Hidden;
             byte[] composed = Pixels(stage.Render());
             foreach (var layer in layers) layer.Visibility = Visibility.Hidden;
             stage.Pet.Visibility = Visibility.Visible; byte[] actor = Pixels(stage.Render());
             stage.Pet.Visibility = Visibility.Hidden; stage.Back.Visibility = Visibility.Visible; byte[] back = Pixels(stage.Render());
             stage.Back.Visibility = Visibility.Hidden; stage.Front.Visibility = Visibility.Visible; byte[] front = Pixels(stage.Render());
-            stage.Front.Visibility = Visibility.Hidden; stage.Computer.Visibility = old[4]; byte[] computer = Pixels(stage.Render());
+            stage.Front.Visibility = Visibility.Hidden; stage.Computer.Visibility = foreground ? old[4] : Visibility.Hidden; byte[] computer = Pixels(stage.Render());
             stage.Computer.Visibility = Visibility.Hidden; stage.Renderer.ForegroundLayer!.Visibility = old[5]; byte[] hands = Pixels(stage.Render());
             // Independent semantic probes do NOT use the implementation's hand/bowl mask as expected data.
             // A known central torso strip is always behind the desk in work, regardless of white shirt/cream logo.
