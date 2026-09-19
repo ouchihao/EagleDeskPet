@@ -6,6 +6,8 @@ public enum PetBehaviorKind
     Petted,
     Notification,
     ManualAction,
+    Annoyed,
+    AutomaticEmotion,
 }
 
 public enum PetBehaviorRequestResult
@@ -29,9 +31,11 @@ public sealed class PetBehaviorController
     private readonly ClipTimeline _timeline;
     private readonly List<PendingBehavior> _pending = new();
     private readonly WorkSceneTimeline _workScene = new();
+    private readonly HungrySceneTimeline _hungryScene = new();
     private double _idleElapsed;
     private bool _workDesired;
     private bool _busyDesired;
+    private bool _hungryDesired;
     private bool _paused;
     private Pose _workEntryPose = Pose.Neutral;
 
@@ -41,8 +45,9 @@ public sealed class PetBehaviorController
         _paused = _timeline.IsPaused;
     }
 
-    public ClipSample CurrentSample => _workScene.IsActive ? _workScene.CurrentSample : _timeline.CurrentSample;
-    public Pose CurrentProceduralPose => _workScene.IsActive
+    public ClipSample CurrentSample => _workScene.IsActive ? _workScene.CurrentSample :
+        _hungryScene.IsActive ? _hungryScene.CurrentSample : _timeline.CurrentSample;
+    public Pose CurrentProceduralPose => _hungryScene.IsActive ? Pose.Neutral : _workScene.IsActive
         ? CurrentSample.Kind == ClipKind.WorkEnter
             ? Pose.Lerp(_workEntryPose, Pose.Neutral, Math.Clamp(CurrentSample.ElapsedSeconds / 0.3, 0.0, 1.0))
             : Pose.Neutral
@@ -51,6 +56,40 @@ public sealed class PetBehaviorController
     public int PendingCount => _pending.Count;
     public bool IsWorkSceneActive => _workScene.IsActive;
     public bool IsWorkRequested => _workDesired;
+    public bool IsHungrySceneActive => _hungryScene.IsActive;
+    public bool IsHungryRequested => _hungryDesired;
+    public bool IsAutomaticSuspended => _timeline.IsAutomaticSuspended;
+
+    public void SuspendAutomatic(bool suspended) => _timeline.SuspendAutomatic(suspended);
+
+    public PetBehaviorRequestResult RequestHungryScene()
+    {
+        if (IsPaused) return PetBehaviorRequestResult.RejectedPaused;
+        if (_workDesired || _workScene.IsActive) return PetBehaviorRequestResult.RejectedWorking;
+        if (_hungryDesired || _hungryScene.IsActive) return PetBehaviorRequestResult.Coalesced;
+        _hungryDesired = true;
+        return PetBehaviorRequestResult.Queued;
+    }
+
+    public void CancelHungryScene()
+    {
+        _hungryDesired = false;
+        _hungryScene.Cancel();
+    }
+
+    public PetBehaviorRequestResult QueueAutomaticEmotion(EmotionReaction reaction) => reaction switch
+    {
+        EmotionReaction.HungryScene => RequestHungryScene(),
+        EmotionReaction.Annoyed => Enqueue(new(PetBehaviorKind.AutomaticEmotion, ClipKind.Annoyed)),
+        _ => throw new ArgumentOutOfRangeException(nameof(reaction)),
+    };
+
+    /// <summary>Disable automatic emotion without discarding deliberate touch reactions.</summary>
+    public void CancelAutomaticEmotions()
+    {
+        _pending.RemoveAll(x => x.Kind == PetBehaviorKind.AutomaticEmotion);
+        CancelHungryScene();
+    }
 
     public void SetWorkState(bool working, bool busy)
     {
@@ -58,11 +97,12 @@ public sealed class PetBehaviorController
         _workDesired = working;
         _busyDesired = working && busy;
         _workScene.SetDesiredState(working, busy);
+        if (working) CancelHungryScene();
     }
 
     public PetBehaviorRequestResult RequestAction(ClipKind kind)
     {
-        if (!ClipCatalog.IsKnown(kind) || kind == ClipKind.Idle || ClipCatalog.IsWorkScene(kind))
+        if (!ClipCatalog.IsKnown(kind) || kind == ClipKind.Idle || ClipCatalog.IsScene(kind))
         {
             throw new ArgumentOutOfRangeException(nameof(kind));
         }
@@ -75,6 +115,7 @@ public sealed class PetBehaviorController
         PetBehaviorKind.Fed => Enqueue(new(kind, ClipKind.Eat)),
         PetBehaviorKind.Petted => Enqueue(new(kind, ClipKind.Shy)),
         PetBehaviorKind.Notification => Enqueue(new(kind, ClipKind.SideEye)),
+        PetBehaviorKind.Annoyed => Enqueue(new(kind, ClipKind.Annoyed)),
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
@@ -102,6 +143,18 @@ public sealed class PetBehaviorController
             return CurrentSample;
         }
 
+        if (_hungryScene.IsActive)
+        {
+            ClipSample hungrySample = _hungryScene.Advance(deltaSeconds);
+            if (!_hungryScene.IsActive)
+            {
+                _hungryDesired = false;
+                _timeline.ResetToIdle(hungrySample.Sequence);
+                _idleElapsed = 0;
+            }
+            return CurrentSample;
+        }
+
         double boundedDelta = Math.Min(deltaSeconds, ClipTimeline.MaximumDeltaSeconds);
         ClipSample before = CurrentSample;
         if (before.Kind == ClipKind.Idle)
@@ -115,6 +168,14 @@ public sealed class PetBehaviorController
             }
 
             _idleElapsed += boundedDelta;
+            if (_hungryDesired && _pending.Count == 0 &&
+                _idleElapsed >= ClipTimeline.AutomaticIdleDurationSeconds - 1e-12)
+            {
+                _hungryScene.Start(before.Sequence);
+                _idleElapsed = 0;
+                return CurrentSample;
+            }
+
             if (_pending.Count > 0 && _idleElapsed >= ClipTimeline.AutomaticIdleDurationSeconds - 1e-12)
             {
                 int index = SelectNextIndex();
@@ -145,7 +206,7 @@ public sealed class PetBehaviorController
         }
 
         _paused = paused;
-        if (!_workScene.IsActive) _timeline.SetPaused(paused);
+        if (!_workScene.IsActive && !_hungryScene.IsActive) _timeline.SetPaused(paused);
         _pending.Clear();
         _idleElapsed = 0.0;
     }
@@ -161,6 +222,11 @@ public sealed class PetBehaviorController
         {
             return PetBehaviorRequestResult.RejectedWorking;
         }
+
+        // A deliberate touch complaint supersedes queued shy reactions, not an
+        // already-running frame sequence. It still observes the two-second beat.
+        if (behavior.Kind == PetBehaviorKind.Annoyed)
+            _pending.RemoveAll(x => x.Kind == PetBehaviorKind.Petted);
 
         if (_pending.Contains(behavior))
         {
@@ -198,8 +264,9 @@ public sealed class PetBehaviorController
 
     private static int Priority(PetBehaviorKind kind) => kind switch
     {
-        PetBehaviorKind.Fed or PetBehaviorKind.ManualAction => 3,
+        PetBehaviorKind.Fed or PetBehaviorKind.ManualAction or PetBehaviorKind.Annoyed => 3,
         PetBehaviorKind.Petted => 2,
+        PetBehaviorKind.AutomaticEmotion => 0,
         _ => 1,
     };
 

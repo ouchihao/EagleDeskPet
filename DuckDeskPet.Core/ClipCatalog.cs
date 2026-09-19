@@ -12,12 +12,15 @@ public static class ClipCatalog
     public const int PlayableClipCount = 1;
 
     public static bool IsKnown(ClipKind kind) =>
-        (uint)kind <= (uint)ClipKind.Stretch || kind == ClipKind.Eat || IsWorkScene(kind);
+        (uint)kind <= (uint)ClipKind.Stretch || kind == ClipKind.Eat || IsScene(kind) ||
+        kind is >= ClipKind.Tea and <= ClipKind.Annoyed;
 
     public static bool IsAutomaticAction(ClipKind kind) =>
         kind == ClipKind.Yawn;
 
     public static bool IsWorkScene(ClipKind kind) => kind is >= ClipKind.WorkEnter and <= ClipKind.BusyExit;
+    public static bool IsHungryScene(ClipKind kind) => kind is >= ClipKind.HungryEnter and <= ClipKind.HungryExit;
+    public static bool IsScene(ClipKind kind) => IsWorkScene(kind) || IsHungryScene(kind);
 
     public static PetActionGroup GetGroup(ClipKind kind)
     {
@@ -39,6 +42,10 @@ public static class ClipCatalog
         ClipKind.BusyLoop => new(kind, 121, 2.00, 0.50),
         ClipKind.WorkExit => new(kind, 121, 2.00, 0.50),
         ClipKind.BusyExit => new(kind, 121, 2.00, 0.50),
+        ClipKind.HungryEnter => new(kind, 91, 1.50, 0.50),
+        ClipKind.HungryLoop => new(kind, 121, 2.00, 0.50),
+        ClipKind.HungryExit => new(kind, 91, 1.50, 0.50),
+        >= ClipKind.Tea and <= ClipKind.Annoyed => new(kind, 121, 2.00, 0.50),
         ClipKind.Wiggle => new(kind, 30, 1.00, 0.50),
         ClipKind.Hop => new(kind, 36, 1.15, 0.47),
         ClipKind.Nod => new(kind, 24, 0.82, 0.50),

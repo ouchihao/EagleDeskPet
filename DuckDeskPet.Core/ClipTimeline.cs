@@ -51,6 +51,10 @@ public sealed class ClipTimeline
     public ClipKind? PendingClip => _pendingClip;
 
     public bool IsPaused => CurrentSample.Phase == ClipPlaybackPhase.Paused;
+    public bool IsAutomaticSuspended { get; private set; }
+
+    /// <summary>Suppress only autonomous Yawn starts, never an active or requested clip.</summary>
+    public void SuspendAutomatic(bool suspended) => IsAutomaticSuspended = suspended;
 
     public ClipRequestResult RequestClip(
         ClipKind kind,
@@ -129,7 +133,7 @@ public sealed class ClipTimeline
 
         if (CurrentSample.Kind == ClipKind.Idle)
         {
-            _secondsUntilAutomaticClip -= boundedDeltaSeconds;
+            _secondsUntilAutomaticClip = Math.Max(0, _secondsUntilAutomaticClip - boundedDeltaSeconds);
             if (_secondsUntilAutomaticClip <= 1e-12)
             {
                 if (_pendingClip is ClipKind pending)
@@ -137,7 +141,7 @@ public sealed class ClipTimeline
                     _pendingClip = null;
                     BeginClip(pending);
                 }
-                else
+                else if (!IsAutomaticSuspended)
                 {
                     BeginAutomaticClip();
                 }
@@ -293,7 +297,7 @@ public sealed class ClipTimeline
 
     private static void ValidatePlayableKind(ClipKind kind)
     {
-        if (!ClipCatalog.IsKnown(kind) || kind == ClipKind.Idle || ClipCatalog.IsWorkScene(kind))
+        if (!ClipCatalog.IsKnown(kind) || kind == ClipKind.Idle || ClipCatalog.IsScene(kind))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(kind),
