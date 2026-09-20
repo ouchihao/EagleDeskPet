@@ -264,6 +264,7 @@ internal static class Program
             clock.Advance(30); window.Refresh();
             Check(awards == 0 && cues.Count(x => x == RpsCue.ReturnToIdle) == 1 && !Find<Button>(window, "ReplayButton").IsEnabled,
                 "Pause rewarded, skipped safe teardown or allowed play while paused.");
+            Check(!Find<Border>(window, "StageSurface").HasAnimatedProperties, "Cancelled round retained a stage animation clock.");
             window.ResumeAfterPause(); Check(Find<Button>(window, "ReplayButton").IsEnabled, "Resume did not permit a fresh round.");
         }
         finally { window.Close(); }
@@ -287,6 +288,7 @@ internal static class Program
     {
         int awards = 0; var window = new RpsWindow((_, _) => Task.CompletedTask, () => null, _ => { awards++; return true; });
         Load(window); window.Close(); Check(awards == 0, "Closing a choice screen rewarded mood.");
+        Check(!Find<Border>(window, "StageSurface").HasAnimatedProperties, "Closing a choice screen retained a stage animation clock.");
     }
     private static void UiAsyncClose()
     {

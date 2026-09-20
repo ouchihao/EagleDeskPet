@@ -36,7 +36,8 @@ public partial class RpsWindow : Window
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(40) };
         _timer.Tick += Timer_OnTick;
         Closing += Window_OnClosing;
-        Closed += (_, _) => { _timer.Stop(); _timer.Tick -= Timer_OnTick; _roundCancellation.Dispose(); };
+        Unloaded += (_, _) => StageSurface.BeginAnimation(OpacityProperty, null);
+        Closed += (_, _) => { StageSurface.BeginAnimation(OpacityProperty, null); _timer.Stop(); _timer.Tick -= Timer_OnTick; _roundCancellation.Dispose(); };
     }
 
     internal Task PendingOperation => _performance;
@@ -139,7 +140,8 @@ public partial class RpsWindow : Window
 
     private void AnimateStage()
     {
-        if (!SystemParameters.ClientAreaAnimation) return;
+        StageSurface.BeginAnimation(OpacityProperty, null);
+        if (!SystemParameters.ClientAreaAnimation || SystemParameters.HighContrast || _closing || _presentedPhase == RpsPhase.Cancelled) return;
         // Only the panel's text/stage eases in; never fade, flip or retime the
         // actual eagle sprite. Every authored action frame still plays intact.
         StageSurface.BeginAnimation(OpacityProperty, new DoubleAnimation(.72, 1, TimeSpan.FromMilliseconds(140)));
@@ -179,6 +181,7 @@ public partial class RpsWindow : Window
     {
         if (_closing) return _performance;
         _paused = true;
+        StageSurface.BeginAnimation(OpacityProperty, null);
         if (_game.IsActive) _game.Cancel(RpsCancelReason.Paused);
         _roundCancellation.Cancel();
         Refresh();
@@ -218,6 +221,7 @@ public partial class RpsWindow : Window
         e.Cancel = true;
         if (_closing) return;
         _closing = true;
+        StageSurface.BeginAnimation(OpacityProperty, null);
         _timer.Stop();
         _game.Cancel(RpsCancelReason.WindowClosed);
         _roundCancellation.Cancel();
