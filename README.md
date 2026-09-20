@@ -4,9 +4,11 @@
 
 一只陪你上班、摸头会害羞、饿了要干饭，还能替 AI 和 GitHub 传话的桌面小鹰。
 
-**Windows x64 · C# / WPF · v1.10.0 Demo · 最高 60 Hz 动画时间轴**
+**Windows x64 · C# / WPF · v1.10.1 Demo · 最高 60 Hz 动画时间轴**
 
 v1.10 把日常界面升级为“小鹰俱乐部”：商品图标货架、紧凑猜拳小窗、18 枚荣誉和三页养成面板。继承 v1.9 的三套完整形象、四张桌子和四种电脑；见 [本版更新](docs/RELEASE-NOTES-v1.10.md) / [验证与未测边界](docs/VALIDATION-v1.10.md)。界面动效不替代宠物逐帧表演，也不承诺每台电脑的物理 60 FPS。
+
+v1.10.1 专门重做猜拳动画：每段从 5 个关键姿势扩为 16 个，补齐抬手、展开手势和收手；出拳保持约 0.87 秒，三套服装同步。见[猜拳动画修订与验证](docs/RPS-ANIMATION-v1.10.1.md)。
 
 [快速上手](docs/QUICK-START.md) · [AI 一键接入](docs/AI-AUTO-SETUP.md) · [GitHub 通知](docs/GITHUB-NOTIFICATIONS.md) · [MCP 文档](docs/MCP.md) · [需求与路线图](docs/REQUIREMENTS.md)
 
@@ -34,7 +36,7 @@ v1.10 把日常界面升级为“小鹰俱乐部”：商品图标货架、紧�
 | 工作赚钱 | 持续办公、满 30 分钟忙碌；每有效工作分钟 +1 经验和 +1 鹰币，本次启动收入单独显示 |
 | 鹰选好物 | 多列双排商品格、真实图标、分类 / 收藏筛选和翻页；独立预览，确认收藏后再装备 |
 | 自主情绪 | 默认关闭；饿了抱空碗，心情低时闹别扭；场景有进入、循环、退出和冷却 |
-| 猜拳小游戏 | 304×352 紧凑小窗，选拳后演出约 5 秒；宠物先选拳，完整出招后揭晓，无下注 |
+| 猜拳小游戏 | 304×352 紧凑小窗，选拳后演出约 6 秒；出拳有清晰留姿，完整收手后揭晓，无下注 |
 | 职场碎碎念 | 60 条普通短句 + 16 条情境短句，按工作、饥饿、低心情等选择，每分钟最多一句，可关闭 |
 | 荣誉展览馆 | 6 个系列、18 枚金银铜徽章，按系列 / 获得状态分页；原薄荷桌和喝茶奖励保留 |
 | 宠物俱乐部 | 日常陪伴、工位与钱包、消息与设置分为三页；奶油、薄荷和蜂蜜金主题，窗口与切页轻过渡 |
@@ -61,7 +63,7 @@ v1.10 把日常界面升级为“小鹰俱乐部”：商品图标货架、紧�
 <img src="docs/images/v1.10-care.png" width="590" alt="v1.10 俱乐部面板：日常陪伴、工位与钱包、消息与设置三页">
 <img src="docs/images/v1.10-rps.png" width="248" alt="v1.10 紧凑猜拳小窗，图形拳型按钮与双方对战展示">
 
-猜拳中的小鹰仍在桌面完整表演；小窗负责选拳和提示，不替代角色动画。约 5 秒指选拳后的演出，不包含你思考选拳、首次预载或上一动作收尾的时间。
+猜拳中的小鹰仍在桌面完整表演；小窗负责选拳和提示，不替代角色动画。出拳 2.8 秒，输赢反应 2.4 秒（平局害羞仍为 2 秒），含 0.6 秒准备约为 6 秒；不包含你思考选拳、首次预载或上一动作收尾的时间。
 
 </details>
 
@@ -78,7 +80,7 @@ v1.10 把日常界面升级为“小鹰俱乐部”：商品图标货架、紧�
 | 右键“我的饭搭子” | 打开三页俱乐部面板，查看养成、工位钱包和消息设置 |
 | 右键“开始工作 / 取消工作” | 入场办公 / 完整收工 |
 | 右键“鹰币小卖部 · 我的收藏” | 逛商品货架、选分类或收藏；选中后独立预览、购买、装备 |
-| 右键“石头剪刀布” | 在小窗选拳，演出约 5 秒；先收工再玩，不含预载与前一动作收尾时间 |
+| 右键“石头剪刀布” | 在小窗选拳，演出约 6 秒；先收工再玩，不含预载与前一动作收尾时间 |
 | 右键“自主情绪小剧场” | 开关自动情绪；“预览空碗小剧场…”为独立只读预览 |
 | 双击 | 有可返回的 AI 通知时打开配置的应用，否则打开养成面板 |
 | 右键菜单 | 调整大小、置顶、暂停、显示帧率、开关碎碎念、查看荣誉与消息 |
@@ -118,12 +120,12 @@ cd EagleDeskPet
 如果系统对本地脚本有执行限制，请按你的设备或组织策略允许运行该脚本。也可以不运行脚本，直接执行：
 
 ```powershell
-dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.10.0
-dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.10.0
-Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.10.0\THIRD-PARTY-NOTICES.md
+dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.10.1
+dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.10.1
+Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.10.1\THIRD-PARTY-NOTICES.md
 ```
 
-脚本从主工程版本读取默认输出目录，本版为 `dist/v1.10.0/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
+脚本从主工程版本读取默认输出目录，本版为 `dist/v1.10.1/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
 
 ## 让它替 AI 和 GitHub 传话
 
@@ -160,9 +162,9 @@ Token 仅在应用中填写，**不要放进代码、Issue 或聊天记录**。�
 
 WPF 跟随桌面合成器，以最高 60 Hz 时间轴选帧，图片预解码后播放。**60 Hz 素材与调度不等于所有电脑恒定 60 FPS**；显示器刷新率、系统负载、远程桌面等都会影响实际表现。
 
-v1.10 的窗口打开和面板切页采用约 180 ms 的轻过渡，遵循 Windows 减弱动画设置；高对比度下也停用这些动效。它们只作用于界面，不翻转、淡化或截断桌面小鹰的动作。猜拳准备缩至 0.6 秒，出拳和结果反应各保留 2 秒完整演出，取消了游戏阶段之间多余的站立等待；普通互动结束后站立 2 秒的规则不变。
+v1.10 的窗口打开和面板切页采用约 180 ms 的轻过渡，遵循 Windows 减弱动画设置；高对比度下也停用这些动效。它们只作用于界面，不翻转、淡化或截断桌面小鹰的动作。v1.10.1 猜拳准备为 0.6 秒，出拳完整演出 2.8 秒，胜负反应 2.4 秒、平局害羞 2 秒，游戏阶段之间不额外站立等待；普通互动结束后站立 2 秒的规则不变。
 
-v1.9 新增 10 段默认形象动画、1150 张运行帧；办公服和摸鱼卫衣各覆盖 19 段、2299 张帧和独立站姿，不是往鹰身上贴静态衣服。三套当前形象共 6900 张运行 PNG 已完整解码验证；桌子与电脑独立搭配。按需预载会占用显著内存，资源与验证边界见 [v1.9 素材说明](docs/ASSETS-v1.9.md)。
+v1.9 新增了 10 段默认形象动画及办公服、摸鱼卫衣，不是往鹰身上贴静态衣服。v1.10.1 每套形象覆盖 19 段、2491 张动画帧和 1 张独立站姿，三套共 7476 张运行 PNG 已完整解码验证；桌子与电脑独立搭配。按需预载会占用显著内存，历史素材结构见 [v1.9 素材说明](docs/ASSETS-v1.9.md)，新增猜拳帧及边界见 [v1.10.1 验证](docs/RPS-ANIMATION-v1.10.1.md)。
 
 [工作动画制作说明](docs/WORK-ANIMATION-ASSETS.md) · [v1.9 新动作提示词](DuckDeskPet/Assets/AnimationSources/expansion-v1-prompts.md) · [九枚徽章提示词](docs/BADGE-ASSETS-v2.md)
 
@@ -189,7 +191,7 @@ dotnet run --project .\tools\WorkStageSelfTest\WorkStageSelfTest.csproj -c Relea
 dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 ```
 
-更多测试入口与适用范围见[开发与测试](docs/DEVELOPMENT.md)。当前结果见 [v1.10 验证记录](docs/VALIDATION-v1.10.md)，[v1.9 验证记录](docs/VALIDATION-v1.9.md)和 [v1.8 验证记录](docs/VALIDATION-v1.8.md)作为历史基线；模拟事件和自动化测试不代表已验证每种客户端版本、真实账号消息或长时间物理屏幕帧率。
+更多测试入口与适用范围见[开发与测试](docs/DEVELOPMENT.md)。当前猜拳修订结果见 [v1.10.1 验证记录](docs/RPS-ANIMATION-v1.10.1.md)，[v1.10](docs/VALIDATION-v1.10.md)、[v1.9](docs/VALIDATION-v1.9.md)和 [v1.8](docs/VALIDATION-v1.8.md)记录作为历史基线；模拟事件和自动化测试不代表已验证每种客户端版本、真实账号消息或长时间物理屏幕帧率。
 
 ## 数据与隐私
 
