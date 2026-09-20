@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="大头鹰 · 任务小信使" Width="590" Height="650" MinWidth="430" MinHeight="440"
-        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#FFF9EF" Foreground="#493B2B"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="#FFF8EB" Foreground="#24364B"
         FontFamily="Microsoft YaHei UI" PreviewKeyDown="Window_OnPreviewKeyDown">
     <Window.Resources>
         <ResourceDictionary>
@@ -12,10 +12,11 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <Border Background="#E6EBD9" Padding="22,18">
+        <Border Padding="22,18" MinHeight="130" BorderBrush="#D8CCB3" BorderThickness="0,0,0,1">
+            <Border.Background><ImageBrush ImageSource="Assets/Ui/club-post-v1.png" Stretch="UniformToFill" AlignmentX="Right" AlignmentY="Center"/></Border.Background>
             <StackPanel>
-                <TextBlock Text="哪个工具的哪件事，需要你。" FontSize="11" Foreground="#7E8667"/>
-                <TextBlock Text="任务小信使" FontSize="25" FontWeight="Bold" Margin="0,5,0,6"/>
+                <TextBlock Text="EAGLE POST / 任务来信" FontSize="10" Foreground="#807349"/>
+                <TextBlock Text="任务小信使" FontSize="25" FontWeight="Bold" Margin="0,8,0,6"/>
                 <TextBlock x:Name="SummaryText" FontSize="12" Foreground="#647452"/>
             </StackPanel>
         </Border>
@@ -39,13 +40,13 @@
                      VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" AutomationProperties.Name="本机任务收件箱">
                 <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,8"/></Style></ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate><DataTemplate>
-                    <Border Background="#FFFEFA" BorderBrush="#E5D9C4" BorderThickness="1" CornerRadius="11" Padding="13,11">
+                    <Border Background="#FFFEF7" BorderBrush="#DCCCA9" BorderThickness="1,1,1,3" CornerRadius="13" Padding="15,13">
                         <StackPanel>
                             <DockPanel>
                                 <TextBlock Text="●" Foreground="#B76542" FontSize="9" Margin="0,2,7,0" DockPanel.Dock="Left">
                                     <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding IsUnread}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
                                 </TextBlock>
-                                <TextBlock Text="{Binding StatusLabel}" DockPanel.Dock="Right" FontSize="11" Foreground="#947250"/>
+                                <Border DockPanel.Dock="Right" Background="#E3EDDE" CornerRadius="7" Padding="7,3"><TextBlock Text="{Binding StatusLabel}" FontSize="10" Foreground="#587465"/></Border>
                                 <TextBlock Text="{Binding Source}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                             </DockPanel>
                             <TextBlock Text="{Binding TaskId, StringFormat='任务 · {0}'}" FontSize="10" Foreground="#8F897C" TextTrimming="CharacterEllipsis" ToolTip="{Binding TaskId}" Margin="0,6,0,0"/>
@@ -61,7 +62,11 @@
                     </Border>
                 </DataTemplate></ListBox.ItemTemplate>
             </ListBox>
-            <TextBlock x:Name="EmptyText" Text="还没有任务消息。&#10;只有来源明确发送的任务更新才会出现在这里。" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#9A8B74" FontSize="12" Margin="20"/>
+            <StackPanel x:Name="EmptyText" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20" IsHitTestVisible="False">
+                <Image Source="Assets/mascot-animated-neutral.png" Width="100" Height="96" Margin="0,0,0,10"/>
+                <TextBlock Text="收件员正在等下一封来信" TextAlignment="Center" Foreground="#607569" FontSize="16" FontWeight="SemiBold"/>
+                <TextBlock Text="只有来源明确发送的任务更新才会出现在这里。" TextWrapping="Wrap" TextAlignment="Center" Foreground="#8F8A76" FontSize="11" Margin="0,9,0,0"/>
+            </StackPanel>
         </Grid>
         <Border Grid.Row="3" Padding="20,10,20,14" Background="#F4ECDD">
             <TextBlock Text="仅保留在本次运行内存中，最多 64 项 / 24 小时。非终态 10 分钟未更新显示未知；Stop 只代表回复就绪。开关本次运行有效；清空保留有限去重标记，不保留正文。" FontSize="10" Foreground="#9A8B74" TextWrapping="Wrap"/>

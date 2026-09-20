@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="大头鹰 · AI 自动传话" Width="660" Height="710" MinWidth="460" MinHeight="440"
-        Background="#FFF9EF" Foreground="#493827" FontFamily="Microsoft YaHei UI"
+        Background="#FFF8EB" Foreground="#24364B" FontFamily="Microsoft YaHei UI"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False" KeyDown="Window_OnKeyDown">
     <Window.Resources>
         <ResourceDictionary>
@@ -13,14 +13,19 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <Border Background="#E8ECDD" Padding="24,20">
+        <Border Padding="24,20" MinHeight="136" BorderBrush="#D6C7AA" BorderThickness="0,0,0,1">
+            <Border.Background><ImageBrush ImageSource="Assets/Ui/club-post-v1.png" Stretch="UniformToFill" AlignmentX="Right" AlignmentY="Center"/></Border.Background>
             <StackPanel>
-                <TextBlock Text="AI 自动传话" FontSize="25" FontWeight="Bold"/>
-                <TextBlock Text="回复一结束，小鹰就来喊你。" Foreground="#79806A" Margin="0,6,0,0"/>
+                <TextBlock Text="EAGLE POST / 传话员上岗" FontSize="10" Foreground="#807349"/>
+                <TextBlock Text="AI 自动传话" FontSize="25" FontWeight="Bold" Margin="0,8,0,0"/>
+                <TextBlock Text="回复一结束，小鹰就来喊你。" Foreground="#687D73" FontSize="12" Margin="0,6,0,0"/>
             </StackPanel>
         </Border>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="24,18">
+                <Border Style="{StaticResource PetCard}" Background="#24364B" Padding="13,10" Margin="0,0,0,17">
+                    <UniformGrid Columns="3"><TextBlock Text="① 选客户端" Foreground="#FFE0A0" FontSize="11"/><TextBlock Text="② 核对路径" Foreground="#DAE6DD" FontSize="11"/><TextBlock Text="③ 一键接入" Foreground="#DAE6DD" FontSize="11"/></UniformGrid>
+                </Border>
                 <TextBlock Text="选择本机 AI 客户端" FontSize="13" FontWeight="Bold" Margin="0,0,0,8"/>
                 <ComboBox x:Name="ClientBox" Padding="10,8" FontSize="13" SelectionChanged="Client_OnChanged" AutomationProperties.Name="要配置的 AI 客户端">
                     <ComboBoxItem Content="Codex"/>
@@ -28,9 +33,9 @@
                     <ComboBoxItem Content="CodeBuddy Code"/>
                 </ComboBox>
                 <TextBlock x:Name="ClientDescriptionText" Foreground="#81755F" FontSize="11" Margin="0,8,0,14"/>
-                <Border Background="#FFFFFF" BorderBrush="#E6DCC9" BorderThickness="1" CornerRadius="12" Padding="14">
+                <Border Style="{StaticResource PetCard}" Background="#F1F4E9" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="一次配置，两条通路" FontSize="13" FontWeight="Bold"/>
+                        <TextBlock Text="小鹰的双线邮路" FontSize="14" FontWeight="Bold"/>
                         <TextBlock Text="MCP：让 AI 可以主动传话、查询小鹰状态。" FontSize="12" Margin="0,9,0,5"/>
                         <TextBlock Text="Stop Hook：客户端回复结束后自动提醒，不依赖 AI 记得调用工具。" FontSize="12"/>
                         <TextBlock Text="只传简短完成提醒，不读取聊天记录，也不配置模型、登录或 API Key。" FontSize="11" Foreground="#87846F" Margin="0,10,0,0"/>
@@ -61,7 +66,7 @@
         <Border Grid.Row="2" Background="#F2ECE0" BorderBrush="#E3D9C4" BorderThickness="0,1,0,0" Padding="20,13">
             <WrapPanel HorizontalAlignment="Right">
                 <Button x:Name="RemoveButton" Content="移除小鹰配置" Margin="0,0,8,0" Background="#F5EFE5" Click="Remove_OnClick"/>
-                <Button x:Name="InstallButton" Content="一键接入" Background="#DCE6CE" Click="Install_OnClick"/>
+                <Button x:Name="InstallButton" Content="一键接入 →" Style="{StaticResource PetPrimaryButton}" Click="Install_OnClick"/>
             </WrapPanel>
         </Border>
     </Grid>

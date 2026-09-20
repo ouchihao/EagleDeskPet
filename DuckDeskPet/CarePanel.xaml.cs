@@ -36,7 +36,7 @@ public partial class CarePanel : Window
             ? "钱包已满；满额期间不积压可补领工资。"
             : $"每有效工作分钟 +1 · 下枚还需 {Math.Ceiling(EconomyPolicy.WageIntervalSeconds - state.WageProgressSeconds):0} 秒工作";
         var honors = HonorCatalog.Evaluate(state);
-        AchievementsText.Text = $"已点亮 {honors.Count(x => x.IsEarned)} / {honors.Count} 枚 · 铜 / 银 / 金";
+        AchievementsText.Text = $"点亮 {honors.Count(x => x.IsEarned)} / {honors.Count} 枚";
         GitHubStatusText.Text = _pet.GitHub.IsConnected ? $"@{_pet.GitHub.Login} · {_pet.GitHub.UnreadCount} 条本地未读" : "可选连接，不需要 GitHub 密码。";
         FoodButton.IsEnabled = !_pet.InteractionsUnavailable;
         PetButton.IsEnabled = !_pet.InteractionsUnavailable;
@@ -54,6 +54,7 @@ public partial class CarePanel : Window
     }
     internal void SelectSource(string source)
     {
+        CareTabs.SelectedItem = MessagesTab;
         AiSettingsExpander.IsExpanded = true;
         SourceBox.Text = source;
     }
@@ -63,6 +64,10 @@ public partial class CarePanel : Window
     private void HonorWall_OnClick(object sender, RoutedEventArgs e) => _pet.OpenHonorWall();
     private void GitHub_OnClick(object sender, RoutedEventArgs e) => _pet.OpenGitHubWindow();
     private void ClientSetup_OnClick(object sender, RoutedEventArgs e) => _pet.OpenClientSetup();
+    private void Shop_OnClick(object sender, RoutedEventArgs e) => _pet.OpenShopWindow();
+    private async void Game_OnClick(object sender, RoutedEventArgs e) => await _pet.OpenGameAsync();
+    private void TaskInbox_OnClick(object sender, RoutedEventArgs e) => _pet.OpenTaskInbox();
+    private void Window_OnKeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Escape) { e.Handled = true; Close(); } }
     private void Food_OnDown(object sender, MouseButtonEventArgs e)
     {
         _foodStart = e.GetPosition(FoodButton);

@@ -1,106 +1,128 @@
 <Window x:Class="DuckDeskPet.CarePanel"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="大头鹰 · 饭搭子" Width="360" Height="640" ResizeMode="NoResize"
-        Background="#FFF9EF" FontFamily="Microsoft YaHei UI" Foreground="#423323"
-        WindowStartupLocation="CenterScreen" ShowInTaskbar="False">
+        Title="大头鹰 · 摸鱼俱乐部" Width="470" Height="690" MinWidth="400" MinHeight="510"
+        Background="#FFF8EB" FontFamily="Microsoft YaHei UI" Foreground="#24364B"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="False" PreviewKeyDown="Window_OnKeyDown">
     <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="#F4DEAC"/>
-            <Setter Property="Foreground" Value="#493322"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="14,9"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value><ControlTemplate TargetType="Button">
-                    <Border x:Name="Surface" Background="{TemplateBinding Background}" CornerRadius="10" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.82"/></Trigger>
-                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.45"/></Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate></Setter.Value>
-            </Setter>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Themes/PetTheme.xaml"/></ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource PetButton}"/>
+            <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+            <Style TargetType="TabItem" BasedOn="{StaticResource PetTabItem}"/>
+        </ResourceDictionary>
     </Window.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="22,18,22,20">
-        <Grid>
-            <StackPanel>
-                <TextBlock Text="你的电子饭搭子" FontSize="11" Foreground="#94754F"/>
-                <TextBlock Text="大头鹰" FontSize="27" FontWeight="Bold" Margin="0,4,0,3"/>
-                <TextBlock x:Name="LevelText" Text="Lv.1  ·  初来乍到" FontSize="12"/>
-            </StackPanel>
-            <Image Source="Assets/mascot-animated-neutral.png" Width="92" Height="94" HorizontalAlignment="Right"/>
-        </Grid>
-        <Border Background="#FFFFFF" CornerRadius="14" Padding="14" Margin="0,15,0,12">
-            <StackPanel>
-                <DockPanel><TextBlock Text="饱食度"/><TextBlock x:Name="FullnessText" HorizontalAlignment="Right"/></DockPanel>
-                <ProgressBar x:Name="FullnessBar" Height="6" Maximum="100" Margin="0,6,0,12" Foreground="#D7A04E" Background="#F5EDDD" BorderThickness="0"/>
-                <DockPanel><TextBlock Text="心情"/><TextBlock x:Name="MoodText" HorizontalAlignment="Right"/></DockPanel>
-                <ProgressBar x:Name="MoodBar" Height="6" Maximum="100" Margin="0,6,0,4" Foreground="#8CAE9E" Background="#EEF3EE" BorderThickness="0"/>
-            </StackPanel>
-        </Border>
-        <Grid Margin="0,0,0,10">
-            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
-            <Button x:Name="FoodButton" Grid.Column="0" Click="Feed_OnClick" PreviewMouseLeftButtonDown="Food_OnDown" PreviewMouseMove="Food_OnMove">
-                <StackPanel><TextBlock Text="🍚  开饭" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock x:Name="FoodText" FontSize="11" Margin="0,4,0,0" HorizontalAlignment="Center"/></StackPanel>
-            </Button>
-            <Button x:Name="PetButton" Grid.Column="2" Background="#E6EDE3" Click="Pet_OnClick">
-                <StackPanel><TextBlock Text="摸摸头" FontSize="16" FontWeight="Bold"/><TextBlock Text="手法要温柔" FontSize="11" Margin="0,4,0,0"/></StackPanel>
-            </Button>
-        </Grid>
-        <TextBlock Text="点开饭，或把饭拖到桌面上的小鹰身上。" FontSize="11" Foreground="#8D7961"/>
-        <TextBlock x:Name="IncomeText" FontSize="11" Foreground="#8D7961" Margin="0,5,0,12"/>
-        <TextBlock x:Name="StatusText" MinHeight="38" TextWrapping="Wrap" FontSize="12" Foreground="#846648"/>
-        <Border Background="#F5E8CB" CornerRadius="12" Padding="12" Margin="0,0,0,10">
-            <StackPanel>
-                <TextBlock x:Name="WalletText" FontSize="18" FontWeight="Bold"/>
-                <TextBlock x:Name="WageText" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
-                <TextBlock x:Name="RunWageText" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
-                <TextBlock Text="鹰币只用于本地商店，无真实货币价值；旧档不补发历史工资。" FontSize="10" TextWrapping="Wrap" Foreground="#846648" Margin="0,5,0,0"/>
-            </StackPanel>
-        </Border>
-        <Border Background="#ECE9E1" CornerRadius="12" Padding="12" Margin="0,0,0,12">
-            <StackPanel>
-                <DockPanel>
-                    <Button x:Name="WorkButton" DockPanel.Dock="Right" Content="开始工作" Padding="11,7" Background="#D9DFC9" Click="Work_OnClick"/>
-                    <TextBlock x:Name="WorkText" Text="工位空着" VerticalAlignment="Center" FontSize="12" TextWrapping="Wrap" Margin="0,0,8,0"/>
-                </DockPanel>
-                <TextBlock Text="每有效工作分钟 +1 经验、+1 鹰币；每小时饱食 −12、心情 −10。30 分钟进入忙碌中，饿到 0 自动收工；隐藏 / 锁屏仍计时，离线最多 2 小时。" FontSize="10" TextWrapping="Wrap" Foreground="#8D7961" Margin="0,7,0,0"/>
-            </StackPanel>
-        </Border>
-        <CheckBox x:Name="BanterCheck" Content="主动职场骚话 · 每分钟随机一句" Click="Banter_OnClick" Foreground="#806F58" FontSize="11" Margin="0,0,0,8"/>
-        <Button x:Name="HonorWallButton" Click="HonorWall_OnClick" Background="#EFE5D4" Padding="12,10" Margin="0,6,0,8" HorizontalContentAlignment="Stretch">
-            <Grid Width="258">
-                <StackPanel Margin="0,0,18,0"><TextBlock Text="荣誉展览馆" FontSize="13" FontWeight="Bold"/><TextBlock x:Name="AchievementsText" TextWrapping="Wrap" FontSize="11" Foreground="#806F58" Margin="0,5,0,0"/></StackPanel>
-                <TextBlock Text="›" FontSize="22" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#9C7745"/>
+    <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="148"/><RowDefinition/><RowDefinition Height="30"/></Grid.RowDefinitions>
+        <Border Background="#24364B" Padding="23,17" ClipToBounds="True">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="126"/></Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="E A G L E  C L U B  /  会员工牌" FontSize="10" Foreground="#DABB80"/>
+                    <TextBlock Text="你的电子饭搭子" FontSize="25" FontWeight="Bold" Foreground="#FFF8EB" Margin="0,10,0,4"/>
+                    <TextBlock x:Name="LevelText" Text="Lv.1 · 初来乍到" FontSize="12" Foreground="#DDE5DF"/>
+                    <Border Background="#334A60" CornerRadius="9" Padding="9,4" Margin="0,10,0,0" HorizontalAlignment="Left">
+                        <TextBlock Text="上班搭子，也是摸鱼同伙。" FontSize="10" Foreground="#E5C992"/>
+                    </Border>
+                </StackPanel>
+                <Grid Grid.Column="1">
+                    <Ellipse Fill="#E2B45F" Width="105" Height="105"/>
+                    <Ellipse Stroke="#FFF0BD" StrokeThickness="1" Width="117" Height="117" StrokeDashArray="2,4"/>
+                    <Image Source="Assets/mascot-animated-neutral.png" Width="124" Height="124" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Grid>
             </Grid>
-        </Button>
-        <Button Click="GitHub_OnClick" Background="#E6EBDC" Padding="12,9" HorizontalContentAlignment="Left">
-            <StackPanel><TextBlock Text="GitHub 消息" FontSize="13" FontWeight="Bold"/><TextBlock x:Name="GitHubStatusText" Text="连接后，由小鹰替你盯 PR。" FontSize="11" Foreground="#778062" Margin="0,4,0,0"/></StackPanel>
-        </Button>
-        <Separator Margin="0,15,0,12" Background="#E4D9C5"/>
-        <Expander x:Name="AiSettingsExpander" Header="AI 传话与返回应用" Foreground="#806F58" FontSize="12">
-        <StackPanel Margin="0,10,0,0">
-        <Button x:Name="ClientSetupButton" Content="一键接入 AI · MCP + 自动提醒" Background="#DDE6D1" Click="ClientSetup_OnClick" Margin="0,0,0,12"/>
-        <DockPanel>
-            <TextBlock Text="AI 传话" FontSize="13" FontWeight="Bold"/>
-            <CheckBox x:Name="NotificationsCheck" Content="接收提醒" HorizontalAlignment="Right" Click="Notifications_OnClick"/>
-        </DockPanel>
-        <TextBlock Text="来源名须与 MCP 的 --source 一致。返回应用只在本机配置。" TextWrapping="Wrap" FontSize="10" Foreground="#8D7961" Margin="0,6,0,8"/>
-        <Grid>
-            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <ComboBox x:Name="SourceBox" IsEditable="True" Text="Codex" VerticalContentAlignment="Center" Padding="7" MaxDropDownHeight="120">
-                <ComboBoxItem Content="Codex"/><ComboBoxItem Content="Claude Code"/><ComboBoxItem Content="CodeBuddy Code"/><ComboBoxItem Content="Gemini CLI"/>
-            </ComboBox>
-            <Button Grid.Column="2" Content="选择应用…" Padding="10,7" Click="ChooseApp_OnClick"/>
-        </Grid>
-        <TextBlock x:Name="AppPathText" TextWrapping="Wrap" FontSize="10" Foreground="#8D7961" Margin="0,7,0,7"/>
-        <Button Content="试一下通知气泡" Padding="12,7" Background="#EAE5DC" Click="TestNotification_OnClick"/>
-        </StackPanel>
-        </Expander>
-    </StackPanel>
-    </ScrollViewer>
+        </Border>
+        <TabControl x:Name="CareTabs" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0" Margin="12,8,12,0">
+            <TabItem Header="日常陪伴">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="7,13,7,8">
+                        <Border Style="{StaticResource PetCard}" Padding="16,13">
+                            <StackPanel>
+                                <DockPanel><TextBlock x:Name="FullnessText" DockPanel.Dock="Right" Foreground="#A26B24"/><TextBlock Text="饭吃饱了，才有力气可爱" FontSize="12"/></DockPanel>
+                                <ProgressBar x:Name="FullnessBar" Height="7" Maximum="100" Margin="0,8,0,14" Foreground="#E5B45D" Background="#F4ECD9" BorderThickness="0"/>
+                                <DockPanel><TextBlock x:Name="MoodText" DockPanel.Dock="Right" Foreground="#527B6E"/><TextBlock Text="今日心情" FontSize="12"/></DockPanel>
+                                <ProgressBar x:Name="MoodBar" Height="7" Maximum="100" Margin="0,8,0,2" Foreground="#8CAF9C" Background="#EAF0E8" BorderThickness="0"/>
+                            </StackPanel>
+                        </Border>
+                        <Grid Margin="0,12,0,7">
+                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="10"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <Button x:Name="FoodButton" Background="#F1CB7B" Click="Feed_OnClick" PreviewMouseLeftButtonDown="Food_OnDown" PreviewMouseMove="Food_OnMove" Padding="10,8">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="55"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Image Source="Assets/Animations/Eat/frame-0060.png" Width="55" Height="58"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="开饭啦" FontSize="16" FontWeight="Bold"/><TextBlock x:Name="FoodText" FontSize="10" Margin="0,4,0,0"/></StackPanel>
+                                </Grid>
+                            </Button>
+                            <Button x:Name="PetButton" Grid.Column="2" Background="#DEEBDF" Click="Pet_OnClick" Padding="10,8">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="55"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Image Source="Assets/Animations/Shy/frame-0060.png" Width="55" Height="58"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="摸摸头" FontSize="16" FontWeight="Bold"/><TextBlock Text="手法要温柔" FontSize="10" Margin="0,4,0,0"/></StackPanel>
+                                </Grid>
+                            </Button>
+                        </Grid>
+                        <TextBlock Text="也可以把饭拖到小鹰身上。" FontSize="10" Foreground="#758080"/>
+                        <TextBlock x:Name="IncomeText" FontSize="10" Foreground="#758080" Margin="0,4,0,10"/>
+                        <Border Background="#F3ECD9" CornerRadius="10" Padding="12,9" Margin="0,0,0,10">
+                            <TextBlock x:Name="StatusText" FontSize="12" Foreground="#6E624C" AutomationProperties.LiveSetting="Polite"/>
+                        </Border>
+                        <UniformGrid Columns="3" Margin="-3,0">
+                            <Button Click="Shop_OnClick" Margin="3,0" Background="#FFFDF6" Padding="8,12"><StackPanel><TextBlock Text="小卖部" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="把工资变可爱" FontSize="10" Foreground="#7C877E" Margin="0,5,0,0"/></StackPanel></Button>
+                            <Button Click="Game_OnClick" Margin="3,0" Background="#FFFDF6" Padding="8,12"><StackPanel><TextBlock Text="猜拳局" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="来，鹰你一把" FontSize="10" Foreground="#7C877E" Margin="0,5,0,0"/></StackPanel></Button>
+                            <Button x:Name="HonorWallButton" Click="HonorWall_OnClick" Margin="3,0" Background="#FFFDF6" Padding="8,12"><StackPanel><TextBlock Text="荣誉室" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock x:Name="AchievementsText" FontSize="10" Foreground="#7C877E" Margin="0,5,0,0" TextAlignment="Center"/></StackPanel></Button>
+                        </UniformGrid>
+                        <CheckBox x:Name="BanterCheck" Content="听它碎碎念 · 每分钟最多一句" Click="Banter_OnClick" FontSize="11" Foreground="#768276" Margin="1,14,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="工位与钱包">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="7,13,7,8">
+                        <Border Style="{StaticResource PetCard}" Background="#F5DFAB" Padding="19">
+                            <StackPanel>
+                                <DockPanel><TextBlock Text="小鹰的工资袋" FontSize="11" Foreground="#847048"/><TextBlock Text="EAGLE COINS" FontSize="9" HorizontalAlignment="Right" Foreground="#847048"/></DockPanel>
+                                <TextBlock x:Name="WalletText" FontSize="31" FontWeight="Bold" Margin="0,10,0,6"/>
+                                <TextBlock x:Name="WageText" FontSize="11" Foreground="#736448"/>
+                                <TextBlock x:Name="RunWageText" FontSize="10" Foreground="#736448" Margin="0,6,0,0"/>
+                                <Button Content="去小卖部犒劳自己 →" Style="{StaticResource PetPrimaryButton}" HorizontalAlignment="Left" Click="Shop_OnClick" Margin="0,15,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource PetCard}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="工位值班表" Style="{StaticResource PetSectionTitle}"/>
+                                <TextBlock x:Name="WorkText" Text="工位空着" Margin="0,9,0,12" FontSize="12" Foreground="#6B7975"/>
+                                <Button x:Name="WorkButton" Content="开始工作" Background="#DDEBDE" HorizontalAlignment="Left" Click="Work_OnClick"/>
+                                <TextBlock Text="每分钟 +1 经验、+1 鹰币；30 分钟后进入忙碌。饿到 0 自动收工，也可随时取消工作。" FontSize="10" Foreground="#7D8174" Margin="0,12,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="隐藏 / 锁屏仍计时，离线最多补算 2 小时。每小时工作消耗 12 饱食、10 心情。鹰币仅为本地游戏币，无充值；旧档不追发工资。" FontSize="10" Foreground="#8A8575" Margin="3,13,3,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem x:Name="MessagesTab" Header="消息与设置">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="7,13,7,12">
+                        <Border Style="{StaticResource PetCard}" Background="#E6EEE3">
+                            <StackPanel><TextBlock Text="小鹰邮局" FontSize="19" FontWeight="Bold"/><TextBlock Text="消息我叼来，回复你安排。" Foreground="#788675" FontSize="11" Margin="0,5,0,12"/>
+                                <Button Click="GitHub_OnClick" Background="#FFFEF8" HorizontalContentAlignment="Stretch" Padding="12"><StackPanel><TextBlock Text="GitHub 收件箱 ↗" FontWeight="SemiBold"/><TextBlock x:Name="GitHubStatusText" FontSize="10" Foreground="#738074" Margin="0,5,0,0"/></StackPanel></Button>
+                                <Button Content="AI 任务小信使 →" Click="TaskInbox_OnClick" Margin="0,8,0,0" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Border>
+                        <Expander x:Name="AiSettingsExpander" Header="AI 传话与返回应用" IsExpanded="True" FontSize="12" Margin="2,18,2,0">
+                            <StackPanel Margin="0,12,0,0">
+                                <Button x:Name="ClientSetupButton" Content="一键接入 AI · MCP + 自动提醒" Style="{StaticResource PetPrimaryButton}" Click="ClientSetup_OnClick" Margin="0,0,0,14"/>
+                                <CheckBox x:Name="NotificationsCheck" Content="接收 AI 提醒" Click="Notifications_OnClick" FontSize="12"/>
+                                <TextBlock Text="来源名须与 MCP 的 --source 一致。返回应用只在本机配置。" FontSize="10" Foreground="#7D8477" Margin="0,9,0,10"/>
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="SourceBox" IsEditable="True" Text="Codex" VerticalContentAlignment="Center" Padding="7" MaxDropDownHeight="120"><ComboBoxItem Content="Codex"/><ComboBoxItem Content="Claude Code"/><ComboBoxItem Content="CodeBuddy Code"/><ComboBoxItem Content="Gemini CLI"/></ComboBox>
+                                    <Button Grid.Column="2" Content="选择应用…" Click="ChooseApp_OnClick" Padding="10,7"/>
+                                </Grid>
+                                <TextBlock x:Name="AppPathText" FontSize="10" Foreground="#7D8477" Margin="0,8,0,8"/>
+                                <Button Content="试一下通知气泡" HorizontalAlignment="Left" Click="TestNotification_OnClick"/>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        <Border Grid.Row="2" Background="#EFE6D3"><TextBlock Text="饭要按时吃，班要准点下。" FontSize="10" Foreground="#8D8067" VerticalAlignment="Center" HorizontalAlignment="Center"/></Border>
+    </Grid>
 </Window>
