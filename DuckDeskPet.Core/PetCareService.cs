@@ -13,6 +13,7 @@ public enum PetCareStatus
     AlreadyWorking,
     NotWorking,
     TooHungryToWork,
+    Initializing,
 }
 
 public readonly record struct PetCareResult(PetCareStatus Status, string Message)
@@ -33,7 +34,7 @@ public sealed class PetCareService
     public const double FullnessLossPerHour = 4.0;
     public const double PetCooldownSeconds = 10.0;
     public const double FeedCooldownSeconds = 2.0;
-    public const int MaximumExperience = 99_900;
+    public const int MaximumExperience = GrowthPolicy.MaximumExperience;
     public const double BusyAfterSeconds = 1800.0;
     public const double WorkFullnessLossPerHour = 12.0;
     public const double WorkMoodLossPerHour = 10.0;
@@ -42,15 +43,68 @@ public sealed class PetCareService
     private static readonly HashSet<string> KnownAchievements =
         new(HonorCatalog.Definitions.Select(x => x.Id), StringComparer.Ordinal);
 
-    public PetCareService(PetState? saved, DateTimeOffset now)
+    private Dictionary<ContentSlot, string> _effectiveEquipment;
+    public bool IsCatchUpPending { get; private set; }
+
+    public PetCareService(PetState? saved, DateTimeOffset now,
+        Func<ContentDefinition, bool>? isEquipmentAvailable = null, bool deferInitialAdvance = false)
     {
         State = Normalize(saved, now.ToUniversalTime());
-        Advance(now);
+        // The host probes installed resources before offline settlement. A saved
+        // request whose resources fell back must not retain its better statistics.
+        isEquipmentAvailable ??= _ => true;
+        _effectiveEquipment = Enum.GetValues<ContentSlot>().ToDictionary(slot => slot,
+            slot => ContentOwnershipService.ResolveEquipped(State.Content, slot, isEquipmentAvailable).EffectiveId
+                ?? ContentCatalog.DefaultForSlot(slot));
+        IsCatchUpPending = deferInitialAdvance;
+        if (!IsCatchUpPending) Advance(now);
     }
 
     public PetState State { get; }
     /// <summary>Actual wages credited during this app run, including eligible startup catch-up; purchases do not reduce it.</summary>
-    public long EarnedCoinsThisRun { get; private set; }
+    public decimal EarnedCoinsThisRun { get; private set; }
+    public EquipmentBonuses CurrentBonuses => IsCatchUpPending ? EquipmentBonuses.None
+        : EquipmentPolicy.Resolve(State.Content, _effectiveEquipment);
+    public decimal MoneyPerWorkMinute => EconomyPolicy.CoinsPerWorkMinute * (1m + CurrentBonuses.WorkCoinBonus);
+    public decimal WorkExperiencePerMinute => 1m + CurrentBonuses.WorkExperienceBonus;
+
+    /// <summary>
+    /// Called only after the host has actually applied an owned outfit/prop (or
+    /// fallback), never for a shop preview or pending selection. Settle the prior
+    /// interval before changing rates, even when the change occurs mid-minute.
+    /// </summary>
+    public void SetEffectiveEquipment(DateTimeOffset now, IReadOnlyDictionary<ContentSlot, string> equipment)
+    {
+        ArgumentNullException.ThrowIfNull(equipment);
+        if (IsCatchUpPending) throw new InvalidOperationException("BeginCatchUp must confirm initial equipment before changing it.");
+        Advance(now);
+        SetEquipmentSnapshot(equipment);
+    }
+
+    /// <summary>
+    /// Complete deferred startup once installed resources and the actual renderer
+    /// selection are known. Loading-time timer ticks cannot consume the old saved
+    /// interval at default rates. Repeated completion cannot replay the catch-up.
+    /// </summary>
+    public bool BeginCatchUp(DateTimeOffset now, IReadOnlyDictionary<ContentSlot, string> actualEffectiveEquipment)
+    {
+        ArgumentNullException.ThrowIfNull(actualEffectiveEquipment);
+        if (!IsCatchUpPending) return false;
+        SetEquipmentSnapshot(actualEffectiveEquipment);
+        IsCatchUpPending = false;
+        Advance(now);
+        return true;
+    }
+
+    private void SetEquipmentSnapshot(IReadOnlyDictionary<ContentSlot, string> equipment)
+    {
+        _effectiveEquipment = Enum.GetValues<ContentSlot>().ToDictionary(slot => slot,
+            slot => equipment.TryGetValue(slot, out string? id) && ContentCatalog.TryGet(id, out var item) &&
+                item!.Slot == slot && ContentOwnershipService.Owns(State.Content, id)
+                ? id : ContentCatalog.DefaultForSlot(slot));
+    }
+
+    private static PetCareResult InitializingResult => new(PetCareStatus.Initializing, "装备还在就位，马上就好。");
 
     /// <summary>
     /// Returns whether game progress or its saved timestamp changed. A backwards
@@ -58,6 +112,7 @@ public sealed class PetCareService
     /// </summary>
     public bool Advance(DateTimeOffset now)
     {
+        if (IsCatchUpPending) return false;
         now = now.ToUniversalTime();
         if (now <= State.LastUpdatedUtc)
         {
@@ -67,29 +122,34 @@ public sealed class PetCareService
         DateTimeOffset previousUpdate = State.LastUpdatedUtc;
         double seconds = Math.Min((now - previousUpdate).TotalSeconds, MaximumCatchUpSeconds);
         State.LastUpdatedUtc = now;
+        var bonuses = CurrentBonuses;
+        double fullnessMultiplier = (double)(1m - bonuses.FullnessDecayReduction);
+        double moodMultiplier = (double)(1m - bonuses.MoodDecayReduction);
         double workSeconds = State.IsWorking
-            ? Math.Min(seconds, State.Fullness * 3600.0 / WorkFullnessLossPerHour)
+            ? Math.Min(seconds, State.Fullness * 3600.0 / (WorkFullnessLossPerHour * fullnessMultiplier))
             : 0.0;
         double idleSeconds = seconds - workSeconds;
         State.Fullness = Math.Max(0.0, State.Fullness -
-            (workSeconds * WorkFullnessLossPerHour + idleSeconds * FullnessLossPerHour) / 3600.0);
+            (workSeconds * WorkFullnessLossPerHour + idleSeconds * FullnessLossPerHour) * fullnessMultiplier / 3600.0);
         State.Mood = Math.Max(0.0, State.Mood -
-            (workSeconds * WorkMoodLossPerHour + idleSeconds) / 3600.0);
+            (workSeconds * WorkMoodLossPerHour + idleSeconds) * moodMultiplier / 3600.0);
         if (workSeconds > 0.0)
         {
             State.WorkSessionSeconds = Math.Min(1e12, State.WorkSessionSeconds + workSeconds);
             State.TotalWorkSeconds = Math.Min(1e12, State.TotalWorkSeconds + workSeconds);
-            double accumulatedWork = State.WorkExperienceProgressSeconds + workSeconds;
-            int workExperience = (int)Math.Floor((accumulatedWork + 1e-7) / WorkExperienceIntervalSeconds);
-            State.WorkExperienceProgressSeconds = Math.Max(0.0,
-                accumulatedWork - workExperience * WorkExperienceIntervalSeconds);
+            decimal accumulatedWork = State.WorkExperienceRemainderUnits +
+                EconomyPolicy.ExactSeconds(workSeconds) * (1m + bonuses.WorkExperienceBonus);
+            int workExperience = (int)decimal.Floor(accumulatedWork / 60m);
+            State.WorkExperienceRemainderUnits = accumulatedWork - workExperience * 60m;
+            State.WorkExperienceProgressSeconds = (double)State.WorkExperienceRemainderUnits;
             AddExperience(workExperience);
             // The effective work interval starts at the prior simulation timestamp.
             // Keeping a separate wage high-water mark prevents clock rollback plus
             // a restart from paying that same wall-clock interval again. A v1
             // migration starts this mark at 'now', so old catch-up earns no wages.
             double unpaidPrefix = Math.Max(0, (State.WageLastUpdatedUtc - previousUpdate).TotalSeconds);
-            EarnedCoinsThisRun += EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix));
+            EarnedCoinsThisRun += EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix),
+                1m + bonuses.WorkCoinBonus);
         }
         if (now > State.WageLastUpdatedUtc) State.WageLastUpdatedUtc = now;
 
@@ -121,6 +181,7 @@ public sealed class PetCareService
 
     public PetCareResult Feed(DateTimeOffset now)
     {
+        if (IsCatchUpPending) return InitializingResult;
         Advance(now);
         if (State.IsWorking)
         {
@@ -154,6 +215,7 @@ public sealed class PetCareService
 
     public PetCareResult Pet(DateTimeOffset now)
     {
+        if (IsCatchUpPending) return InitializingResult;
         Advance(now);
         if (State.IsWorking)
         {
@@ -179,6 +241,7 @@ public sealed class PetCareService
 
     public PetCareResult StartWork(DateTimeOffset now)
     {
+        if (IsCatchUpPending) return InitializingResult;
         Advance(now);
         if (State.IsWorking)
         {
@@ -197,6 +260,7 @@ public sealed class PetCareService
 
     public PetCareResult StopWork(DateTimeOffset now)
     {
+        if (IsCatchUpPending) return InitializingResult;
         Advance(now);
         if (!State.IsWorking)
         {
@@ -239,7 +303,7 @@ public sealed class PetCareService
             return new PetState { LastUpdatedUtc = now, WageLastUpdatedUtc = now };
         }
 
-        if (saved.Version is not 1 && saved.Version != PetState.CurrentVersion)
+        if (saved.Version is not 1 and not 2 && saved.Version != PetState.CurrentVersion)
         {
             throw new NotSupportedException($"Unsupported pet save version: {saved.Version}.");
         }
@@ -249,6 +313,7 @@ public sealed class PetCareService
         // awarding anything. Within a process Advance retains a UTC high-water mark.
         bool futureSave = lastUpdated > now;
         bool migrating = saved.Version == 1;
+        bool legacyPrecision = saved.Version < 3;
         EconomyPolicy.ValidateWalletLedger(saved);
         double totalWorkSeconds = FiniteClamp(saved.TotalWorkSeconds, 0.0, 1e12, 0.0);
         var state = new PetState
@@ -256,7 +321,8 @@ public sealed class PetCareService
             Fullness = FiniteClamp(saved.Fullness, 0.0, 100.0, 75.0),
             Mood = FiniteClamp(saved.Mood, 0.0, 100.0, 70.0),
             Food = Math.Clamp(saved.Food, 0, MaximumFood),
-            Experience = Math.Clamp(saved.Experience, 0, MaximumExperience),
+            Experience = legacyPrecision ? GrowthPolicy.MigrateLegacyExperience(saved.Experience)
+                : Math.Clamp(saved.Experience, 0, MaximumExperience),
             FoodProgressSeconds = FiniteClamp(saved.FoodProgressSeconds, 0.0, FoodIntervalSeconds - 0.001, 0.0),
             LastUpdatedUtc = futureSave ? now : lastUpdated,
             LastFedUtc = NormalizeInteraction(saved.LastFedUtc, futureSave, now),
@@ -271,9 +337,16 @@ public sealed class PetCareService
             WorkExperienceProgressSeconds = FiniteClamp(saved.WorkExperienceProgressSeconds,
                 0.0, WorkExperienceIntervalSeconds - 0.001, 0.0),
             TotalWorkSeconds = totalWorkSeconds,
-            Coins = migrating ? 0 : Math.Clamp(saved.Coins, 0, EconomyPolicy.MaximumCoins),
-            WageProgressSeconds = migrating ? 0 : FiniteClamp(saved.WageProgressSeconds,
-                0, EconomyPolicy.WageIntervalSeconds - 0.0000001, 0),
+            Coins = migrating ? 0 : decimal.Truncate(Math.Clamp(saved.Coins, 0, EconomyPolicy.MaximumCoins) * 100m) / 100m,
+            // Preserve previously earned fractional work at its OLD base rate.
+            // It is not multiplied by newly equipped gear or reconstructed from
+            // lifetime work. The next eligible settlement converts it to cents.
+            WageRemainderUnits = migrating ? 0 : legacyPrecision
+                ? EconomyPolicy.ExactSeconds(FiniteClamp(saved.WageProgressSeconds, 0, 59.9999999, 0))
+                : Math.Clamp(saved.WageRemainderUnits, 0, 59.9999999m),
+            WorkExperienceRemainderUnits = legacyPrecision
+                ? EconomyPolicy.ExactSeconds(FiniteClamp(saved.WorkExperienceProgressSeconds, 0, 59.9999999, 0))
+                : Math.Clamp(saved.WorkExperienceRemainderUnits, 0, 59.9999999m),
             WageSettledWorkSeconds = migrating ? totalWorkSeconds :
                 FiniteClamp(saved.WageSettledWorkSeconds, 0, 1e12, totalWorkSeconds),
             WageLastUpdatedUtc = migrating ? now :
@@ -283,6 +356,8 @@ public sealed class PetCareService
             Content = ContentOwnershipService.Normalize(saved.Content),
             Achievements = (saved.Achievements ?? new()).Where(KnownAchievements.Contains).Distinct(StringComparer.Ordinal).ToList(),
         };
+        state.WageProgressSeconds = (double)state.WageRemainderUnits;
+        state.WorkExperienceProgressSeconds = (double)state.WorkExperienceRemainderUnits;
         ContentOwnershipService.GrantEligibleRewards(state.Content, state);
         HonorCatalog.RecordEarned(state);
         return state;

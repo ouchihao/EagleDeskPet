@@ -22,12 +22,12 @@ internal static class Program
         Directory.CreateDirectory(root);
         var cases = new (string Name, Action Test)[]
         {
-            ("stable-twelve-entry-catalog", Catalog),
+            ("stable-twenty-one-entry-catalog", Catalog),
             ("three-free-defaults-forever-owned", Defaults),
             ("resource-links-match-content-types", Links),
             ("no-content-is-automatically-played", ManualActions),
             ("reward-conditions-reference-honor-thresholds", RewardContract),
-            ("meal-reward-at-ten-not-nine", MealReward),
+            ("meal-reward-at-thirty-not-twenty-nine", MealReward),
             ("growth-reward-at-level-two", GrowthReward),
             ("legacy-growth-honor-still-grants", LegacyGrowth),
             ("reward-grants-are-idempotent", RepeatReward),
@@ -60,6 +60,8 @@ internal static class Program
             ("normalize-null-and-malformed-selections", Normalize),
             ("normalization-preserves-valid-unknown-owned-ids", NormalizeUnknown),
             ("ownership-cap-does-not-drop-old-content", Capacity),
+            ("v2-full-collection-survives-expanded-catalog", LegacyFullCollection),
+            ("expanded-shop-reserves-space-for-old-free-reward", ReservedRewardSlot),
             ("reward-cap-failure-has-no-partial-grant", RewardCapacity),
             ("purchase-id-stable-and-bounded", TransactionIds),
             ("pet-state-content-deep-copy", StateSnapshot),
@@ -73,7 +75,7 @@ internal static class Program
             ("future-owned-choice-survives-disk", UnknownDisk),
             ("invalid-content-save-retains-original", InvalidContentSave),
             ("pending-equipment-survives-restart", PendingDisk),
-            ("feeding-tenth-meal-grants-in-core", CoreMealReward),
+            ("feeding-thirtieth-meal-grants-in-core", CoreMealReward),
             ("petting-level-two-grants-in-core", CoreLevelReward),
             ("offline-level-up-grants-in-core", CoreOfflineReward),
         };
@@ -92,20 +94,20 @@ internal static class Program
         return failed == 0 ? 0 : 1;
     }
 
-    private static PetState Progress(int meals = 0, int experience = 0) => new() { TotalMeals = meals, Experience = experience, Coins = 100 };
+    private static PetState Progress(int meals = 0, int experience = 0) => new() { TotalMeals = meals, Experience = experience, Coins = 1000 };
     private static ContentOwnershipState Owned(string id)
     {
         var state = new ContentOwnershipState(); state.OwnedContentIds.Add(id); return state;
     }
     private static void Catalog()
     {
-        Equal(12, ContentCatalog.Definitions.Count); Equal(12, ContentCatalog.Definitions.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count());
-        Equal(4, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Desk));
-        Equal(4, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Computer));
-        Equal(3, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Outfit));
-        Equal(45, ContentCatalog.Get(ContentCatalog.HoodieOutfitId).Price);
-        Equal(20, ContentCatalog.Get("desk.mint").Price); Equal(30, ContentCatalog.Get("computer.midnight").Price);
-        Equal(15, ContentCatalog.Get("action.tea").Price); Equal(40, ContentCatalog.Get("outfit.office").Price);
+        Equal(21, ContentCatalog.Definitions.Count); Equal(21, ContentCatalog.Definitions.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count());
+        Equal(7, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Desk));
+        Equal(7, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Computer));
+        Equal(6, ContentCatalog.Definitions.Count(x => x.Type == ContentType.Outfit));
+        Equal(600m, ContentCatalog.Get(ContentCatalog.HoodieOutfitId).Price);
+        Equal(150m, ContentCatalog.Get("desk.mint").Price); Equal(240m, ContentCatalog.Get("computer.midnight").Price);
+        Equal(120m, ContentCatalog.Get("action.tea").Price); Equal(10000m, ContentCatalog.Get("outfit.office").Price);
         foreach (var entry in ContentCatalog.Definitions) Check(entry.Price >= 0 && entry.Price <= EconomyPolicy.MaximumCoins);
     }
     private static void Defaults()
@@ -137,13 +139,13 @@ internal static class Program
     {
         foreach (var entry in ContentCatalog.Definitions.Where(x => x.Reward is not null))
             Equal(1, HonorCatalog.Definitions.Count(x => x.Id == entry.Reward!.HonorId));
-        Equal(10, HonorCatalog.Definitions.Single(x => x.Id == ContentCatalog.Get("desk.mint").Reward!.HonorId).Target);
+        Equal(30, HonorCatalog.Definitions.Single(x => x.Id == ContentCatalog.Get("desk.mint").Reward!.HonorId).Target);
         Equal(2, HonorCatalog.Definitions.Single(x => x.Id == ContentCatalog.Get("action.tea").Reward!.HonorId).Target);
     }
     private static void MealReward()
     {
-        var c = new ContentOwnershipState(); Equal(0, ContentOwnershipService.GrantEligibleRewards(c, Progress(9)).Count);
-        Check(ContentOwnershipService.GrantEligibleRewards(c, Progress(10)).SequenceEqual(new[] { "desk.mint" }));
+        var c = new ContentOwnershipState(); Equal(0, ContentOwnershipService.GrantEligibleRewards(c, Progress(29)).Count);
+        Check(ContentOwnershipService.GrantEligibleRewards(c, Progress(30)).SequenceEqual(new[] { "desk.mint" }));
     }
     private static void GrowthReward()
     {
@@ -157,20 +159,20 @@ internal static class Program
     }
     private static void RepeatReward()
     {
-        var c = new ContentOwnershipState(); var p = Progress(10, 100);
+        var c = new ContentOwnershipState(); var p = Progress(30, 100);
         Equal(2, ContentOwnershipService.GrantEligibleRewards(c, p).Count); Equal(0, ContentOwnershipService.GrantEligibleRewards(c, p).Count); Equal(5, c.OwnedContentIds.Count);
-        Equal(100, p.Coins); Equal(0, p.AppliedWalletDebits.Count);
+        Equal(1000m, p.Coins); Equal(0, p.AppliedWalletDebits.Count);
     }
     private static void RewardWithoutArt()
     {
-        var c = new ContentOwnershipState(); ContentOwnershipService.GrantEligibleRewards(c, Progress(10));
+        var c = new ContentOwnershipState(); ContentOwnershipService.GrantEligibleRewards(c, Progress(30));
         Check(c.OwnedContentIds.Contains("desk.mint")); Equal(ContentOperationStatus.Unavailable, ContentOwnershipService.RequestEquip(c, "desk.mint", false, OnlyDefaults).Status);
     }
     private static void Quote()
     {
         var c = new ContentOwnershipState(); var p = Progress(); string before = JsonSerializer.Serialize(c);
-        var result = ContentOwnershipService.QuotePurchase(c, "desk.mint", p, Available); Check(result.CanPurchase); Equal(20, result.Definition!.Price);
-        Equal(before, JsonSerializer.Serialize(c)); Equal(100, p.Coins);
+        var result = ContentOwnershipService.QuotePurchase(c, "desk.mint", p, Available); Check(result.CanPurchase); Equal(150m, result.Definition!.Price);
+        Equal(before, JsonSerializer.Serialize(c)); Equal(1000m, p.Coins);
     }
     private static void MissingArt()
     {
@@ -186,7 +188,7 @@ internal static class Program
     private static void Grant()
     {
         var c = new ContentOwnershipState(); var p = Progress(); var result = ContentOwnershipService.GrantPurchase(c, "desk.mint", p, Available);
-        Check(result.Changed); Check(c.OwnedContentIds.Contains("desk.mint")); Equal(100, p.Coins); Equal(0, p.AppliedWalletDebits.Count);
+        Check(result.Changed); Check(c.OwnedContentIds.Contains("desk.mint")); Equal(1000m, p.Coins); Equal(0, p.AppliedWalletDebits.Count);
         Equal("desk.default", c.Equipped[ContentSlot.Desk]);
     }
     private static void DuplicatePurchase()
@@ -197,17 +199,17 @@ internal static class Program
     }
     private static void RewardThenPurchase()
     {
-        var c = new ContentOwnershipState(); var p = Progress(10); ContentOwnershipService.GrantEligibleRewards(c, p);
-        Equal(ContentOperationStatus.AlreadyOwned, ContentOwnershipService.GrantPurchase(c, "desk.mint", p, Available).Status); Equal(100, p.Coins);
+        var c = new ContentOwnershipState(); var p = Progress(30); ContentOwnershipService.GrantEligibleRewards(c, p);
+        Equal(ContentOperationStatus.AlreadyOwned, ContentOwnershipService.GrantPurchase(c, "desk.mint", p, Available).Status); Equal(1000m, p.Coins);
     }
     private static void PurchaseThenReward()
     {
         var c = new ContentOwnershipState(); var p = Progress(); ContentOwnershipService.GrantPurchase(c, "desk.mint", p, Available);
-        p.Coins = 80; p.TotalMeals = 10; Equal(0, ContentOwnershipService.GrantEligibleRewards(c, p).Count); Equal(80, p.Coins);
+        p.Coins = 80; p.TotalMeals = 30; Equal(0, ContentOwnershipService.GrantEligibleRewards(c, p).Count); Equal(80, p.Coins);
     }
     private static void EligibleBlocksPurchase()
     {
-        var c = new ContentOwnershipState(); var p = Progress(10);
+        var c = new ContentOwnershipState(); var p = Progress(30);
         Equal(ContentOperationStatus.RewardAvailable, ContentOwnershipService.QuotePurchase(c, "desk.mint", p, Available).Status);
         Check(!ContentOwnershipService.GrantPurchase(c, "desk.mint", p, Available).Changed); Check(!c.OwnedContentIds.Contains("desk.mint"));
     }
@@ -322,7 +324,7 @@ internal static class Program
         int unknownLimit = ContentOwnershipService.MaximumOwnedContents - ContentCatalog.Definitions.Count;
         for (int i = 0; i < unknownLimit; i++) c.OwnedContentIds.Add("future." + i);
         c = ContentOwnershipService.Normalize(c);
-        ContentOwnershipService.GrantEligibleRewards(c, Progress(10, 100));
+        ContentOwnershipService.GrantEligibleRewards(c, Progress(30, 100));
         foreach (var item in ContentCatalog.Definitions.Where(x => !x.IsDefault && x.Reward is null))
             ContentOwnershipService.GrantPurchase(c, item.Id, Progress(), Available);
         Equal(ContentOwnershipService.MaximumOwnedContents, c.OwnedContentIds.Count); ContentOwnershipService.ValidateForSave(c);
@@ -331,8 +333,38 @@ internal static class Program
     private static void RewardCapacity()
     {
         var c = new ContentOwnershipState(); for (int i = 3; i < ContentOwnershipService.MaximumOwnedContents - 1; i++) c.OwnedContentIds.Add("future." + i);
-        int count = c.OwnedContentIds.Count; Throws<InvalidDataException>(() => ContentOwnershipService.GrantEligibleRewards(c, Progress(10, 100)));
+        int count = c.OwnedContentIds.Count; Throws<InvalidDataException>(() => ContentOwnershipService.GrantEligibleRewards(c, Progress(30, 100)));
         Equal(count, c.OwnedContentIds.Count); Check(!c.OwnedContentIds.Contains("desk.mint") && !c.OwnedContentIds.Contains("action.tea"));
+    }
+    private static void LegacyFullCollection()
+    {
+        var old = Progress(); old.Version = 2; old.LastUpdatedUtc = Start;
+        string[] oldIds = { "desk.default", "computer.default", "outfit.default", "desk.mint", "computer.midnight", "action.tea",
+            "outfit.office", "desk.walnut", "desk.arcade", "computer.retro", "computer.arcade", "outfit.hoodie" };
+        old.Content.OwnedContentIds.UnionWith(oldIds);
+        for (int i = 0; i < ContentOwnershipService.MaximumOwnedContents - oldIds.Length; i++) old.Content.OwnedContentIds.Add("future." + i);
+        string before = JsonSerializer.Serialize(old);
+        File.WriteAllText(SavePath, before); var store = new PetStore(_directory);
+        var care = new PetCareService(store.Load(), Start);
+        Equal(ContentOwnershipService.MaximumOwnedContents, care.State.Content.OwnedContentIds.Count);
+        Check(old.Content.OwnedContentIds.SetEquals(care.State.Content.OwnedContentIds));
+        Check(store.Save(care.State)); Equal(before, File.ReadAllText(SavePath + ".bak"));
+        Equal(ContentOperationStatus.Unavailable, ContentOwnershipService.QuotePurchase(care.State.Content,
+            ContentCatalog.GoldComputerId, care.State, Available).Status);
+    }
+    private static void ReservedRewardSlot()
+    {
+        var state = Progress();
+        string[] oldIds = { "desk.default", "computer.default", "outfit.default", "desk.mint", "computer.midnight",
+            "outfit.office", "desk.walnut", "desk.arcade", "computer.retro", "computer.arcade", "outfit.hoodie" };
+        state.Content.OwnedContentIds.UnionWith(oldIds);
+        for (int i = 0; i < ContentOwnershipService.MaximumOwnedContents - 12; i++) state.Content.OwnedContentIds.Add("future." + i);
+        Equal(4095, state.Content.OwnedContentIds.Count);
+        ContentOwnershipService.ValidateForSave(state.Content);
+        Check(!ContentOwnershipService.QuotePurchase(state.Content, ContentCatalog.GoldComputerId, state, Available).CanPurchase);
+        state.Experience = 100;
+        Check(ContentOwnershipService.GrantEligibleRewards(state.Content, state).SequenceEqual(new[] { ContentCatalog.TeaActionId }));
+        Equal(4096, state.Content.OwnedContentIds.Count); ContentOwnershipService.ValidateForSave(state.Content);
     }
     private static void TransactionIds()
     {
@@ -352,14 +384,14 @@ internal static class Program
     }
     private static void LegacyState()
     {
-        var saved = Progress(10, 100); saved.Version = 1; saved.LastUpdatedUtc = Start;
+        var saved = Progress(30, 100); saved.Version = 1; saved.LastUpdatedUtc = Start;
         var care = new PetCareService(saved, Start); Check(care.State.Content.OwnedContentIds.Contains("desk.mint")); Check(care.State.Content.OwnedContentIds.Contains("action.tea"));
         Equal(0, care.State.Coins); Equal(0, care.State.AppliedWalletDebits.Count); Equal(3, saved.Content.OwnedContentIds.Count);
     }
     private static void CurrentState()
     {
-        var saved = Progress(10, 100); saved.LastUpdatedUtc = Start; saved.Content.OwnedContentIds.Add("desk.future"); saved.Content.Equipped[ContentSlot.Desk] = "desk.future";
-        var care = new PetCareService(saved, Start); Equal(100, care.State.Coins); Equal(6, care.State.Content.OwnedContentIds.Count); Equal("desk.future", care.State.Content.Equipped[ContentSlot.Desk]);
+        var saved = Progress(30, 100); saved.LastUpdatedUtc = Start; saved.Content.OwnedContentIds.Add("desk.future"); saved.Content.Equipped[ContentSlot.Desk] = "desk.future";
+        var care = new PetCareService(saved, Start); Equal(1000m, care.State.Coins); Equal(6, care.State.Content.OwnedContentIds.Count); Equal("desk.future", care.State.Content.Equipped[ContentSlot.Desk]);
         Check(care.State.Content.OwnedContentIds.Contains("desk.mint")); Equal(0, care.State.AppliedWalletDebits.Count);
     }
     private static void GameRewardClock()
@@ -377,24 +409,24 @@ internal static class Program
     private static void AtomicPurchase()
     {
         var store = new PetStore(_directory); var state = Progress(); Check(store.Save(state)); Check(Purchase(store, state, "desk.mint").Changed);
-        Equal(80, state.Coins); Check(state.Content.OwnedContentIds.Contains("desk.mint"));
-        var loadedStore = new PetStore(_directory); var loaded = loadedStore.Load()!; Equal(80, loaded.Coins); Check(loaded.Content.OwnedContentIds.Contains("desk.mint"));
-        Equal(WalletTransactionStatus.AlreadyApplied, Purchase(loadedStore, loaded, "desk.mint").Status); Equal(80, loaded.Coins);
-        var before = JsonSerializer.Deserialize<PetState>(File.ReadAllText(SavePath + ".bak"))!; Equal(100, before.Coins); Check(!before.Content.OwnedContentIds.Contains("desk.mint"));
+        Equal(850m, state.Coins); Check(state.Content.OwnedContentIds.Contains("desk.mint"));
+        var loadedStore = new PetStore(_directory); var loaded = loadedStore.Load()!; Equal(850m, loaded.Coins); Check(loaded.Content.OwnedContentIds.Contains("desk.mint"));
+        Equal(WalletTransactionStatus.AlreadyApplied, Purchase(loadedStore, loaded, "desk.mint").Status); Equal(850m, loaded.Coins);
+        var before = JsonSerializer.Deserialize<PetState>(File.ReadAllText(SavePath + ".bak"))!; Equal(1000m, before.Coins); Check(!before.Content.OwnedContentIds.Contains("desk.mint"));
     }
     private static void DuplicateItemTransaction()
     {
         var store = new PetStore(_directory); var state = Progress(); Check(store.Save(state)); Check(Purchase(store, state, "desk.mint").Changed);
         Equal(WalletTransactionStatus.InvalidRequest, Purchase(store, state, "desk.mint", "another-id").Status);
-        Equal(80, state.Coins); Equal(1, state.AppliedWalletDebits.Count); Equal(80, new PetStore(_directory).Load()!.Coins);
+        Equal(850m, state.Coins); Equal(1, state.AppliedWalletDebits.Count); Equal(850m, new PetStore(_directory).Load()!.Coins);
     }
     private static void RewardRace()
     {
-        var store = new PetStore(_directory); var state = Progress(9); Check(store.Save(state));
+        var store = new PetStore(_directory); var state = Progress(29); Check(store.Save(state));
         Check(ContentOwnershipService.QuotePurchase(state.Content, "desk.mint", state, Available).CanPurchase);
-        state.TotalMeals = 10; Equal(WalletTransactionStatus.InvalidRequest, Purchase(store, state, "desk.mint").Status);
-        Equal(100, state.Coins); Equal(0, state.AppliedWalletDebits.Count);
-        ContentOwnershipService.GrantEligibleRewards(state.Content, state); Check(store.Save(state)); Check(state.Content.OwnedContentIds.Contains("desk.mint")); Equal(100, state.Coins);
+        state.TotalMeals = 30; Equal(WalletTransactionStatus.InvalidRequest, Purchase(store, state, "desk.mint").Status);
+        Equal(1000m, state.Coins); Equal(0, state.AppliedWalletDebits.Count);
+        ContentOwnershipService.GrantEligibleRewards(state.Content, state); Check(store.Save(state)); Check(state.Content.OwnedContentIds.Contains("desk.mint")); Equal(1000m, state.Coins);
     }
     private static void FailedPurchase()
     {
@@ -402,10 +434,10 @@ internal static class Program
         using (var held = new FileStream(SavePath, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             Equal(WalletTransactionStatus.SaveFailed, Purchase(store, state, "computer.midnight").Status);
-            Equal(100, state.Coins); Check(!state.Content.OwnedContentIds.Contains("computer.midnight")); Equal(0, state.AppliedWalletDebits.Count);
+            Equal(1000m, state.Coins); Check(!state.Content.OwnedContentIds.Contains("computer.midnight")); Equal(0, state.AppliedWalletDebits.Count);
             Check(File.ReadAllBytes(SavePath).SequenceEqual(before));
         }
-        Check(Purchase(store, state, "computer.midnight").Changed); Equal(70, state.Coins); Check(state.Content.OwnedContentIds.Contains("computer.midnight"));
+        Check(Purchase(store, state, "computer.midnight").Changed); Equal(760m, state.Coins); Check(state.Content.OwnedContentIds.Contains("computer.midnight"));
     }
     private static void UnknownDisk()
     {
@@ -429,21 +461,21 @@ internal static class Program
     }
     private static void CoreMealReward()
     {
-        var state = Progress(9); state.LastUpdatedUtc = Start; state.Fullness = 50;
+        var state = Progress(29); state.LastUpdatedUtc = Start; state.Fullness = 50;
         var care = new PetCareService(state, Start); Check(care.Feed(Start).Success);
-        Check(care.State.Content.OwnedContentIds.Contains("desk.mint")); Equal(100, care.State.Coins);
+        Check(care.State.Content.OwnedContentIds.Contains("desk.mint")); Equal(1000m, care.State.Coins);
     }
     private static void CoreLevelReward()
     {
         var state = Progress(experience: 99); state.LastUpdatedUtc = Start;
         var care = new PetCareService(state, Start); Check(care.Pet(Start).Success);
-        Check(care.State.Content.OwnedContentIds.Contains("action.tea")); Equal(100, care.State.Coins);
+        Check(care.State.Content.OwnedContentIds.Contains("action.tea")); Equal(1000m, care.State.Coins);
     }
     private static void CoreOfflineReward()
     {
         var state = Progress(experience: 99); state.LastUpdatedUtc = Start;
         var care = new PetCareService(state, Start.AddMinutes(5)); Equal(2, care.State.Level);
-        Check(care.State.Content.OwnedContentIds.Contains("action.tea")); Equal(100, care.State.Coins);
+        Check(care.State.Content.OwnedContentIds.Contains("action.tea")); Equal(1000m, care.State.Coins);
     }
     private static void Check(bool condition) { if (!condition) throw new InvalidOperationException("Assertion failed."); }
     private static void Equal<T>(T expected, T actual) { if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new InvalidOperationException($"Expected {expected}, actual {actual}."); }

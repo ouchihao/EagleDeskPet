@@ -72,6 +72,10 @@ internal sealed class PetStore
                 if (state.Version != PetState.CurrentVersion)
                     throw new InvalidDataException("Only current, migrated states can be saved.");
                 EconomyPolicy.ValidateWalletLedger(state);
+                if (state.Coins < 0 || state.Coins > EconomyPolicy.MaximumCoins || !EconomyPolicy.HasCentPrecision(state.Coins) ||
+                    state.WageRemainderUnits < 0 || state.WageRemainderUnits >= 60m ||
+                    state.WorkExperienceRemainderUnits < 0 || state.WorkExperienceRemainderUnits >= 60m)
+                    throw new InvalidDataException("Invalid precise economy state.");
                 ContentOwnershipService.ValidateForSave(state.Content);
                 byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(state,
                     new JsonSerializerOptions { WriteIndented = true });
@@ -124,7 +128,7 @@ internal sealed class PetStore
     }
 
     /// <summary>Idempotent local debit. Failed persistence never changes the live wallet.</summary>
-    public WalletTransactionResult TryDebit(PetState liveState, string transactionId, int amount) =>
+    public WalletTransactionResult TryDebit(PetState liveState, string transactionId, decimal amount) =>
         TryTransaction(liveState, transactionId, amount, _ => true);
 
     /// <summary>
@@ -133,7 +137,7 @@ internal sealed class PetStore
     /// The callback must only mutate the candidate, never the live state or outside
     /// world; its wallet fields belong to this transaction coordinator.
     /// </summary>
-    public WalletTransactionResult TryTransaction(PetState liveState, string transactionId, int amount,
+    public WalletTransactionResult TryTransaction(PetState liveState, string transactionId, decimal amount,
         Func<PetState, bool> mutate)
     {
         lock (_gate)
@@ -144,14 +148,19 @@ internal sealed class PetStore
             catch (InvalidDataException)
             { return new(WalletTransactionStatus.InvalidRequest, "本地交易记录异常，未扣除鹰币。"); }
             if (!result.Changed) return result;
-            int expectedCoins = candidate!.Coins;
-            var expectedLedger = new Dictionary<string, int>(candidate.AppliedWalletDebits, StringComparer.Ordinal);
+            decimal expectedCoins = candidate!.Coins;
+            decimal expectedWageRemainder = candidate.WageRemainderUnits;
+            double expectedWageCursor = candidate.WageSettledWorkSeconds;
+            DateTimeOffset expectedWageTime = candidate.WageLastUpdatedUtc;
+            var expectedLedger = new Dictionary<string, decimal>(candidate.AppliedWalletDebits, StringComparer.Ordinal);
             try
             {
                 if (!mutate(candidate) || candidate.Version != PetState.CurrentVersion ||
                     candidate.Coins != expectedCoins || candidate.AppliedWalletDebits is null ||
+                    candidate.WageRemainderUnits != expectedWageRemainder ||
+                    candidate.WageSettledWorkSeconds != expectedWageCursor || candidate.WageLastUpdatedUtc != expectedWageTime ||
                     candidate.AppliedWalletDebits.Count != expectedLedger.Count ||
-                    expectedLedger.Any(x => !candidate.AppliedWalletDebits.TryGetValue(x.Key, out int value) || value != x.Value))
+                    expectedLedger.Any(x => !candidate.AppliedWalletDebits.TryGetValue(x.Key, out decimal value) || value != x.Value))
                     return new(WalletTransactionStatus.InvalidRequest, "交易条件不满足，未扣除鹰币。");
                 // Detach any references the callback retained, and reject invalid
                 // mutable collections before committing rather than after it.
@@ -178,10 +187,10 @@ internal sealed class PetStore
         // fingerprinting and backups still use the exact original bytes.
         using var text = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         var state = JsonSerializer.Deserialize<PetState>(text.ReadToEnd()) ?? throw new InvalidDataException("Empty save.");
-        if (state.Version is not 1 && state.Version != PetState.CurrentVersion)
+        if (state.Version is not 1 and not 2 && state.Version != PetState.CurrentVersion)
             throw new InvalidDataException("Unsupported save version.");
         EconomyPolicy.ValidateWalletLedger(state);
-        if (state.Version == PetState.CurrentVersion) ContentOwnershipService.ValidateForSave(state.Content);
+        if (state.Version >= 2) ContentOwnershipService.ValidateForSave(state.Content);
         return state;
     }
 

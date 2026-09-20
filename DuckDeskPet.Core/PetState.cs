@@ -5,7 +5,7 @@ namespace DuckDeskPet.Core;
 /// <summary>Local game progress only; no conversations or AI memory are stored.</summary>
 public sealed class PetState
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     public int Version { get; set; } = CurrentVersion;
     public double Fullness { get; set; } = 75.0;
@@ -23,11 +23,15 @@ public sealed class PetState
     public double WorkSessionSeconds { get; set; }
     public double WorkExperienceProgressSeconds { get; set; }
     public double TotalWorkSeconds { get; set; }
-    public int Coins { get; set; }
+    public decimal Coins { get; set; }
+    // Exact numerator in coin-seconds, carried across payments and saves. Divide
+    // by 60 only after whole cents have been removed; no repeating decimals accrue.
+    public decimal WageRemainderUnits { get; set; }
+    public decimal WorkExperienceRemainderUnits { get; set; }
     public double WageProgressSeconds { get; set; }
     public double WageSettledWorkSeconds { get; set; }
     public DateTimeOffset WageLastUpdatedUtc { get; set; }
-    public Dictionary<string, int> AppliedWalletDebits { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, decimal> AppliedWalletDebits { get; set; } = new(StringComparer.Ordinal);
     public ContentOwnershipState Content { get; set; } = new();
     public List<string> Achievements { get; set; } = new();
 
@@ -61,6 +65,8 @@ public sealed class PetState
         WorkExperienceProgressSeconds = committed.WorkExperienceProgressSeconds;
         TotalWorkSeconds = committed.TotalWorkSeconds;
         Coins = committed.Coins;
+        WageRemainderUnits = committed.WageRemainderUnits;
+        WorkExperienceRemainderUnits = committed.WorkExperienceRemainderUnits;
         WageProgressSeconds = committed.WageProgressSeconds;
         WageSettledWorkSeconds = committed.WageSettledWorkSeconds;
         WageLastUpdatedUtc = committed.WageLastUpdatedUtc;
@@ -70,7 +76,22 @@ public sealed class PetState
     }
 
     [JsonIgnore]
-    public int Level => 1 + Math.Clamp(Experience, 0, 99_900) / 100;
+    public int Level => GrowthPolicy.LevelForExperience(Experience);
+
+    [JsonIgnore]
+    public int ExperienceIntoLevel => Math.Clamp(Experience, 0, GrowthPolicy.MaximumExperience) - GrowthPolicy.ExperienceAtLevel(Level);
+
+    [JsonIgnore]
+    public bool IsMaximumLevel => Experience >= GrowthPolicy.MaximumExperience;
+
+    [JsonIgnore]
+    public int NextLevelRequirement => IsMaximumLevel ? 0 : GrowthPolicy.RequirementForLevel(Level);
+
+    [JsonIgnore]
+    public int ExperienceToNextLevel => Math.Max(0, NextLevelRequirement - ExperienceIntoLevel);
+
+    [JsonIgnore]
+    public double LevelProgress => IsMaximumLevel ? 1 : Math.Clamp((double)ExperienceIntoLevel / NextLevelRequirement, 0, 1);
 
     [JsonIgnore]
     public bool IsHungry => Fullness < 30.0;

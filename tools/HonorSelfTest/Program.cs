@@ -27,19 +27,19 @@ var tests = new (string Name, Action Body)[]
         Require(all.Count == 18 && all.All(x => !x.IsEarned), "All locked.");
         Require(all.All(x => x.Fraction >= 0 && x.Fraction < 1), "Finite bounded preview progress.");
     }),
-    ("Meal tiers unlock exactly at one ten thirty", () =>
+    ("Meal tiers unlock exactly at one thirty one-eighty", () =>
     {
-        foreach (var (meals, earned) in new[] { (0, 0), (1, 1), (9, 1), (10, 2), (29, 2), (30, 3) })
+        foreach (var (meals, earned) in new[] { (0, 0), (1, 1), (29, 1), (30, 2), (179, 2), (180, 3) })
             Require(Count(new PetState { TotalMeals = meals }, HonorSeries.Meals) == earned, $"Meals {meals}.");
     }),
-    ("Affection tiers unlock exactly at ten fifty hundred", () =>
+    ("Affection tiers unlock exactly at ten one-fifty twelve-hundred", () =>
     {
-        foreach (var (pets, earned) in new[] { (0, 0), (9, 0), (10, 1), (49, 1), (50, 2), (99, 2), (100, 3) })
+        foreach (var (pets, earned) in new[] { (0, 0), (9, 0), (10, 1), (149, 1), (150, 2), (1199, 2), (1200, 3) })
             Require(Count(new PetState { TotalPets = pets }, HonorSeries.Affection) == earned, $"Pets {pets}.");
     }),
-    ("Growth tiers use derived level two five ten", () =>
+    ("Growth tiers use nonlinear derived level two ten twenty-five", () =>
     {
-        foreach (var (xp, earned) in new[] { (0, 0), (99, 0), (100, 1), (399, 1), (400, 2), (899, 2), (900, 3) })
+        foreach (var (xp, earned) in new[] { (0, 0), (99, 0), (100, 1), (2699, 1), (2700, 2), (16199, 2), (16200, 3) })
             Require(Count(new PetState { Experience = xp }, HonorSeries.Growth) == earned, $"XP {xp}.");
     }),
     ("Legacy IDs retain bronze without silently granting silver", () =>
@@ -60,7 +60,7 @@ var tests = new (string Name, Action Body)[]
     }),
     ("Full progress earns all eighteen with clamped bars", () =>
     {
-        var state = new PetState { TotalMeals = int.MaxValue, TotalPets = int.MaxValue, Experience = int.MaxValue, TotalWorkSeconds = 72000 };
+        var state = new PetState { TotalMeals = int.MaxValue, TotalPets = int.MaxValue, Experience = int.MaxValue, TotalWorkSeconds = 1800000 };
         state.Content.OwnedContentIds.UnionWith(ContentCatalog.Definitions.Select(x => x.Id));
         var all = HonorCatalog.Evaluate(state);
         Require(all.All(x => x.IsEarned && x.Fraction == 1), "All complete without numeric overflow.");
@@ -88,15 +88,15 @@ var tests = new (string Name, Action Body)[]
     }),
     ("Work tiers count effective minutes not wage balance", () =>
     {
-        foreach (var (minutes, earned) in new[] { (0d, 0), (29.99, 0), (30d, 1), (299.99, 1), (300d, 2), (1199.99, 2), (1200d, 3) })
+        foreach (var (minutes, earned) in new[] { (0d, 0), (29.99, 0), (30d, 1), (1799.99, 1), (1800d, 2), (17999.99, 2), (18000d, 3) })
             Require(Count(new PetState { TotalWorkSeconds = minutes * 60, Coins = 999999 }, HonorSeries.Work) == earned, $"Minutes {minutes}.");
         foreach (double seconds in new[] { -1d, double.NaN, double.PositiveInfinity })
             Require(Count(new PetState { TotalWorkSeconds = seconds }, HonorSeries.Work) == 0, "Invalid duration grants nothing.");
     }),
-    ("Collection tiers count two five nine known non-default entitlements", () =>
+    ("Collection tiers count two nine eighteen known non-default entitlements", () =>
     {
         var ids = ContentCatalog.Definitions.Where(x => !x.IsDefault).Select(x => x.Id).ToArray();
-        foreach (var (count, earned) in new[] { (0, 0), (1, 0), (2, 1), (4, 1), (5, 2), (8, 2), (9, 3) })
+        foreach (var (count, earned) in new[] { (0, 0), (1, 0), (2, 1), (8, 1), (9, 2), (17, 2), (18, 3) })
         {
             var state = new PetState(); state.Content.OwnedContentIds.UnionWith(ids.Take(count));
             state.Content.OwnedContentIds.Add("future.missing");
@@ -105,7 +105,7 @@ var tests = new (string Name, Action Body)[]
     }),
     ("Bond tiers sum successful meals and pets without overflow", () =>
     {
-        foreach (var (count, earned) in new[] { (0, 0), (24, 0), (25, 1), (99, 1), (100, 2), (299, 2), (300, 3) })
+        foreach (var (count, earned) in new[] { (0, 0), (24, 0), (25, 1), (299, 1), (300, 2), (1499, 2), (1500, 3) })
             Require(Count(new PetState { TotalMeals = count / 2, TotalPets = count - count / 2 }, HonorSeries.Bond) == earned, $"Bond {count}.");
         Require(HonorCatalog.Evaluate(new PetState { TotalMeals = int.MaxValue, TotalPets = int.MaxValue })
             .First(x => x.Definition.Series == HonorSeries.Bond).Current == int.MaxValue, "Sum saturates safely.");
@@ -142,7 +142,7 @@ var tests = new (string Name, Action Body)[]
     }),
     ("Free rewards can cross collection milestone in the same candidate", () =>
     {
-        var state = new PetState { TotalMeals = 10, Experience = 100 };
+        var state = new PetState { TotalMeals = 30, Experience = 100 };
         ContentOwnershipService.GrantEligibleRewards(state.Content, state);
         Require(state.Achievements.Contains("collection-bronze"), "Two actual free reward entitlements recorded immediately.");
     }),
@@ -157,18 +157,18 @@ var tests = new (string Name, Action Body)[]
     {
         var directory = Path.Combine(Path.GetTempPath(), "EagleHonorAtomic-" + Guid.NewGuid().ToString("N"));
         var store = new PetStore(directory);
-        var state = new PetState { Coins = 100 };
+        var state = new PetState { Coins = 1000m };
         state.Content.OwnedContentIds.Add(ContentCatalog.WalnutDeskId);
         Require(store.Save(state), "Isolated baseline saved.");
         var rival = new PetStore(directory); var changed = rival.Load()!; changed.Mood++; Require(rival.Save(changed), "Create an actual stale-writer conflict.");
         var before = JsonSerializer.Serialize(state);
-        var result = store.TryTransaction(state, ContentCatalog.PurchaseTransactionId(ContentCatalog.MidnightComputerId), 30,
+        var result = store.TryTransaction(state, ContentCatalog.PurchaseTransactionId(ContentCatalog.MidnightComputerId), 240m,
             candidate => ContentOwnershipService.GrantPurchase(candidate.Content, ContentCatalog.MidnightComputerId, candidate, _ => true).Changed);
         Require(result.Status == WalletTransactionStatus.SaveFailed && JsonSerializer.Serialize(state) == before, "Failed save leaks neither ownership nor coins nor honors.");
         var retry = new PetStore(directory); state = retry.Load()!;
-        result = retry.TryTransaction(state, ContentCatalog.PurchaseTransactionId(ContentCatalog.MidnightComputerId), 30,
+        result = retry.TryTransaction(state, ContentCatalog.PurchaseTransactionId(ContentCatalog.MidnightComputerId), 240m,
             candidate => ContentOwnershipService.GrantPurchase(candidate.Content, ContentCatalog.MidnightComputerId, candidate, _ => true).Changed);
-        Require(result.Changed && state.Coins == 70 && state.Achievements.Contains("collection-bronze"), "Successful transaction includes honor.");
+        Require(result.Changed && state.Coins == 760m && state.Achievements.Contains("collection-bronze"), "Successful transaction includes honor.");
         Require(new PetStore(directory).Load()!.Achievements.Contains("collection-bronze"), "Honor survives disk round trip.");
         Console.WriteLine("Isolated atomic evidence: " + directory);
     }),

@@ -52,7 +52,10 @@ public static class ContentOwnershipService
     public const int MaximumOwnedContents = 4096;
     // Reserve room for every built-in grant. A full imported/unknown collection
     // must not make a later level-up or tenth meal throw halfway through care.
-    private static int MaximumUnknownContents => MaximumOwnedContents - ContentCatalog.Definitions.Count;
+    // Keep the v2 reservation stable. Growing the catalog must not invalidate a
+    // formerly valid full collection of optional/unknown IDs. The twelve reserved
+    // slots still cover defaults and all automatic grants; purchases check space.
+    private static int MaximumUnknownContents => MaximumOwnedContents - 12;
     private static readonly ContentSlot[] Slots = Enum.GetValues<ContentSlot>();
 
     public static ContentOwnershipState Normalize(ContentOwnershipState? saved)
@@ -65,7 +68,8 @@ public static class ContentOwnershipService
         foreach (string id in saved.OwnedContentIds ?? new())
             if (IsValidId(id)) result.OwnedContentIds.Add(id);
         if (result.OwnedContentIds.Count > MaximumOwnedContents ||
-            result.OwnedContentIds.Count(x => !ContentCatalog.TryGet(x, out _)) > MaximumUnknownContents)
+            result.OwnedContentIds.Count(x => !ContentCatalog.TryGet(x, out _)) > MaximumUnknownContents ||
+            result.OwnedContentIds.Count + ReservedAutomaticGrants(result) > MaximumOwnedContents)
             throw new InvalidDataException("Content ownership exceeds its save bounds.");
         CopySelections(saved.Equipped, result.Equipped);
         CopySelections(saved.PendingEquipment, result.PendingEquipment);
@@ -82,6 +86,7 @@ public static class ContentOwnershipService
         if (state is null || state.OwnedContentIds is null || state.Equipped is null || state.PendingEquipment is null ||
             state.OwnedContentIds.Count > MaximumOwnedContents || state.OwnedContentIds.Any(x => !IsValidId(x)) ||
             state.OwnedContentIds.Count(x => !ContentCatalog.TryGet(x, out _)) > MaximumUnknownContents ||
+            state.OwnedContentIds.Count + ReservedAutomaticGrants(state) > MaximumOwnedContents ||
             state.Equipped.Count > Slots.Length || state.PendingEquipment.Count > Slots.Length ||
             state.Equipped.Concat(state.PendingEquipment).Any(x => !Enum.IsDefined(x.Key) || !IsValidId(x.Value)))
             throw new InvalidDataException("Invalid content ownership save data.");
@@ -116,8 +121,9 @@ public static class ContentOwnershipService
         if (Owns(state, contentId)) return new(ContentOperationStatus.AlreadyOwned, "已经拥有啦，不会重复购买。", definition);
         if (IsRewardEligible(definition!, progress)) return new(ContentOperationStatus.RewardAvailable, "已达成荣誉条件，可以免费解锁。", definition);
         if (!isAvailable(definition!)) return new(ContentOperationStatus.Unavailable, "这件内容的资源尚未就绪，暂不售卖。", definition);
-        if (state.OwnedContentIds.Count >= MaximumOwnedContents) return new(ContentOperationStatus.Unavailable, "拥有的内容已达存档上限。", definition);
-        return new(ContentOperationStatus.PurchaseReady, $"需要 {definition!.Price} 鹰币。", definition);
+        if (state.OwnedContentIds.Count + ReservedAutomaticGrants(state) >= MaximumOwnedContents)
+            return new(ContentOperationStatus.Unavailable, "收藏空间已满，或剩余位置已为免费荣誉奖励保留。", definition);
+        return new(ContentOperationStatus.PurchaseReady, $"需要 {definition!.Price:F2} 鹰币。", definition);
     }
 
     /// <summary>
@@ -214,6 +220,9 @@ public static class ContentOwnershipService
 
     private static string Requested(ContentOwnershipState state, ContentSlot slot) =>
         state.Equipped.TryGetValue(slot, out string? id) ? id : ContentCatalog.DefaultForSlot(slot);
+
+    private static int ReservedAutomaticGrants(ContentOwnershipState state) => ContentCatalog.Definitions.Count(
+        x => (x.IsDefault || x.Reward is not null) && !state.OwnedContentIds.Contains(x.Id));
 
     private static void CopySelections(Dictionary<ContentSlot, string>? source, Dictionary<ContentSlot, string> target)
     {
