@@ -20,7 +20,7 @@ public partial class PetWindow
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(280));
         var elapsed = Stopwatch.StartNew();
         bool isolated = false;
-        const int expectedCases = 9;
+        const int expectedCases = 10;
         string? fatal = null;
         object? renderCadence = null;
         string reportPath = Path.Combine(output, "expansion-smoke.json");
@@ -33,9 +33,10 @@ public partial class PetWindow
             cases = results, error = fatal, dataDirectory = AppPaths.DataDirectory,
             realHost = true, realRenderClock = true, ownWindowRenderingOnly = true,
             renderCadence,
+            rpsClickToThrowMilliseconds = _uiSmokeRpsStarts,
             limitations = new[]
             {
-                "Shop purchase uses the real transaction coordinator; the human confirmation MessageBox is not automated.",
+                "Shop purchase uses the real transaction coordinator; the custom confirmation dialog is covered separately by ShopSelfTest.",
                 "Runtime state is seeded only in the launcher's new disposable data directory; elapsed care/work simulation is allowed.",
                 "No real GitHub/AI accounts, client configuration, task producer delivery, mouse dragging or physical 60 Hz certification.",
                 "A skipped outfit case is not outfit acceptance. Screenshots alone do not certify animation aesthetics.",
@@ -83,10 +84,12 @@ public partial class PetWindow
                 var shopMenu = PetMenu.Items.OfType<MenuItem>().Single(x => x.Header?.ToString()?.Contains("小卖部", StringComparison.Ordinal) == true);
                 shopMenu.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                 ExpansionCheck(_shopWindow is not null, "Shop menu did not open the actual window.");
+                await Task.Delay(240, timeout.Token);
                 _shopWindow!.UpdateLayout();
                 RenderOwnVisual(_shopWindow, Path.Combine(output, "expansion-shop-before.png"));
                 string before = ExpansionContentFingerprint();
-                var preview = ExpansionVisuals<Button>(_shopWindow).Single(x => x.Tag as string == ContentCatalog.MintDeskId && x.Content as string == "预览");
+                ExpansionCheck(_shopWindow.SelectItem(ContentCatalog.MintDeskId), "Mint desk not reachable through paged catalog.");
+                var preview = (Button)_shopWindow.FindName("PreviewButton");
                 ExpansionCheck(preview.IsEnabled, "Mint desk preview unavailable.");
                 preview.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 await _shopWindow.PendingOperation.WaitAsync(timeout.Token);
@@ -104,7 +107,7 @@ public partial class PetWindow
                 var computer = _contentTransactions.Purchase(ContentCatalog.MidnightComputerId);
                 ExpansionCheck(computer.Success && CareState.Coins == coins - 50, "Computer purchase failed.");
                 _shopWindow.Refresh(); RenderOwnVisual(_shopWindow, Path.Combine(output, "expansion-shop-owned.png"));
-                ExpansionVisuals<Button>(_shopWindow).Single(x => x.Content as string == "先逛到这").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                _shopWindow.Close();
                 ExpansionCheck(_shopWindow is null, "Shop did not detach on close.");
             });
 
@@ -318,6 +321,7 @@ public partial class PetWindow
                 await EquipContentAsync(ContentCatalog.DefaultOutfitId).WaitAsync(timeout.Token);
                 await ExpansionWaitAsync(() => _framePlayer.CurrentOutfitId == ContentCatalog.DefaultOutfitId, timeout.Token, "default restore after hoodie");
             });
+            await Case("club UI navigation, paged galleries and reduced motion are read-only", () => RunClubUiSmokeAsync(output, timeout.Token));
         }
         catch (Exception ex) { fatal = ex.ToString(); }
         finally
@@ -417,9 +421,11 @@ public partial class PetWindow
     {
         var window = _gameWindow ?? throw new InvalidOperationException("Game window missing.");
         long before = _behavior.CurrentSample.Sequence;
+        var responseTime = Stopwatch.StartNew();
         ((Button)window.FindName("RockButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await ExpansionWaitAsync(() => _behavior.CurrentSample.Sequence > before && _behavior.CurrentSample.Kind is ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors,
             token, "actual RPS throw");
+        _uiSmokeRpsStarts.Add(Math.Round(responseTime.Elapsed.TotalMilliseconds, 2));
         ExpansionCheck(((TextBlock)window.FindName("StageText")).Text == "出拳！" && !_gameThrown, "Result was disclosed before the throw animation finished.");
         int food = CareState.Food, pets = CareState.TotalPets;
         FeedPet(); PetHead(); await StartWorkingAsync();

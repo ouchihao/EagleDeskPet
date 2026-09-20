@@ -76,6 +76,9 @@ public partial class PetWindow
     private static void RenderOwnVisual(FrameworkElement element, string path)
     {
         element.UpdateLayout();
+        // A WPF Window's native title bar is not part of its visual tree. Render
+        // the client content at its actual size instead of adding a blank strip.
+        if (element is Window { Content: FrameworkElement content }) element = content;
         var bitmap = new RenderTargetBitmap(Math.Max(1, (int)Math.Ceiling(element.ActualWidth)),
             Math.Max(1, (int)Math.Ceiling(element.ActualHeight)), 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(element);

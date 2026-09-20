@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using DuckDeskPet.GitHub;
 using DuckDeskPet.ClientSetup;
+using DuckDeskPet.Core;
 
 namespace DuckDeskPet;
 
@@ -54,8 +55,9 @@ public partial class PetWindow
         ((Button)_carePanel!.FindName("HonorWallButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Task.Delay(100);
         Check(_honorWall is not null, "Care-panel honor card opens its separate exhibition");
-        Check(((ItemsControl)_honorWall!.FindName("CardsItems")).Items.Count == 9, "All nine honor badges are shown");
-        RenderOwnVisual(_honorWall, Path.Combine(output, "honor-wall.png"));
+        Check(HonorCatalog.Definitions.Count == 18 && ((ItemsControl)_honorWall!.FindName("CardsItems")).Items.Count is > 0 and <= 6,
+            "All eighteen honors are available in a bounded paged gallery");
+        RenderOwnVisual(_honorWall!, Path.Combine(output, "honor-wall.png"));
         RenderOwnVisual(_carePanel, Path.Combine(output, "care-panel.png"));
 
         // The setup window is injected with a disposable client home. Even the
@@ -71,6 +73,7 @@ public partial class PetWindow
         setupWindow.Closed += (_, _) => _clientSetupWindow = null;
         setupWindow.Show();
         await setupWindow.PendingOperation;
+        ((TabControl)_carePanel.FindName("CareTabs")).SelectedIndex = 2;
         ((Expander)_carePanel.FindName("AiSettingsExpander")).IsExpanded = true;
         ((Button)_carePanel.FindName("ClientSetupButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(ReferenceEquals(_clientSetupWindow, setupWindow), "Care-panel one-click setup opens/reuses its own window");
