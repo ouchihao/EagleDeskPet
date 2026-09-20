@@ -15,5 +15,7 @@
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
+    <Compile Include="../../DuckDeskPet/LayeredOutfitPack.cs" Link="LayeredOutfitPack.cs" />
+    <Compile Include="../../DuckDeskPet/OutfitCompositeMetadata.cs" Link="OutfitCompositeMetadata.cs" />
   </ItemGroup>
 </Project>

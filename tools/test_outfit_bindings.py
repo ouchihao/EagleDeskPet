@@ -1,5 +1,10 @@
 """Read-only regression checks against actual articulated source poses (no artwork rewriting)."""
+import hashlib
+import json
+import tempfile
 import unittest
+import zipfile
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -34,7 +39,7 @@ class OutfitBindingsTests(unittest.TestCase):
                     self.assertFalse(np.any((data[:, :, 0] != 0) & (alpha == 0)))
                     self.assertTrue(np.all(data[:, :, 0] <= 7))
                     self.assertGreater(report['torsoPixels'], 600)
-                    for slot in ('head', 'body'):
+                    for slot in ('head', 'body', 'eyes'):
                         t = transform[slot]
                         self.assertGreater(abs(t[2] * t[5] - t[3] * t[4]), 16)
 
@@ -78,6 +83,51 @@ class OutfitBindingsTests(unittest.TestCase):
         self.assertGreater(np.ptp(data[:, :, 2][torso]), 160)
         self.assertGreater(np.count_nonzero(data[:, :, 0] == 4), 200)
         self.assertGreater(np.count_nonzero(data[:, :, 0] == 5), 200)
+
+    def test_glasses_follow_actual_eye_band_not_the_head_box(self):
+        # Native-pixel eye centres from the accepted Office source poses. The head-box
+        # approximation formerly put Yawn's lenses across the mouth and Work's above eyes.
+        cases = [('Yawn', 60, 196, 145), ('Shy', 30, 176, 159), ('Eat', 30, 193, 150),
+                 ('WorkLoop', 0, 195, 176), ('BusyLoop', 60, 195, 168), ('RpsLose', 60, 198, 161)]
+        for directory, index, expected_x, expected_y in cases:
+            with self.subTest(clip=directory, frame=index):
+                source = self.assets / 'Outfits' / 'Office' / 'Animations' / directory / f'frame-{index:04d}.png'
+                measured = p.measure(Image.open(source))
+                cx, cy, width, height, _ = measured['eyes']
+                self.assertAlmostEqual(cx, expected_x, delta=2)
+                self.assertAlmostEqual(cy, expected_y, delta=2)
+                self.assertAlmostEqual(height / width, 173 / 512)
+                self.assertNotEqual(measured['eyes'], measured['head'])
+
+    def test_eye_retarget_only_changes_binding_metadata(self):
+        source = self.assets / 'Outfits' / 'Office' / 'Animations' / 'Yawn' / 'frame-0060.png'
+        data = source.read_bytes()
+        frame = dict(source=source.relative_to(self.assets.parent).as_posix(),
+                     sha256=hashlib.sha256(data).hexdigest(), map='maps/Yawn/0060.png',
+                     head=[1, 2, 100, 0, 0, 100], body=[3, 4, 100, 0, 0, 100])
+        with tempfile.TemporaryDirectory(prefix='eagle-eye-retarget-') as temporary:
+            archive = Path(temporary) / 'Office-v1.zip'
+            with zipfile.ZipFile(archive, 'w') as original:
+                original.writestr('bindings.json', json.dumps({'frames': {'Yawn/0060': frame}}))
+                original.writestr(frame['map'], data)
+            original_bytes = archive.read_bytes()
+            target_dir = Path(temporary) / 'updated'
+            p.retarget_eyes(self.assets, archive, target_dir)
+            self.assertEqual(archive.read_bytes(), original_bytes)
+            with zipfile.ZipFile(target_dir / archive.name) as updated:
+                self.assertEqual(updated.read(frame['map']), data)
+                actual = json.loads(updated.read('bindings.json'))['frames']['Yawn/0060']
+                self.assertEqual({key: value for key, value in actual.items() if key != 'eyes'}, frame)
+                self.assertEqual(actual['eyes'], p.affine(*p.measure(Image.open(source))['eyes']))
+
+    def test_anchor_smoothing_keeps_canonical_endpoints_and_reduces_detector_pulses(self):
+        values = np.zeros((31, 5), float)
+        values[:, 0] = np.linspace(180, 190, 31)
+        values[15, 0] += 7  # Single-frame component-detector quantisation, not authored motion.
+        smoothed = p.smooth_anchors(values)
+        np.testing.assert_array_equal(smoothed[[0, -1]], values[[0, -1]])
+        self.assertLess(abs(smoothed[15, 0] - 185), 1)
+        self.assertLess(np.max(np.abs(np.diff(smoothed[:, 0]))), 1)
 
 
 if __name__ == '__main__':

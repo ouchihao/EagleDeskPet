@@ -16,6 +16,7 @@ internal static partial class Program
     private static readonly double[] Progresses = [0, .25, .5, .75, 1];
     private static readonly List<string> Failures = [], Sheets = [];
     private static readonly Dictionary<string, BitmapSource> CharacterSamples = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, LayeredOutfitPack> CostumeLayers = new(StringComparer.Ordinal);
     private static readonly List<object> OcclusionMeasurements = [], ComputerMeasurements = [], FootMeasurements = [];
     private static FileResources _resources = null!;
     private static SceneCatalog _catalog = null!;
@@ -25,8 +26,9 @@ internal static partial class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args.Length is < 2 or > 3 || (args.Length == 3 && args[2] is not ("--motion" or "--motion-first" or "--motion-last")))
-        { Console.Error.WriteLine("Usage: OutfitSceneSelfTest <repository root> <QA output under .codex-build> [--motion|--motion-first|--motion-last]"); return 2; }
+        if (args.Length is < 2 or > 3 || (args.Length == 3 && args[2] is not ("--motion" or "--motion-first" or "--motion-last" or "--occlusion-only")))
+        { Console.Error.WriteLine("Usage: OutfitSceneSelfTest <repository root> <QA output under .codex-build> [--motion|--motion-first|--motion-last|--occlusion-only]"); return 2; }
+        bool occlusionOnly = args.Length == 3 && args[2] == "--occlusion-only";
         string repository = Path.GetFullPath(args[0]); _output = Path.GetFullPath(args[1]);
         string qaRoot = Path.Combine(repository, ".codex-build") + Path.DirectorySeparatorChar;
         if (!_output.StartsWith(qaRoot, StringComparison.OrdinalIgnoreCase)) { Console.Error.WriteLine("QA output must be inside the repository's .codex-build directory."); return 2; }
@@ -36,18 +38,21 @@ internal static partial class Program
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
         var outfits = OutfitCatalog.Load(_resources).Outfits.Select(item =>
             (Id: item.Id.Replace("outfit.", "", StringComparison.Ordinal), Assets: AnimationAssets.Load(_resources, item.AnimationManifest))).ToArray();
+        foreach (var outfit in outfits)
+            if (outfit.Assets.Appearance is { } recipe) CostumeLayers.Add(recipe, LayeredOutfitPack.Load(_resources, outfit.Assets));
         int workCombinations = outfits.Length * _catalog.Desks.Count * _catalog.Computers.Count;
         var overview = new List<(string Label, BitmapSource Image)>();
         try
         {
-            if (args.Length == 3) return AuditAllMotion(args[2] == "--motion-last" ? outfits.TakeLast(1).ToArray() : outfits,
+            AuditSourceOverOracle();
+            if (args.Length == 3 && !occlusionOnly) return AuditAllMotion(args[2] == "--motion-last" ? outfits.TakeLast(1).ToArray() : outfits,
                 args[2] is "--motion-first" or "--motion-last");
             foreach (var outfit in outfits)
                 foreach (string desk in _catalog.Desks.Select(x => x.Id))
                     foreach (string computer in _catalog.Computers.Select(x => x.Id))
                     {
                         string combination = $"{outfit.Id}-{desk}-{computer}";
-                        AuditWork(outfit.Assets, new("work.default", desk, computer), combination, overview);
+                        AuditWork(outfit.Assets, new("work.default", desk, computer), combination, overview, occlusionOnly);
                     }
             foreach (string desk in _catalog.Desks.Select(x => x.Id))
                 AuditHungry(outfits[^1].Assets, new("work.default", desk, "computer.midnight"), outfits[^1].Id + "-" + desk + "-hungry");
@@ -55,11 +60,12 @@ internal static partial class Program
             for (int i = 0; i < overview.Count; i += groupSize)
                 Contact(overview.Skip(i).Take(groupSize).ToArray(), 6, Brushes.FloralWhite,
                     $"work-combination-grid-{i / groupSize + 1:00}.png", "One outfit/desk with every computer / six scene phases", rowLabels: true);
-            Contact(overview, 6, Brushes.FloralWhite, "all-combinations-light-1.00x-overview.png",
-                $"{workCombinations} combinations / six actual work phases at 50% / native 1.00x", rowLabels: true);
+            for (int start = 0; start < overview.Count; start += 72)
+                Contact(overview.Skip(start).Take(72).ToArray(), 6, Brushes.FloralWhite, $"all-combinations-light-1.00x-overview-{start / 72 + 1:00}.png",
+                    $"{workCombinations} combinations / six actual work phases at 50% / page {start / 72 + 1}", rowLabels: true);
             File.WriteAllText(Path.Combine(_output, "report.json"), JsonSerializer.Serialize(new
             {
-                passed = Failures.Count == 0, failures = Failures, workCombinations, hungryCombinations = _catalog.Desks.Count,
+                passed = Failures.Count == 0, failures = Failures, occlusionOnly, workCombinations, hungryCombinations = _catalog.Desks.Count,
                 workPhases = WorkClips.Select(x => x.ToString()), hungryPhases = HungryClips.Select(x => x.ToString()),
                 sampledProgress = Progresses, themes = new[] { "dark", "light" }, scales = new[] { 1.0, 1.28 },
                 renderedComposites = _renders, distinctCharacterSamples = CharacterSamples.Count, sheets = Sheets,
@@ -76,13 +82,22 @@ internal static partial class Program
         finally { CharacterSamples.Clear(); app.Shutdown(); }
     }
 
-    private static void AuditWork(AnimationAssets assets, SceneSelection selection, string label, List<(string, BitmapSource)> overview)
+    private static void AuditWork(AnimationAssets assets, SceneSelection selection, string label, List<(string, BitmapSource)> overview, bool occlusionOnly = false)
     {
         var stage = new Stage(); WaitUi(stage.Renderer.RequestSelectionAsync(selection)); stage.Renderer.Apply(ClipSample.Idle);
         WaitUi(stage.Renderer.WarmFireAsync());
         try
         {
             AuditComputer(stage, label);
+            if (occlusionOnly)
+            {
+                foreach (var kind in new[] { ClipKind.WorkLoop, ClipKind.BusyLoop })
+                {
+                    stage.Show(Character(assets, kind, .5), kind, .5);
+                    Guard(label + "/occlusion/" + kind, () => AuditOcclusion(stage, label + "/" + kind));
+                }
+                return;
+            }
             foreach (var (theme, brush) in Themes()) foreach (double scale in new[] { 1.0, 1.28 })
             {
                 stage.SetEnvironment(scale, brush); Point? foot = null; var frames = new List<(string, BitmapSource)>();
@@ -139,13 +154,14 @@ internal static partial class Program
         var action = assets.Actions.Single(x => x.Clip == kind.ToString());
         int index = (int)Math.Round(progress * (action.FrameCount - 1)); string path = $"{action.Directory}/frame-{index:0000}.png";
         if (CharacterSamples.TryGetValue(path, out var cached)) return cached;
-        var bitmap = OutfitBitmap.Load(_resources, path); CharacterSamples[path] = bitmap;
+        var layers = assets.Appearance is null ? null : CostumeLayers[assets.Appearance];
+        var bitmap = RasterFramePlayer.LoadFrame(_resources, path, layers); CharacterSamples[path] = bitmap;
         Guard(path + "/foot", () =>
         {
             // Contact is the visible foot OUTLINE, not the last bright-yellow interior row.
             // This matches prepare_care_animation.measure_eat_root's alpha >= 32 policy;
             // measure original pixels so the production 320px decode cannot shift the test threshold.
-            using var originalStream = _resources.Open(path)!;
+            using var originalStream = _resources.Open(layers?.AnatomicalSourcePath(path) ?? path)!;
             var original = new PngBitmapDecoder(originalStream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad).Frames[0];
             byte[] pixels = Pixels(original); int bottom = -1, yellowFootPixels = 0;
             for (int y = (int)(original.PixelHeight * .87); y < original.PixelHeight; y++)
@@ -219,15 +235,36 @@ internal static partial class Program
             foreground.Visibility = Visibility.Hidden;
             stage.Fire.Visibility = stage.Back.Visibility = stage.Front.Visibility = stage.Computer.Visibility = Visibility.Hidden;
             byte[] actor = Pixels(stage.Render()); stage.Pet.Visibility = Visibility.Hidden; stage.Front.Visibility = Visibility.Visible;
-            byte[] front = Pixels(stage.Render()); stage.Front.Visibility = Visibility.Hidden; stage.Computer.Visibility = old[4];
-            byte[] computer = Pixels(stage.Render()); int overlaps = 0, mismatches = 0;
+            byte[] front = Pixels(stage.Render()); stage.Back.Visibility = Visibility.Visible;
+            byte[] completeDesk = Pixels(stage.Render()); stage.Back.Visibility = stage.Front.Visibility = Visibility.Hidden;
+            stage.Back.Visibility = old[1]; byte[] back = Pixels(stage.Render()); stage.Back.Visibility = Visibility.Hidden;
+            stage.Fire.Visibility = old[0]; byte[] fire = Pixels(stage.Render()); stage.Fire.Visibility = Visibility.Hidden;
+            foreground.Visibility = foregroundVisibility; byte[] hands = Pixels(stage.Render()); foreground.Visibility = Visibility.Hidden;
+            stage.Computer.Visibility = old[4];
+            byte[] computer = Pixels(stage.Render()); int overlaps = 0, surfaceOverlaps = 0, translucentOverlaps = 0, mismatches = 0;
+            byte[][] semanticStack = [fire, actor, back, hands, front, computer];
             for (int p = 0; p < composed.Length; p += 4)
                 if (front[p + 3] > 253 && actor[p + 3] > 230 && computer[p + 3] < 3)
                 {
                     overlaps++; if (Enumerable.Range(0, 3).Any(c => Math.Abs(composed[p + c] - front[p + c]) > 2)) mismatches++;
                 }
-            OcclusionMeasurements.Add(new { label, frontBodyOverlappingPixels = overlaps, mismatchedPixels = mismatches });
-            Require(overlaps >= 8 && mismatches == 0, $"Desk apron overlap check failed: {overlaps} overlapping pixels, {mismatches} leaked actor pixels.");
+                else if (completeDesk[p + 3] > 253 && actor[p + 3] > 230 && computer[p + 3] < 3 && hands[p + 3] < 3)
+                {
+                    surfaceOverlaps++;
+                    if (Enumerable.Range(0, 3).Any(c => Math.Abs(composed[p + c] - completeDesk[p + c]) > 2)) mismatches++;
+                }
+                else if (completeDesk[p + 3] > 230 && actor[p + 3] > 230 && computer[p + 3] < 3)
+                {
+                    // Generated metal/wood can contain alpha=253 throughout its interior.
+                    // Compare its ACTUAL source-over result rather than pretending it is opaque.
+                    // This retains the same 2/255 colour tolerance and independently fixes depth.
+                    translucentOverlaps++;
+                    if (!MatchesSemanticStack(composed, p, semanticStack)) mismatches++;
+                }
+            OcclusionMeasurements.Add(new { label, frontBodyOverlappingPixels = overlaps, tabletopBodyOverlappingPixels = surfaceOverlaps,
+                translucentDeskBodyOverlappingPixels = translucentOverlaps, mismatchedPixels = mismatches });
+            Require(overlaps + surfaceOverlaps + translucentOverlaps >= 8 && mismatches == 0,
+                $"Complete desk overlap check failed: {overlaps} apron + {surfaceOverlaps} tabletop + {translucentOverlaps} alpha-composited pixels, {mismatches} leaked actor pixels.");
         }
         finally
         {
@@ -235,6 +272,28 @@ internal static partial class Program
             for (int i = 0; i < layers.Length; i++) layers[i].Visibility = old[i]; stage.Root.Background = background;
             foreground.Visibility = foregroundVisibility;
         }
+    }
+
+    private static bool MatchesSemanticStack(byte[] composed, int pixel, byte[][] layers)
+    {
+        for (int channel = 0; channel < 4; channel++)
+        {
+            double expected = 0;
+            foreach (byte[] layer in layers)
+                expected = layer[pixel + channel] + expected * (1 - layer[pixel + 3] / 255.0);
+            if (Math.Abs(composed[pixel + channel] - expected) > 2) return false;
+        }
+        return true;
+    }
+
+    private static void AuditSourceOverOracle()
+    {
+        byte[] actor = [0, 0, 255, 255], translucentDesk = [253, 0, 0, 253];
+        byte[][] stack = [actor, translucentDesk];
+        Require(MatchesSemanticStack([253, 0, 2, 255], 0, stack), "Alpha-aware desk oracle rejected exact source-over.");
+        Require(!MatchesSemanticStack(actor, 0, stack), "Alpha-aware desk oracle failed to detect body above desk.");
+        Require(!MatchesSemanticStack([253, 3, 2, 255], 0, stack), "Alpha-aware desk oracle weakened the two-level colour tolerance.");
+        Require(!MatchesSemanticStack([253, 0, 2, 250], 0, stack), "Alpha-aware desk oracle failed to check alpha coverage.");
     }
 
     private static ClipSample Sample(ClipKind kind, double progress) => new(kind, progress == 1 ? ClipPlaybackPhase.Terminal : ClipPlaybackPhase.Playing, progress, (long)kind);

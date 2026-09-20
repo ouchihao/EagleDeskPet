@@ -16,6 +16,8 @@
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
+    <Compile Include="../../DuckDeskPet/LayeredOutfitPack.cs" Link="LayeredOutfitPack.cs" />
+    <Compile Include="../../DuckDeskPet/OutfitCompositeMetadata.cs" Link="OutfitCompositeMetadata.cs" />
     <Resource Include="../../DuckDeskPet/Assets/SceneProps/WorkV2/**/*.png" Link="Assets/SceneProps/WorkV2/%(RecursiveDir)%(Filename)%(Extension)" />
     <Resource Include="../../DuckDeskPet/Assets/SceneProps/Work/laptop.png" Link="Assets/SceneProps/Work/laptop.png" />
     <Resource Include="../../DuckDeskPet/Assets/SceneProps/Shop/*.png" Link="Assets/SceneProps/Shop/%(Filename)%(Extension)" />

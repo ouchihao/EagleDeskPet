@@ -12,6 +12,8 @@
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
+    <Compile Include="../../DuckDeskPet/LayeredOutfitPack.cs" Link="LayeredOutfitPack.cs" />
+    <Compile Include="../../DuckDeskPet/OutfitCompositeMetadata.cs" Link="OutfitCompositeMetadata.cs" />
     <Compile Include="../../DuckDeskPet/HungryScenePreviewWindow.cs" Link="HungryScenePreviewWindow.cs" />
     <Compile Include="../../DuckDeskPet/ContentPreviewWindow.cs" Link="ContentPreviewWindow.cs" />
     <Compile Include="../../DuckDeskPet/PreviewStageChrome.cs" Link="PreviewStageChrome.cs" />

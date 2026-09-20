@@ -15,6 +15,8 @@
     <Compile Include="../../DuckDeskPet/PreviewStageChrome.cs" Link="PreviewStageChrome.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
+    <Compile Include="../../DuckDeskPet/LayeredOutfitPack.cs" Link="LayeredOutfitPack.cs" />
+    <Compile Include="../../DuckDeskPet/OutfitCompositeMetadata.cs" Link="OutfitCompositeMetadata.cs" />
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
     <Compile Include="../../DuckDeskPet/WorkStageRenderer.cs" Link="WorkStageRenderer.cs" />
     <Compile Include="../../DuckDeskPet/WorkStageMotion.cs" Link="WorkStageMotion.cs" />
@@ -27,6 +29,7 @@
     <Resource Include="../../DuckDeskPet/Assets/mascot-animated-neutral.png" Link="Assets/mascot-animated-neutral.png" />
     <Resource Include="../../DuckDeskPet/Assets/Outfits/Office/neutral.png" Link="Assets/Outfits/Office/neutral.png" />
     <Resource Include="../../DuckDeskPet/Assets/Outfits/Hoodie/neutral.png" Link="Assets/Outfits/Hoodie/neutral.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Outfits/**/thumbnail.png" Link="Assets/Outfits/%(RecursiveDir)%(Filename)%(Extension)" />
     <Resource Include="../../DuckDeskPet/Assets/Animations/Tea/frame-0060.png" Link="Assets/Animations/Tea/frame-0060.png" />
     <Resource Include="../../DuckDeskPet/Assets/Ui/club-shop-v1.png" Link="Assets/Ui/club-shop-v1.png" Condition="Exists('../../DuckDeskPet/Assets/Ui/club-shop-v1.png')" />
     <Resource Include="../../DuckDeskPet/Assets/Badges/*-v2.png" Link="Assets/Badges/%(Filename)%(Extension)" />

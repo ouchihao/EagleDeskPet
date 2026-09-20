@@ -42,7 +42,8 @@ internal static partial class Program
                         {
                             double progress = i / (double)(action.FrameCount - 1);
                             string path = $"{action.Directory}/frame-{i:0000}.png";
-                            var actor = OutfitBitmap.Load(_resources, path);
+                            var layers = outfit.Assets.Appearance is null ? null : CostumeLayers[outfit.Assets.Appearance];
+                            var actor = RasterFramePlayer.LoadFrame(_resources, path, layers);
                             stage.Pet.Source = actor;
                             long started = System.Diagnostics.Stopwatch.GetTimestamp();
                             stage.Renderer.Apply(Sample(kind, progress), 1.0 / 60);

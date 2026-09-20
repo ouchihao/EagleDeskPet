@@ -45,9 +45,9 @@ internal static class Program
     {
         var resources = new FileResources(root);
         var catalog = OutfitCatalog.Load(resources);
-        var expected = new HashSet<string>([OutfitCatalog.DefaultId, Office, "outfit.hoodie"], StringComparer.Ordinal);
+        var expected = new HashSet<string>([OutfitCatalog.DefaultId, Office, "outfit.hoodie", "outfit.ox", "outfit.hero", "outfit.astronaut"], StringComparer.Ordinal);
         Check(catalog.Warning is null && expected.SetEquals(catalog.Outfits.Select(x => x.Id)),
-            "real registry contains default, office and hoodie without fallback");
+            "real registry contains all six complete costumes without fallback");
         foreach (var outfit in catalog.Outfits)
         {
             // This exercises the production full-PNG validator, not WarmClipsAsync.
@@ -66,8 +66,11 @@ internal static class Program
                 $"real {outfit.Id} supports all 19 actions plus neutral");
             Check(validated.Assets is { Actions.Count: 19 } assets && assets.Actions.Sum(x => x.FrameCount) == 2491,
                 $"real {outfit.Id} manifest declares exactly 19 clips and 2491 frames");
-            Check(pngReads == 2492,
-                $"real {outfit.Id} actually reads all 2491 frames and its neutral PNG");
+            if (validated.Layers is null)
+                Check(pngReads == 2492, $"real {outfit.Id} actually reads all 2491 frames and its neutral PNG");
+            else
+                Check(validated.Layers.FrameCount == 2492 && pngReads > 0,
+                    $"real {outfit.Id} validates all 2492 source-hashed anatomical maps and its actual costume pieces");
             Console.WriteLine($"REAL {outfit.Id}: available={result.IsAvailable}; pngReads={pngReads}; warning={result.Warning ?? "none"}");
         }
         GC.Collect();

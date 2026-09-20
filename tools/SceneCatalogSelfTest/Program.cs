@@ -48,6 +48,7 @@ internal static class Program
             ("Apply never loads images and release clears fire sources", RenderPathAndRelease),
             ("Fire anchor follows image scale without adding letterboxing", FireAnchor),
             ("White work clothing is never a bowl and cached masks follow the action family", SemanticForeground),
+            ("A layered cape never enters the anatomical hand foreground", LayeredCapeOcclusion),
         };
         int failures = 0;
         foreach (var (name, body) in cases)
@@ -60,6 +61,22 @@ internal static class Program
     }
 
     private static JsonObject Document() => JsonNode.Parse(_json)!.AsObject();
+    private static void LayeredCapeOcclusion()
+    {
+        var pixels = new byte[384 * 346 * 4];
+        for (int y = 247; y < 278; y++) for (int x = 120; x < 151; x++)
+        {
+            int p = (y * 384 + x) * 4; pixels[p] = 40; pixels[p + 1] = 75; pixels[p + 2] = 160; pixels[p + 3] = 255;
+        }
+        var anatomy = BitmapSource.Create(384, 346, 96, 96, PixelFormats.Bgra32, null, pixels, 384 * 4); anatomy.Freeze();
+        Array.Fill(pixels, (byte)255); // Deliberately huge cape: geometry must use the underlying actor, not this bitmap.
+        var dressed = BitmapSource.Create(384, 346, 96, 96, PixelFormats.Bgra32, null, pixels, 384 * 4); dressed.Freeze();
+        OutfitCompositeMetadata.Attach(dressed, anatomy);
+        var scene = AlternateCatalog().Resolve(Alternate).Scene;
+        var mask = SceneForegroundMask.Create(dressed, scene.Canvas, 1, includeBowl: false);
+        Check(mask.FillContains(new Point(130, 260)), "The dressed anatomical hand disappeared.");
+        Check(!mask.FillContains(new Point(110, 260)) && !mask.FillContains(new Point(260, 260)), "A rear cape/backpack was copied above the tabletop.");
+    }
     private static void SemanticForeground()
     {
         var panel = new Grid { Width = 160, Height = 174 };
