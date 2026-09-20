@@ -86,10 +86,15 @@ def validate_selection(assets: Path, stage: Path, selected: list[tuple[str, str]
             _require(provenance.get("source_order_metadata_sha256") == metadata_hash, f"Stale source-order metadata: {path}")
             _require(provenance.get("duration_seconds") == spec.duration_seconds and
                      provenance.get("expected_frame_count") == expected_count and provenance.get("authored_keys_locked") is True and
+                     provenance.get("authored_root_calibration") is True and
                      provenance.get("segmentwise_interpolation") is True and provenance.get("qa_thresholds_relaxed") is False,
                      f"Incomplete or incompatible build provenance: {path}")
             reports[suffix] = report
         _require(reports["keys-qa"].get("preflight", {}).get("passed") is True, f"Unpassed key preflight: {outfit}/{clip}")
+        calibration = reports["qa"].get("stabilization", {}).get("authored_root_calibration", {})
+        _require(calibration.get("enabled") is True and calibration.get("maximum_authored_translation") == 0 and
+                 calibration.get("frame_indices") == list(spec.authored_frame_indices),
+                 f"Missing endpoint-calibrated stabilization: {outfit}/{clip}")
         locked = reports["qa"].get("authored_key_frames", {})
         _require(locked.get("locked") is True and locked.get("all_exact") is True and
                  locked.get("frame_indices") == list(spec.authored_frame_indices), f"Missing exact key-lock QA: {outfit}/{clip}")

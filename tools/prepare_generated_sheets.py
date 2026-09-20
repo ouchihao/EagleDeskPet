@@ -49,6 +49,7 @@ class ClipSpec:
     layered_midpoint_sheet_name: str | None = None
     detached_right_only_after_frame: int | None = None
     detached_motion_after_frame: int | None = None
+    authored_root_calibration: bool = False
 
     @property
     def uses_layered_bomb_pipeline(self) -> bool:
@@ -1802,7 +1803,13 @@ def stabilize_frames(
     canonical_neutral: Image.Image,
     *,
     exact_endpoints: tuple[Image.Image, Image.Image] | None = None,
+    authored_frame_indices: tuple[int, ...] | None = None,
 ) -> tuple[list[Image.Image], dict[str, object]]:
+    if authored_frame_indices is not None:
+        return stabilize_authored_root_frames(
+            frames, canonical_neutral, authored_frame_indices,
+            exact_endpoints=exact_endpoints,
+        )
     if not frames:
         raise ValueError("cannot stabilize an empty frame sequence")
     target = measure_root_anchor(canonical_neutral)
@@ -1910,6 +1917,160 @@ def stabilize_frames(
         },
     }
     return stabilized, report
+
+
+def stabilize_authored_root_frames(
+    frames: list[Image.Image],
+    canonical_neutral: Image.Image,
+    authored_frame_indices: tuple[int, ...],
+    *,
+    exact_endpoints: tuple[Image.Image, Image.Image] | None = None,
+) -> tuple[list[Image.Image], dict[str, object]]:
+    """Remove segment-local root drift without moving an authored endpoint.
+
+    Tightening reconstructed alpha can change a threshold-measured foot/root by
+    0.5--1px even when RGB geometry has not moved. Pulling every reconstructed
+    frame to the canonical measurement, then replacing locked keys with their
+    original pixels, creates a one-frame whole-character jump. Calibrate that
+    measurement bias at *every* authored endpoint and interpolate the baseline
+    across each segment. Only deviation from that baseline is corrected.
+
+    This is not permission to ship a displaced character: the normal final
+    root, border and halo gates still check the actual output unchanged.
+    """
+    indices = authored_frame_indices
+    if (not frames or len(indices) < 2
+            or any(type(index) is not int for index in indices)
+            or indices[0] != 0 or indices[-1] != len(frames) - 1
+            or any(first >= last for first, last in zip(indices, indices[1:]))):
+        raise ValueError("authored root calibration requires increasing endpoint indexes spanning all frames")
+    target = measure_root_anchor(canonical_neutral)
+    anchors = [measure_root_anchor(frame) for frame in frames]
+    raw_track = np.asarray([(anchor.torso_x, anchor.foot_contact_y) for anchor in anchors], dtype=np.float64)
+    filtered_track = _median_track(raw_track)
+    target_point = np.asarray((target.torso_x, target.foot_contact_y), dtype=np.float64)
+    uncalibrated = target_point[None, :] - filtered_track
+    endpoint_offsets = uncalibrated[list(indices)]
+    baseline = np.column_stack([
+        np.interp(np.arange(len(frames)), indices, endpoint_offsets[:, dimension])
+        for dimension in range(2)
+    ])
+    translations = uncalibrated - baseline
+    # Be explicit rather than relying on floating-point interpolation identity.
+    translations[list(indices)] = 0.0
+    if float(np.max(np.abs(translations))) > max(CANVAS_SIZE) * 0.35:
+        raise RuntimeError("required calibrated root correction is implausibly large")
+    rendered = [
+        frame.copy() if not np.any(offset) else translate_rgba(frame, float(offset[0]), float(offset[1]))
+        for frame, offset in zip(frames, translations, strict=True)
+    ]
+    if exact_endpoints is not None:
+        rendered[0], rendered[-1] = exact_endpoints[0].copy(), exact_endpoints[1].copy()
+    result_anchors = [measure_root_anchor(frame) for frame in rendered]
+    result_track = np.asarray([(anchor.torso_x, anchor.foot_contact_y) for anchor in result_anchors], dtype=np.float64)
+    steps = np.diff(translations, axis=0)
+    return rendered, {
+        "target": {"torso_x": target.torso_x, "foot_contact_y": target.foot_contact_y},
+        "raw": {"torso_x_range": float(np.ptp(raw_track[:, 0])), "foot_contact_y_range": float(np.ptp(raw_track[:, 1]))},
+        "translation": {
+            "maximum_absolute_x": float(np.max(np.abs(translations[:, 0]))),
+            "maximum_absolute_y": float(np.max(np.abs(translations[:, 1]))),
+            "maximum_adjacent_step_x": float(np.max(np.abs(steps[:, 0]))),
+            "maximum_adjacent_step_y": float(np.max(np.abs(steps[:, 1]))),
+            "secondary_correction_maximum_x": 0.0, "secondary_correction_maximum_y": 0.0,
+            "secondary_correction_passes": 0, "per_frame_offsets": translations.tolist(),
+        },
+        "authored_root_calibration": {
+            "enabled": True, "frame_indices": list(indices),
+            "reconstructed_endpoint_root_offsets": endpoint_offsets.tolist(),
+            "endpoint_baseline_offsets": baseline.tolist(),
+            "maximum_authored_translation": float(np.max(np.abs(translations[list(indices)]))),
+            "method": "segmentwise linear endpoint measurement-bias baseline; only intra-segment drift is corrected",
+            "qa_thresholds_relaxed": False,
+        },
+        "stabilized": {
+            "torso_x_range": float(np.ptp(result_track[:, 0])),
+            "foot_contact_y_range": float(np.ptp(result_track[:, 1])),
+            "maximum_torso_x_error": float(np.max(np.abs(result_track[:, 0] - target.torso_x))),
+            "maximum_foot_contact_y_error": float(np.max(np.abs(result_track[:, 1] - target.foot_contact_y))),
+        },
+    }
+
+
+def preserve_calibrated_root_residuals(
+    frames: list[Image.Image], canonical_neutral: Image.Image, locked_indices: set[int],
+) -> tuple[list[Image.Image], dict[str, object]]:
+    """Report, but never undo, endpoint calibration with canonical re-centering."""
+    target = measure_root_anchor(canonical_neutral)
+    anchors = [measure_root_anchor(frame) for frame in frames]
+    return frames, {
+        "locked_authored_frames": sorted(locked_indices), "corrected_frame_count": 0, "corrections": [],
+        "maximum_torso_x_error": max(abs(anchor.torso_x - target.torso_x) for anchor in anchors),
+        "maximum_foot_contact_y_error": max(abs(anchor.foot_contact_y - target.foot_contact_y) for anchor in anchors),
+        "authored_root_calibration": True,
+        "method": "preserve calibrated coordinates; unchanged final QA gates decide root bounds",
+        "qa_thresholds_relaxed": False,
+    }
+
+
+def repair_calibrated_outer_edge_rgb(
+    frames: list[Image.Image], locked_indices: set[int],
+) -> tuple[list[Image.Image], dict[str, object]]:
+    """Repair only unsupported edge *color*, never coverage or geometry.
+
+    The legacy color propagation treats alpha >=240 as a trusted seed while
+    the strict halo gate requires >=245 opaque support. A resampled 242-alpha
+    matte seed can consequently propagate its own polluted RGB forever. For
+    calibrated clips, replace only outer-edge colors that disagree with every
+    nearby truly opaque color. Copy an existing local color rather than mixing
+    a new one. Locked keys and all opaque/interior pixels stay byte-exact.
+    """
+    result: list[Image.Image] = []
+    observations: list[dict[str, int]] = []
+    radius = HALO_EDGE_COLOR_SEARCH_RADIUS
+    for index, frame in enumerate(frames):
+        if index in locked_indices:
+            result.append(frame.copy())
+            continue
+        rgba = np.array(frame.convert("RGBA"), dtype=np.uint8)
+        original_rgb = rgba[:, :, :3].astype(np.int16)
+        alpha = rgba[:, :, 3]
+        visible = alpha >= HALO_ALPHA_THRESHOLD
+        opaque = alpha >= 245
+        supported = opaque.copy()
+        for _ in range(HALO_MAX_LOW_ALPHA_DISTANCE_TO_OPAQUE):
+            supported |= _adjacent_to(supported)
+        candidates = visible & ~opaque & supported & _adjacent_to(~visible)
+        repaired = 0
+        for raw_y, raw_x in np.argwhere(candidates):
+            y, x = int(raw_y), int(raw_x)
+            y0, y1 = max(0, y - radius), min(alpha.shape[0], y + radius + 1)
+            x0, x1 = max(0, x - radius), min(alpha.shape[1], x + radius + 1)
+            support_positions = np.argwhere(opaque[y0:y1, x0:x1])
+            if not len(support_positions):
+                continue  # Unsupported coverage remains a strict QA failure.
+            colors = original_rgb[y0:y1, x0:x1][opaque[y0:y1, x0:x1]]
+            residuals = np.max(np.abs(colors - original_rgb[y, x]), axis=1)
+            minimum = int(np.min(residuals))
+            if minimum <= HALO_EDGE_COLOR_RESIDUAL_MAXIMUM:
+                continue
+            # Minimize color change, then break ties by spatial proximity.
+            choices = np.flatnonzero(residuals == minimum)
+            distances = ((support_positions[choices, 0] + y0 - y) ** 2
+                         + (support_positions[choices, 1] + x0 - x) ** 2)
+            selected = int(choices[int(np.argmin(distances))])
+            rgba[y, x, :3] = colors[selected]
+            repaired += 1
+        result.append(Image.fromarray(rgba))
+        if repaired:
+            observations.append({"frame": index, "recolored_outer_edge_pixels": repaired})
+    return result, {
+        "enabled": True, "alpha_modified": False, "opaque_pixels_modified": False,
+        "authored_frames_modified": False, "qa_thresholds_relaxed": False,
+        "recolored_pixel_count": sum(item["recolored_outer_edge_pixels"] for item in observations),
+        "observations": observations,
+        "method": "RGB-only outer-alpha-edge repair from existing local >=245-alpha color support",
+    }
 
 
 def _premultiplied_mae(first: Image.Image, second: Image.Image) -> float:
@@ -4566,6 +4727,8 @@ def run_rife(
     *,
     exact_endpoints: tuple[Image.Image, Image.Image] | None = None,
 ) -> tuple[int, dict[str, object]]:
+    if spec.authored_root_calibration and not (spec.lock_authored_frames and spec.segmentwise_interpolation):
+        raise ValueError("authored_root_calibration requires locked authored frames and segmentwise interpolation")
     clear_generated_pngs(output_dir, "frame-")
     output_count = round(spec.duration_seconds * 60) + 1
     authored_frame_indices = resolve_authored_frame_indices(spec, output_count)
@@ -4727,6 +4890,7 @@ def run_rife(
             reconstructed,
             canonical_neutral,
             exact_endpoints=endpoints,
+            authored_frame_indices=tuple(authored_frame_indices) if spec.authored_root_calibration else None,
         )
         stabilized, component_policy = enforce_detached_component_policy(
             stabilized,
@@ -4739,7 +4903,8 @@ def run_rife(
                 strict=True,
             ):
                 stabilized[frame_index] = key.copy()
-        stabilized, final_root_correction = correct_final_root_residuals(
+        residual_correction = preserve_calibrated_root_residuals if spec.authored_root_calibration else correct_final_root_residuals
+        stabilized, final_root_correction = residual_correction(
             stabilized,
             canonical_neutral,
             locked_frame_indices,
@@ -4749,6 +4914,11 @@ def run_rife(
             spec,
             locked_frame_indices,
         )
+        calibrated_edge_cleanup: dict[str, object] = {"enabled": False}
+        if spec.authored_root_calibration:
+            stabilized, calibrated_edge_cleanup = repair_calibrated_outer_edge_rgb(
+                stabilized, locked_frame_indices,
+            )
         component_policy["post_root_residual_policy"] = (
             inspect_detached_component_policy(stabilized, spec)
         )
@@ -4779,6 +4949,7 @@ def run_rife(
     qa["stabilization"] = stabilization
     qa["final_root_residual_correction"] = final_root_correction
     qa["interpolated_matte_cleanup"] = interpolated_matte_cleanup
+    qa["calibrated_outer_edge_rgb_cleanup"] = calibrated_edge_cleanup
     qa["component_policy_cleanup"] = component_policy
     exact_authored_frames: list[dict[str, object]] = []
     for key_index, (frame_index, key) in enumerate(

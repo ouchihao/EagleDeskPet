@@ -57,6 +57,7 @@ class RpsPreparationTests(unittest.TestCase):
             self.assertEqual(spec.source_count, 16)
             self.assertTrue(spec.lock_authored_frames)
             self.assertTrue(spec.segmentwise_interpolation)
+            self.assertTrue(spec.authored_root_calibration)
             self.assertEqual(round(spec.duration_seconds * 60), positions[-1])
             self.assertTrue(all(a < b for a, b in zip(positions, positions[1:])))
 
@@ -71,6 +72,13 @@ class RpsPreparationTests(unittest.TestCase):
         self.assertEqual(info["reused_source_cells"], [{"source_cell": 7, "key_positions": [7, 9]}])
         self.assertEqual(info["omitted_source_cells"], [9])
         self.assertEqual(info["source_order_metadata_sha256"], rps.sha256(metadata))
+
+    def test_recovery_and_finger_formation_keep_the_reviewed_timing(self):
+        self.assertEqual(rps.THROW_POSITIONS[1] - rps.THROW_POSITIONS[0], 20)
+        self.assertEqual(rps.THROW_POSITIONS[-1] - rps.THROW_POSITIONS[-2], 20)
+        self.assertEqual(rps.THROW_POSITIONS[9] - rps.THROW_POSITIONS[6], 52)
+        self.assertTrue(all(b - a >= 8 for a, b in zip(rps.THROW_POSITIONS[1:6], rps.THROW_POSITIONS[2:7])))
+        self.assertEqual(rps.REACTION_POSITIONS[-1] - rps.REACTION_POSITIONS[-2], 20)
 
     def test_source_order_rejects_bool_missing_and_out_of_range(self):
         for order in ([*range(15), True], list(range(15)), [*range(15), 16], [*range(15), -1]):
@@ -215,6 +223,9 @@ class RpsPromotionTests(unittest.TestCase):
         for suffix, frames in (("keys-qa", 16), ("qa", count)):
             report = rps.annotate({"passed": True, "errors": [], "frame_count": frames,
                                    "preflight": {"passed": True},
+                                   "stabilization": {"authored_root_calibration": {"enabled": True,
+                                       "maximum_authored_translation": 0,
+                                       "frame_indices": list(spec.authored_frame_indices)}},
                                    "authored_key_frames": {"locked": True, "all_exact": True,
                                                            "frame_indices": list(spec.authored_frame_indices)}}, info, "default", clip)
             rps.pipeline.write_qa_report(qa / f"{clip}-{suffix}.json", report)
@@ -238,7 +249,8 @@ class RpsPromotionTests(unittest.TestCase):
 
     def test_failed_or_stale_report_produces_zero_production_writes(self):
         import promote_rps_animation as promotion
-        for field, value in (("passed", False), ("source_sha256", "stale"), ("neutral_sha256", "stale")):
+        for field, value in (("passed", False), ("source_sha256", "stale"), ("neutral_sha256", "stale"),
+                             ("stabilization", {})):
             _, _, qa = self.complete_stage()
             path = qa / "RpsRock-qa.json"
             report = json.loads(path.read_text())
@@ -253,7 +265,8 @@ class RpsPromotionTests(unittest.TestCase):
     def test_changed_locked_frame_rejected_without_production_writes(self):
         import promote_rps_animation as promotion
         _, frames, _ = self.complete_stage()
-        self.neutral.save(frames / "frame-0008.png")
+        locked_index = rps.THROW_POSITIONS[1]
+        self.neutral.save(frames / f"frame-{locked_index:04d}.png")
         before = self.asset_hashes()
         with patch.object(rps.pipeline, "CANVAS_SIZE", (8, 8)), self.assertRaisesRegex(ValueError, "Authored key changed"):
             promotion.promote(self.assets, self.output, [("default", "RpsRock")], repository_root=self.root)

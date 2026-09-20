@@ -18,6 +18,7 @@ import prepare_generated_sheets as pipeline
 from prepare_work_animation import align_cells, extract_native_cells, place_prop
 from prepare_care_animation import measure_eat_root, add_temporal_qa
 import work_asset_acceleration
+from rps_animation_timing import RPS_TIMES
 
 WORK = ['WorkEnter', 'WorkLoop', 'WorkToBusyV2', 'BusyLoop', 'WorkExit', 'BusyExitV2']
 GROUPS = {'Yawn':['Yawn'], 'Shy':['Shy'], 'Eat':['Eat'], 'Work':WORK,
@@ -38,12 +39,6 @@ TIMES = {
     'HungryExit': (1.5, (0,23,46,67,90)),
 }
 FIFTEEN = (0,8,16,24,32,40,48,56,64,72,80,90,100,110,120)
-RPS_TIMES = {
-    **{clip: (2.8, (0,8,16,26,36,46,56,72,92,108,118,130,142,152,162,168))
-       for clip in ('RpsRock','RpsPaper','RpsScissors')},
-    **{clip: (2.4, (0,8,16,24,34,44,54,64,74,84,94,104,114,126,136,144))
-       for clip in ('RpsWin','RpsLose')},
-}
 TIMES.update(RPS_TIMES)
 RPS_ROUTE = 'Rps v2 is built separately by tools/prepare_rps_animation.py (16 authored keys per clip)'
 

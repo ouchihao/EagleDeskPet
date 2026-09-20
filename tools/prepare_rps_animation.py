@@ -23,14 +23,13 @@ from prepare_care_animation import add_temporal_qa, measure_eat_root
 from prepare_office_outfit import clean_registered_alpha
 from prepare_work_animation import align_cells, extract_native_cells
 import work_asset_acceleration
+from rps_animation_timing import THROW_POSITIONS, REACTION_POSITIONS
 
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTFITS = ("default", "office", "hoodie")
 CLIP_SOURCES = {"RpsRock": "rock", "RpsPaper": "paper", "RpsScissors": "scissors",
                 "RpsWin": "win", "RpsLose": "lose"}
-THROW_POSITIONS = (0, 8, 16, 26, 36, 46, 56, 72, 92, 108, 118, 130, 142, 152, 162, 168)
-REACTION_POSITIONS = (0, 8, 16, 24, 34, 44, 54, 64, 74, 84, 94, 104, 114, 126, 136, 144)
 
 
 def utc_now() -> str:
@@ -56,7 +55,7 @@ def clip_spec(clip: str, source_name: str) -> pipeline.ClipSpec:
                              duration_seconds=2.4 if positions == REACTION_POSITIONS else 2.8,
                              columns=4, rows=4, source_pose_count=16,
                              authored_frame_indices=positions, segmentwise_interpolation=True,
-                             lock_authored_frames=True)
+                             lock_authored_frames=True, authored_root_calibration=True)
 
 
 def read_source_order(source: Path) -> tuple[tuple[int, ...], Path | None]:
@@ -123,6 +122,7 @@ def provenance(source: Path, neutral_path: Path, order: tuple[int, ...], metadat
         "authored_time_seconds": [round(i / 60, 6) for i in spec.authored_frame_indices],
         "expected_frame_count": round(spec.duration_seconds * 60) + 1,
         "authored_keys_locked": True, "segmentwise_interpolation": True,
+        "authored_root_calibration": spec.authored_root_calibration,
         "method": "native-alpha extraction, one sheet-wide helmet registration, established alpha cleanup, paired RIFE RGB/alpha, planted-foot stabilization",
         "qa_thresholds_relaxed": False, "build_started_utc": utc_now(),
     }
