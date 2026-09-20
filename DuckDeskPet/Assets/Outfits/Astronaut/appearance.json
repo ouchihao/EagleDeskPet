@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "baseManifest": "Assets/actions.json",
+  "bindings": "Assets/OutfitBindings/Default-v1.zip",
+  "layers": [
+    {
+      "slot": "torso",
+      "image": "Assets/Outfits/Astronaut/Layers/torso.png"
+    },
+    {
+      "slot": "leftSleeve",
+      "image": "Assets/Outfits/Astronaut/Layers/left-sleeve.png",
+      "uvQuad": [
+        0.56,
+        0.02,
+        0.96,
+        0.34,
+        0.03,
+        0.59,
+        0.44,
+        0.96
+      ]
+    },
+    {
+      "slot": "rightSleeve",
+      "image": "Assets/Outfits/Astronaut/Layers/right-sleeve.png",
+      "uvQuad": [
+        0.04,
+        0.34,
+        0.44,
+        0.02,
+        0.56,
+        0.96,
+        0.97,
+        0.59
+      ]
+    },
+    {
+      "slot": "leftBoot",
+      "image": "Assets/Outfits/Astronaut/Layers/left-boot.png"
+    },
+    {
+      "slot": "rightBoot",
+      "image": "Assets/Outfits/Astronaut/Layers/right-boot.png"
+    },
+    {
+      "slot": "head",
+      "image": "Assets/Outfits/Astronaut/Layers/head.png",
+      "rect": [
+        -0.14,
+        -0.13,
+        1.28,
+        1.13
+      ]
+    },
+    {
+      "slot": "back",
+      "image": "Assets/Outfits/Astronaut/Layers/back.png",
+      "rect": [
+        -0.24,
+        -0.04,
+        1.48,
+        1.03
+      ]
+    }
+  ]
+}

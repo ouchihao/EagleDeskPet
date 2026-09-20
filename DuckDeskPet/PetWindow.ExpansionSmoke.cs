@@ -20,7 +20,7 @@ public partial class PetWindow
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(280));
         var elapsed = Stopwatch.StartNew();
         bool isolated = false;
-        const int expectedCases = 10;
+        const int expectedCases = 12;
         string? fatal = null;
         object? renderCadence = null;
         string reportPath = Path.Combine(output, "expansion-smoke.json");
@@ -65,7 +65,7 @@ public partial class PetWindow
                 ExpansionCheck(!_companion.AutoEmotionScenesEnabled && !_emotions.Enabled, "Automatic emotions must default to off in a fresh profile.");
                 _settings.IsPaused = false; _behavior.SetPaused(false); _behavior.SuspendAutomatic(true);
                 SetActiveBanter(false); SetNotifications(true); SetTaskNotificationsMuted(true);
-                CareState.Coins = 500; CareState.Food = 12; CareState.FoodProgressSeconds = 0;
+                CareState.Coins = 50000.05m; CareState.Food = 12; CareState.FoodProgressSeconds = 0;
                 CareState.Fullness = 75; CareState.Mood = 60;
                 ExpansionCheck(_store.Save(CareState), "Cannot seed the isolated real store.");
                 EmotionMenuItem.IsChecked = true; EmotionMenu_OnClick(EmotionMenuItem, new RoutedEventArgs(MenuItem.ClickEvent));
@@ -98,14 +98,15 @@ public partial class PetWindow
                 ExpansionCheck(ExpansionContentFingerprint() == before, "Preview mutated currency, ownership, equipment or active outfit/scene.");
                 RenderOwnVisual(_contentPreviewWindow!, Path.Combine(output, "expansion-preview.png"));
                 _contentPreviewWindow!.Close();
-                int coins = CareState.Coins;
+                decimal coins = CareState.Coins;
+                decimal deskPrice = ContentCatalog.Get(ContentCatalog.MintDeskId).Price;
                 var purchase = _contentTransactions!.Purchase(ContentCatalog.MintDeskId);
-                ExpansionCheck(purchase.Success && purchase.Changed && CareState.Coins == coins - 20, "First purchase did not atomically charge 20.");
+                ExpansionCheck(purchase.Success && purchase.Changed && CareState.Coins == coins - deskPrice, "First purchase did not atomically charge the catalog price.");
                 var duplicate = _contentTransactions.Purchase(ContentCatalog.MintDeskId);
-                ExpansionCheck(!duplicate.Changed && CareState.Coins == coins - 20, "Duplicate purchase charged again.");
+                ExpansionCheck(!duplicate.Changed && CareState.Coins == coins - deskPrice, "Duplicate purchase charged again.");
                 ExpansionCheck(ContentOwnershipService.Owns(CareState.Content, ContentCatalog.MintDeskId), "Purchased desk was not owned.");
                 var computer = _contentTransactions.Purchase(ContentCatalog.MidnightComputerId);
-                ExpansionCheck(computer.Success && CareState.Coins == coins - 50, "Computer purchase failed.");
+                ExpansionCheck(computer.Success && CareState.Coins == coins - deskPrice - ContentCatalog.Get(ContentCatalog.MidnightComputerId).Price, "Computer purchase failed.");
                 _shopWindow.Refresh(); RenderOwnVisual(_shopWindow, Path.Combine(output, "expansion-shop-owned.png"));
                 _shopWindow.Close();
                 ExpansionCheck(_shopWindow is null, "Shop did not detach on close.");
@@ -193,7 +194,7 @@ public partial class PetWindow
                 await StartWorkingAsync().WaitAsync(timeout.Token);
                 await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, timeout.Token, "WorkLoop");
                 SceneSelection oldScene = _workStage.ActiveSelection;
-                int coins = CareState.Coins;
+                decimal coins = CareState.Coins;
                 var desk = await EquipContentAsync(ContentCatalog.MintDeskId).WaitAsync(timeout.Token);
                 var computer = await EquipContentAsync(ContentCatalog.MidnightComputerId).WaitAsync(timeout.Token);
                 ExpansionCheck(desk.Success && computer.Success && CareState.Content.PendingEquipment.Count == 2 && _workStage.ActiveSelection == oldScene,
@@ -276,11 +277,14 @@ public partial class PetWindow
                     ExpansionCheck(IsContentResourceAvailable(definition), id + " is not fully available.");
                     string before = ExpansionContentFingerprint();
                     await PreviewContentAsync(id).WaitAsync(timeout.Token);
+                    var previewWindow = _contentPreviewWindow;
+                    ExpansionCheck(previewWindow?.IsVisible == true, id + " preview closed while preparing; no screenshot acceptance was recorded.");
                     await Task.Delay(150, timeout.Token);
                     ExpansionCheck(before == ExpansionContentFingerprint(), id + " preview changed the live pet.");
-                    RenderOwnVisual(_contentPreviewWindow!, Path.Combine(output, "expansion-preview-" + id + ".png"));
-                    _contentPreviewWindow!.Close();
-                    int coins = CareState.Coins;
+                    ExpansionCheck(previewWindow!.IsVisible, id + " preview closed before capture.");
+                    RenderOwnVisual(previewWindow, Path.Combine(output, "expansion-preview-" + id + ".png"));
+                    previewWindow.Close();
+                    decimal coins = CareState.Coins;
                     var purchase = _contentTransactions!.Purchase(id);
                     ExpansionCheck(purchase.Success && purchase.Changed && CareState.Coins == coins - definition.Price,
                         id + " did not atomically charge its listed price.");
@@ -322,6 +326,8 @@ public partial class PetWindow
                 await ExpansionWaitAsync(() => _framePlayer.CurrentOutfitId == ContentCatalog.DefaultOutfitId, timeout.Token, "default restore after hoodie");
             });
             await Case("club UI navigation, paged galleries and reduced motion are read-only", () => RunClubUiSmokeAsync(output, timeout.Token));
+            await Case("equipment v2 real layered wardrobes, props and active bonuses", () => RunEquipmentSmokeAsync(output, timeout.Token));
+            await Case("real reminder menu, persistence, delivery and inbox priority", () => RunReminderSmokeAsync(output, timeout.Token));
         }
         catch (Exception ex) { fatal = ex.ToString(); }
         finally

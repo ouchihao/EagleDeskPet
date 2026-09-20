@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "baseManifest": "Assets/Outfits/Office/actions.json",
+  "bindings": "Assets/OutfitBindings/Office-v1.zip",
+  "layers": [
+    {
+      "slot": "glasses",
+      "image": "Assets/Outfits/Office/Layers/glasses.png",
+      "rect": [0, 0, 1, 1]
+    }
+  ]
+}

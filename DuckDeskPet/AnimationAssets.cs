@@ -9,6 +9,8 @@ internal sealed class AnimationAssets
 {
     public int Version { get; set; }
     public string Neutral { get; set; } = "";
+    // Optional compact, articulated outfit. Native legacy PNG packs remain valid.
+    public string? Appearance { get; set; }
     public List<ActionAsset> Actions { get; set; } = new();
 
     public static AnimationAssets Load() => Load(PackAnimationResourceProvider.Instance, "Assets/actions.json");
@@ -28,6 +30,12 @@ internal sealed class AnimationAssets
         if (result.Version != 1 || result.Actions is null || result.Actions.Count > 64 ||
             result.Neutral != (isDefault ? "Assets/mascot-animated-neutral.png" : root + "neutral.png"))
             throw new InvalidDataException("Unsupported animation manifest.");
+        if (result.Appearance is not null)
+        {
+            AnimationResourcePath.Validate(result.Appearance);
+            if (isDefault || result.Appearance != root + "appearance.json")
+                throw new InvalidDataException("Invalid layered outfit recipe location.");
+        }
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var clips = new HashSet<ClipKind>();
         foreach (var action in result.Actions)

@@ -33,6 +33,7 @@ eagle-desktop-pet.install.json
 *.dll
 *.pdb
 *.zip
+!/DuckDeskPet/Assets/OutfitBindings/*.zip
 *.7z
 *.nupkg
 

@@ -11,9 +11,9 @@
     <AssemblyTitle>小鹰桌宠</AssemblyTitle>
     <Product>小鹰桌宠</Product>
     <Description>一只会逐帧表演搞怪动作的 60 FPS Windows 小鹰桌宠</Description>
-    <Version>1.10.1</Version>
-    <FileVersion>1.10.1.0</FileVersion>
-    <InformationalVersion>1.10.1</InformationalVersion>
+    <Version>1.11.0</Version>
+    <FileVersion>1.11.0.0</FileVersion>
+    <InformationalVersion>1.11.0</InformationalVersion>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <DebugType>None</DebugType>
@@ -31,6 +31,8 @@
     <Resource Include="Assets\actions.json" />
     <None Remove="Assets\outfits.json;Assets\Outfits\**\*.png;Assets\Outfits\**\actions.json" />
     <Resource Include="Assets\outfits.json;Assets\Outfits\**\actions.json;Assets\Outfits\**\neutral.png;Assets\Outfits\**\Animations\**\frame-*.png" />
+    <None Remove="Assets\OutfitBindings\*.zip;Assets\Outfits\**\appearance.json" />
+    <Resource Include="Assets\OutfitBindings\*.zip;Assets\Outfits\**\appearance.json;Assets\Outfits\**\Layers\*.png;Assets\Outfits\**\thumbnail.png" />
     <None Remove="Assets\SceneProps\work-scenes.json" />
     <Resource Include="Assets\SceneProps\work-scenes.json" />
     <None Remove="Assets\Animations\**\frame-*.png" />

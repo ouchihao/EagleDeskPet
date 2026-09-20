@@ -46,7 +46,7 @@ public partial class PetWindow
         ((RadioButton)shop.FindName("DeskCategory")).IsChecked = true;
         await Task.Delay(180, token);
         RenderOwnVisual(shop, Path.Combine(output, "club-shop-desks.png"));
-        ExpansionCheck(cards.Items.Count <= 4, "Desk category includes non-desk products.");
+        ExpansionCheck(shop.FilteredCount == ContentCatalog.Definitions.Count(x => x.Type == ContentType.Desk), "Desk category includes non-desk products.");
         shop.Close();
 
         OpenHonorWall();

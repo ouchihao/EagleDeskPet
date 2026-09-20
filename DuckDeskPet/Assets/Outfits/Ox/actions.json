@@ -1,7 +1,6 @@
 {
   "version": 1,
-  "neutral": "Assets/Outfits/Office/neutral.png",
-  "appearance": "Assets/Outfits/Office/appearance.json",
+  "neutral": "Assets/Outfits/Ox/neutral.png",
   "actions": [
     {
       "id": "yawn",
@@ -9,7 +8,7 @@
       "name": "困到哈欠",
       "group": "Idle",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/Yawn",
+      "directory": "Assets/Outfits/Ox/Animations/Yawn",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -19,7 +18,7 @@
       "name": "摸头害羞",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/Shy",
+      "directory": "Assets/Outfits/Ox/Animations/Shy",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -29,7 +28,7 @@
       "name": "干饭",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/Eat",
+      "directory": "Assets/Outfits/Ox/Animations/Eat",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -39,7 +38,7 @@
       "name": "工位入场",
       "group": "Interaction",
       "phase": "enter",
-      "directory": "Assets/Outfits/Office/Animations/WorkEnter",
+      "directory": "Assets/Outfits/Ox/Animations/WorkEnter",
       "frameCount": 211,
       "durationSeconds": 3.5
     },
@@ -49,7 +48,7 @@
       "name": "办公循环",
       "group": "Interaction",
       "phase": "loop",
-      "directory": "Assets/Outfits/Office/Animations/WorkLoop",
+      "directory": "Assets/Outfits/Ox/Animations/WorkLoop",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -59,7 +58,7 @@
       "name": "进入忙碌",
       "group": "Interaction",
       "phase": "transition",
-      "directory": "Assets/Outfits/Office/Animations/WorkToBusyV2",
+      "directory": "Assets/Outfits/Ox/Animations/WorkToBusyV2",
       "frameCount": 91,
       "durationSeconds": 1.5
     },
@@ -69,7 +68,7 @@
       "name": "忙碌循环",
       "group": "Interaction",
       "phase": "loop",
-      "directory": "Assets/Outfits/Office/Animations/BusyLoop",
+      "directory": "Assets/Outfits/Ox/Animations/BusyLoop",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -79,7 +78,7 @@
       "name": "工作收场",
       "group": "Interaction",
       "phase": "exit",
-      "directory": "Assets/Outfits/Office/Animations/WorkExit",
+      "directory": "Assets/Outfits/Ox/Animations/WorkExit",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -89,7 +88,7 @@
       "name": "忙碌收场",
       "group": "Interaction",
       "phase": "exit",
-      "directory": "Assets/Outfits/Office/Animations/BusyExitV2",
+      "directory": "Assets/Outfits/Ox/Animations/BusyExitV2",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -99,7 +98,7 @@
       "name": "端出空碗",
       "group": "Interaction",
       "phase": "enter",
-      "directory": "Assets/Outfits/Office/Animations/HungryEnter",
+      "directory": "Assets/Outfits/Ox/Animations/HungryEnter",
       "frameCount": 91,
       "durationSeconds": 1.5
     },
@@ -109,7 +108,7 @@
       "name": "等饭小剧场",
       "group": "Interaction",
       "phase": "loop",
-      "directory": "Assets/Outfits/Office/Animations/HungryLoop",
+      "directory": "Assets/Outfits/Ox/Animations/HungryLoop",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -119,7 +118,7 @@
       "name": "收好空碗",
       "group": "Interaction",
       "phase": "exit",
-      "directory": "Assets/Outfits/Office/Animations/HungryExit",
+      "directory": "Assets/Outfits/Ox/Animations/HungryExit",
       "frameCount": 91,
       "durationSeconds": 1.5
     },
@@ -129,7 +128,7 @@
       "name": "喝茶缓一缓",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/Tea",
+      "directory": "Assets/Outfits/Ox/Animations/Tea",
       "frameCount": 121,
       "durationSeconds": 2
     },
@@ -139,7 +138,7 @@
       "name": "出石头",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/RpsRock",
+      "directory": "Assets/Outfits/Ox/Animations/RpsRock",
       "frameCount": 169,
       "durationSeconds": 2.8
     },
@@ -149,7 +148,7 @@
       "name": "出布",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/RpsPaper",
+      "directory": "Assets/Outfits/Ox/Animations/RpsPaper",
       "frameCount": 169,
       "durationSeconds": 2.8
     },
@@ -159,7 +158,7 @@
       "name": "出剪刀",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/RpsScissors",
+      "directory": "Assets/Outfits/Ox/Animations/RpsScissors",
       "frameCount": 169,
       "durationSeconds": 2.8
     },
@@ -169,7 +168,7 @@
       "name": "得意小鹰",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/RpsWin",
+      "directory": "Assets/Outfits/Ox/Animations/RpsWin",
       "frameCount": 145,
       "durationSeconds": 2.4
     },
@@ -179,7 +178,7 @@
       "name": "输后捂脸",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/RpsLose",
+      "directory": "Assets/Outfits/Ox/Animations/RpsLose",
       "frameCount": 145,
       "durationSeconds": 2.4
     },
@@ -189,9 +188,10 @@
       "name": "护头龇牙",
       "group": "Interaction",
       "phase": "once",
-      "directory": "Assets/Outfits/Office/Animations/Annoyed",
+      "directory": "Assets/Outfits/Ox/Animations/Annoyed",
       "frameCount": 121,
       "durationSeconds": 2
     }
-  ]
+  ],
+  "appearance": "Assets/Outfits/Ox/appearance.json"
 }

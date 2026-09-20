@@ -3,7 +3,10 @@
   "defaultOutfitId": "outfit.default",
   "outfits": [
     { "id": "outfit.default", "name": "原味大头鹰", "animationManifest": "Assets/actions.json" },
-    { "id": "outfit.office", "name": "认真上班装", "animationManifest": "Assets/Outfits/Office/actions.json" },
-    { "id": "outfit.hoodie", "name": "摸鱼卫衣", "animationManifest": "Assets/Outfits/Hoodie/actions.json" }
+    { "id": "outfit.office", "name": "资本家", "animationManifest": "Assets/Outfits/Office/actions.json" },
+    { "id": "outfit.hoodie", "name": "摸鱼卫衣", "animationManifest": "Assets/Outfits/Hoodie/actions.json" },
+    { "id": "outfit.ox", "name": "牛马也要体面", "animationManifest": "Assets/Outfits/Ox/actions.json" },
+    { "id": "outfit.hero", "name": "下班战神", "animationManifest": "Assets/Outfits/Hero/actions.json" },
+    { "id": "outfit.astronaut", "name": "摸鱼航天员", "animationManifest": "Assets/Outfits/Astronaut/actions.json" }
   ]
 }

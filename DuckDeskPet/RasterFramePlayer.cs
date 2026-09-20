@@ -23,6 +23,7 @@ internal sealed class RasterFramePlayer : IDisposable
     private readonly Image _target;
     private readonly OutfitCatalog _catalog;
     private AnimationAssets _assets;
+    private LayeredOutfitPack? _layers;
     private BitmapSource _neutral;
     private readonly Dictionary<ClipKind, BitmapSource[]> _frames = new();
     private readonly Dictionary<ClipKind, Task> _loads = new();
@@ -85,19 +86,19 @@ internal sealed class RasterFramePlayer : IDisposable
             Warning = $"当前服装不支持动作 {kind}；已保留当前画面。";
             return Task.FromException(new InvalidDataException(Warning));
         }
-        var load = LoadClipAsync(action, kind, _outfitGeneration, ClipLoadGeneration(kind));
+        var load = LoadClipAsync(action, kind, _outfitGeneration, ClipLoadGeneration(kind), _layers);
         _loads[kind] = load;
         return load.WaitAsync(token);
     }
 
-    private async Task LoadClipAsync(ActionAsset action, ClipKind kind, long generation, long clipGeneration)
+    private async Task LoadClipAsync(ActionAsset action, ClipKind kind, long generation, long clipGeneration, LayeredOutfitPack? layers)
     {
         bool acquired = false;
         try
         {
             await _loadGate.WaitAsync(_lifetime.Token);
             acquired = true;
-            var frames = await Task.Run(() => LoadSequence(_catalog.Resources, action, _lifetime.Token), _lifetime.Token);
+            var frames = await Task.Run(() => LoadSequence(_catalog.Resources, action, _lifetime.Token, layers), _lifetime.Token);
             if (IsCurrentLoad(kind, generation, clipGeneration)) _frames[kind] = frames;
         }
         catch (Exception ex) when (OutfitCatalog.IsResourceError(ex))
@@ -162,9 +163,9 @@ internal sealed class RasterFramePlayer : IDisposable
             var candidate = await Task.Run(() =>
             {
                 linked.Token.ThrowIfCancellationRequested();
-                var neutral = OutfitBitmap.Load(_catalog.Resources, assets.Neutral);
+                var neutral = LoadFrame(_catalog.Resources, assets.Neutral, validated.Layers);
                 var frames = CommonClips.ToDictionary(kind => kind,
-                    kind => LoadSequence(_catalog.Resources, assets.Actions.Single(x => x.Clip == kind.ToString()), linked.Token));
+                    kind => LoadSequence(_catalog.Resources, assets.Actions.Single(x => x.Clip == kind.ToString()), linked.Token, validated.Layers));
                 return (Neutral: neutral, Frames: frames);
             }, linked.Token);
             linked.Token.ThrowIfCancellationRequested();
@@ -173,6 +174,7 @@ internal sealed class RasterFramePlayer : IDisposable
             if (!IsAtSafeOutfitBoundary) return Selection(OutfitSelectionStatus.UnsafeBoundary, outfitId, "动作尚未结束，换装已延期。", request);
             _outfitGeneration++;
             _assets = assets;
+            _layers = validated.Layers;
             _neutral = candidate.Neutral;
             _frames.Clear();
             _loads.Clear();
@@ -247,23 +249,26 @@ internal sealed class RasterFramePlayer : IDisposable
         return await Task.Run<IReadOnlyList<BitmapSource>>(() =>
         {
             token.ThrowIfCancellationRequested();
-            if (clip == ClipKind.Idle) return Array.AsReadOnly(new[] { OutfitBitmap.Load(catalog.Resources, assets.Neutral) });
+            if (clip == ClipKind.Idle) return Array.AsReadOnly(new[] { LoadFrame(catalog.Resources, assets.Neutral, validated.Layers) });
             var action = assets.Actions.SingleOrDefault(x => x.Clip == clip.ToString()) ??
                          throw new InvalidDataException("This outfit does not support the preview action: " + clip);
-            return Array.AsReadOnly(LoadSequence(catalog.Resources, action, token));
+            return Array.AsReadOnly(LoadSequence(catalog.Resources, action, token, validated.Layers));
         }, token).ConfigureAwait(false);
     }
 
-    private static BitmapSource[] LoadSequence(IAnimationResourceProvider resources, ActionAsset action, CancellationToken token)
+    private static BitmapSource[] LoadSequence(IAnimationResourceProvider resources, ActionAsset action, CancellationToken token, LayeredOutfitPack? layers = null)
     {
         var result = new BitmapSource[action.FrameCount];
         for (int i = 0; i < result.Length; i++)
         {
             token.ThrowIfCancellationRequested();
-            result[i] = OutfitBitmap.Load(resources, $"{action.Directory}/frame-{i:0000}.png");
+            result[i] = LoadFrame(resources, $"{action.Directory}/frame-{i:0000}.png", layers);
         }
         return result;
     }
+
+    internal static BitmapSource LoadFrame(IAnimationResourceProvider resources, string path, LayeredOutfitPack? layers = null) =>
+        layers is null ? OutfitBitmap.Load(resources, path) : layers.Load(path);
 
     // Generic scene-prop loader retained for existing work renderer callers (props need not be 384x346).
     internal static BitmapSource LoadBitmap(string path)

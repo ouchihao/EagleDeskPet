@@ -298,6 +298,11 @@ internal static class SceneForegroundMask
 
     internal static Geometry Create(BitmapSource source, SceneCanvas canvas, double sceneScale, bool includeBowl)
     {
+        // Clothes change colour, not anatomy. Keep the shared moving hand/bowl mask independent
+        // from a white spacesuit, black sleeve, chest badge or any future material.
+        var anatomy = OutfitCompositeMetadata.Anatomy(source);
+        bool articulated = !ReferenceEquals(source, anatomy);
+        source = anatomy;
         double sx = source.PixelWidth / canvas.Width, sy = source.PixelHeight / canvas.Height;
         const double bandTop = 247, bandBottom = 278;
         int left = (int)Math.Floor(104 * sx), top = (int)Math.Floor(bandTop * sy);
@@ -339,6 +344,28 @@ internal static class SceneForegroundMask
             }
 
             void Rectangle(double x, double y, double w, double h)
+            {
+                if (articulated)
+                {
+                    // A cape or backpack may extend beside a hand. The old outside-body strip
+                    // must not repaint that BACK accessory over the tabletop. Intersect with
+                    // the exact undressed actor's coverage, which is retained in the semantic map.
+                    int row = Math.Clamp((int)Math.Round(y * sy) - top, 0, height - 1);
+                    int first = Math.Clamp((int)Math.Floor(x * sx) - left, 0, width);
+                    int last = Math.Clamp((int)Math.Ceiling((x + w) * sx) - left, 0, width);
+                    for (int column = first; column < last;)
+                    {
+                        if (pixels[(row * width + column) * 4 + 3] == 0) { column++; continue; }
+                        int start = column++;
+                        while (column < last && pixels[(row * width + column) * 4 + 3] != 0) column++;
+                        DrawStrip((left + start) / sx, y, (column - start) / sx, h);
+                    }
+                    return;
+                }
+                DrawStrip(x, y, w, h);
+            }
+
+            void DrawStrip(double x, double y, double w, double h)
             {
                 // Native row strips give WPF a true alpha-bearing copy of the current hand/bowl,
                 // including its ink marks; no per-frame bitmap allocation, re-encoding or recoloring.

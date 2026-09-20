@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "baseManifest": "Assets/actions.json",
+  "bindings": "Assets/OutfitBindings/Default-v1.zip",
+  "layers": [
+    {
+      "slot": "torso",
+      "image": "Assets/Outfits/Ox/Layers/torso.png"
+    },
+    {
+      "slot": "leftSleeve",
+      "image": "Assets/Outfits/Ox/Layers/left-sleeve.png",
+      "uvQuad": [
+        0.6,
+        0.05,
+        0.98,
+        0.32,
+        0.04,
+        0.57,
+        0.49,
+        0.98
+      ]
+    },
+    {
+      "slot": "rightSleeve",
+      "image": "Assets/Outfits/Ox/Layers/right-sleeve.png",
+      "uvQuad": [
+        0.02,
+        0.32,
+        0.4,
+        0.05,
+        0.51,
+        0.98,
+        0.96,
+        0.57
+      ]
+    },
+    {
+      "slot": "leftBoot",
+      "image": "Assets/Outfits/Ox/Layers/left-boot.png"
+    },
+    {
+      "slot": "rightBoot",
+      "image": "Assets/Outfits/Ox/Layers/right-boot.png"
+    },
+    {
+      "slot": "head",
+      "image": "Assets/Outfits/Ox/Layers/head.png",
+      "rect": [
+        -0.15,
+        -0.4,
+        1.3,
+        0.75
+      ]
+    },
+    {
+      "slot": "back",
+      "image": "Assets/Outfits/Ox/Layers/back.png",
+      "rect": [
+        0.25,
+        0.1,
+        1.35,
+        1.02
+      ]
+    }
+  ]
+}

@@ -109,12 +109,17 @@ internal sealed class OutfitCatalog
                 if (actual is null || actual.Id != required.Id)
                     throw new InvalidDataException("Missing or mismatched outfit action: " + required.Clip);
             }
-            OutfitBitmap.Validate(_resources, assets.Neutral);
-            foreach (var action in assets.Actions)
-                for (int i = 0; i < action.FrameCount; i++)
-                    OutfitBitmap.Validate(_resources, $"{action.Directory}/frame-{i:0000}.png");
+            LayeredOutfitPack? layers = null;
+            if (assets.Appearance is not null) layers = LayeredOutfitPack.Load(_resources, assets);
+            else
+            {
+                OutfitBitmap.Validate(_resources, assets.Neutral);
+                foreach (var action in assets.Actions)
+                    for (int i = 0; i < action.FrameCount; i++)
+                        OutfitBitmap.Validate(_resources, $"{action.Directory}/frame-{i:0000}.png");
+            }
             return new ValidatedOutfit(new OutfitAvailability(outfitId, true, null,
-                Array.AsReadOnly(assets.Actions.Select(x => Enum.Parse<ClipKind>(x.Clip)).Prepend(ClipKind.Idle).ToArray())), assets);
+                Array.AsReadOnly(assets.Actions.Select(x => Enum.Parse<ClipKind>(x.Clip)).Prepend(ClipKind.Idle).ToArray())), assets, layers);
         }
         catch (Exception ex) when (IsResourceError(ex))
         {
@@ -139,7 +144,7 @@ internal sealed class OutfitCatalog
         public List<OutfitDefinition> Outfits { get; set; } = new();
     }
 
-    internal sealed record ValidatedOutfit(OutfitAvailability Availability, AnimationAssets? Assets);
+    internal sealed record ValidatedOutfit(OutfitAvailability Availability, AnimationAssets? Assets, LayeredOutfitPack? Layers = null);
 }
 
 /// <summary>Injectable only for isolated resource tests; production reads application pack resources.</summary>

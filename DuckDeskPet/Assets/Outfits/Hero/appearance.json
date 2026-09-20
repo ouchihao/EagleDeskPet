@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "baseManifest": "Assets/actions.json",
+  "bindings": "Assets/OutfitBindings/Default-v1.zip",
+  "layers": [
+    {
+      "slot": "torso",
+      "image": "Assets/Outfits/Hero/Layers/torso.png"
+    },
+    {
+      "slot": "leftSleeve",
+      "image": "Assets/Outfits/Hero/Layers/left-sleeve.png",
+      "uvQuad": [
+        0.1,
+        0.03,
+        0.04,
+        0.62,
+        0.98,
+        0.3,
+        0.81,
+        0.98
+      ]
+    },
+    {
+      "slot": "rightSleeve",
+      "image": "Assets/Outfits/Hero/Layers/right-sleeve.png",
+      "uvQuad": [
+        0.96,
+        0.62,
+        0.9,
+        0.03,
+        0.19,
+        0.98,
+        0.02,
+        0.3
+      ]
+    },
+    {
+      "slot": "leftBoot",
+      "image": "Assets/Outfits/Hero/Layers/left-boot.png"
+    },
+    {
+      "slot": "rightBoot",
+      "image": "Assets/Outfits/Hero/Layers/right-boot.png"
+    },
+    {
+      "slot": "head",
+      "image": "Assets/Outfits/Hero/Layers/head.png",
+      "rect": [
+        -0.06,
+        -0.16,
+        1.12,
+        0.38
+      ]
+    },
+    {
+      "slot": "back",
+      "image": "Assets/Outfits/Hero/Layers/back.png",
+      "rect": [
+        -0.33,
+        -0.27,
+        1.66,
+        1.28
+      ]
+    }
+  ]
+}
