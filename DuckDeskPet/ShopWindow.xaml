@@ -86,7 +86,7 @@
                      ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled" KeyboardNavigation.DirectionalNavigation="Contained">
                 <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="{Binding GridColumns, RelativeSource={RelativeSource AncestorType=Window}}" Rows="{Binding GridRows, RelativeSource={RelativeSource AncestorType=Window}}"/></ItemsPanelTemplate></ListBox.ItemsPanel>
                 <ListBox.ItemTemplate><DataTemplate>
-                    <Grid Margin="10,7"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <Grid Margin="10,7" ToolTip="{Binding Effects}"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <TextBlock Text="{Binding ShortCategory}" FontSize="9" Foreground="#8A8878"/>
                             <TextBlock Text="{Binding Badge}" Grid.Column="1" FontSize="9" FontWeight="Bold" Foreground="#477762"/>
@@ -98,6 +98,7 @@
                         </Grid>
                         <TextBlock Grid.Row="2" Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" Margin="0,0,0,3"/>
                         <TextBlock Grid.Row="3" Text="{Binding PriceLabel}" FontSize="11" FontWeight="Bold" Foreground="#A47226" HorizontalAlignment="Center"/>
+                        <TextBlock Grid.Row="4" Text="{Binding PrimaryEffect}" FontSize="10" Foreground="#487C68" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </Grid>
                 </DataTemplate></ListBox.ItemTemplate>
             </ListBox>
@@ -116,6 +117,8 @@
                 <StackPanel Margin="0,0,12,0">
                     <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold"/>
                     <TextBlock x:Name="DescriptionText" Text="{Binding Description}" FontSize="11" Foreground="#6F796C" Margin="0,3,0,0"/>
+                    <TextBlock Text="{Binding Effects}" FontSize="11" FontWeight="SemiBold" Foreground="#39705C" Margin="0,5,0,0"/>
+                    <TextBlock Text="{Binding Comparison}" FontSize="10" Foreground="#6F796C" Margin="0,3,0,0"/>
                     <TextBlock Text="{Binding Acquisition}" FontSize="10" Foreground="#897757" Margin="0,4,0,0"/>
                     <TextBlock Text="{Binding Status}" FontSize="10" Foreground="#517461" Margin="0,4,0,0"/>
                 </StackPanel>
@@ -126,7 +129,7 @@
             </Grid>
         </Border>
         <Border Grid.Row="4" Background="#EFE8D8" Padding="20,8" BorderBrush="#E1D7C1" BorderThickness="0,1,0,0">
-            <TextBlock x:Name="StatusText" Text="本机小商店 · 不联网，不花真钱。装备会等待当前动作安全结束。" FontSize="10" Foreground="#7E765F" AutomationProperties.LiveSetting="Polite"/>
+            <TextBlock x:Name="StatusText" Text="只花游戏鹰币。已生效装备的加成相加；省粮/省心上限 50%，赚钱 +250%，工作经验 +200%。" FontSize="10" Foreground="#7E765F" AutomationProperties.LiveSetting="Polite"/>
         </Border>
     </Grid>
 </Window>

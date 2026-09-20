@@ -17,7 +17,7 @@ internal static class Program
         string output = Path.GetFullPath(args.Length > 0 ? args[0] : "honor-ui-output");
         Directory.CreateDirectory(output);
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-        var state = new PetState { TotalMeals = 10, TotalPets = 55, Experience = 400, TotalWorkSeconds = 1800 };
+        var state = new PetState { TotalMeals = 30, TotalPets = 150, Experience = 2700, TotalWorkSeconds = 1800 };
         state.Content.OwnedContentIds.UnionWith(new[] { ContentCatalog.WalnutDeskId, ContentCatalog.MidnightComputerId });
         var window = new HonorWallWindow(() => state);
         var surface = (FrameworkElement)window.Content;
@@ -86,7 +86,7 @@ internal static class Program
             state.Mood--;
             window.Refresh();
             Assert(ReferenceEquals(retainedSource, items.ItemsSource), "Ordinary care ticks do not rebuild cards or disrupt scrolling.");
-            state.TotalMeals = 100; state.TotalPets = 300; state.Experience = 900; state.TotalWorkSeconds = 72000;
+            state.TotalMeals = 180; state.TotalPets = 1320; state.Experience = 16200; state.TotalWorkSeconds = 1080000;
             state.Content.OwnedContentIds.UnionWith(ContentCatalog.Definitions.Select(x => x.Id));
             window.Refresh();
             Layout(1000, 860);

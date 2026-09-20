@@ -36,13 +36,16 @@ internal static class Program
             ("Invalid slot combinations are rejected before saving", IncompatibleEquipment),
             ("Owned equipment can be swapped repeatedly without a second payment", FreeReequip),
             ("UI shows balance, prices, conditions, owned and unavailable states", UiStates),
+            ("UI preserves both decimal places through purchase and refresh", UiDecimalBalance),
             ("UI purchase confirmation cancellation changes no progress", UiCancelPurchase),
             ("UI preview dispatch is read-only and does not buy or equip", UiPreview),
             ("Every real catalog entry has a frozen, transparent-cropped art icon", UiIcons),
             ("Shelf pagination exposes every item without a long vertical scroll", UiPages),
             ("Category and owned filters compose without modifying progress", UiFilters),
             ("Narrow and short windows retain reachable product details and paging", UiResponsive),
+            ("440-wide shelf keeps long Chinese names, four equipment stats and maximum wallet reachable", UiEquipmentResponsive),
             ("Real modal purchase dialog shows installed art, price and balances without spending", PurchaseDialogContent),
+            ("Premium equipment confirmation keeps long names, four stats and cent balances visible", PurchaseDialogEquipment),
             ("Real modal confirmation accepts only confirm; cancel, Escape and close return false", PurchaseDialogDecisions),
             ("Purchase dialog supports Tab focus and Enter while preserving safe initial cancel", PurchaseDialogKeyboard),
             ("Default shop modal rechecks resource availability after its message pump", UiModalRevalidation),
@@ -70,11 +73,11 @@ internal static class Program
     {
         using var f = new Fixture(); var before = f.State.Content.Equipped[ContentSlot.Desk];
         var result = f.Shop.Purchase(ContentCatalog.MintDeskId);
-        Check(result.Success && result.Changed && f.State.Coins == 80 && f.State.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Purchase not applied together.");
+        Check(result.Success && result.Changed && f.State.Coins == 850m && f.State.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Purchase not applied together.");
         Check(f.State.Content.Equipped[ContentSlot.Desk] == before, "Purchase auto-equipped the desk.");
-        Check(f.State.AppliedWalletDebits[ContentCatalog.PurchaseTransactionId(ContentCatalog.MintDeskId)] == 20, "Stable receipt missing.");
+        Check(f.State.AppliedWalletDebits[ContentCatalog.PurchaseTransactionId(ContentCatalog.MintDeskId)] == 150m, "Stable receipt missing.");
         var saved = new PetStore(f.Directory).Load()!;
-        Check(saved.Coins == 80 && saved.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Durable state differs from live state.");
+        Check(saved.Coins == 850m && saved.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Durable state differs from live state.");
     }
     private static void DuplicatePurchase()
     {
@@ -94,13 +97,13 @@ internal static class Program
     private static void ChangedResources()
     {
         using var f = new Fixture(); Check(f.Shop.Quote(ContentCatalog.MintDeskId).CanPurchase, "Expected a quote.");
-        f.Available = false; Check(!f.Shop.Purchase(ContentCatalog.MintDeskId).Success && f.State.Coins == 100, "Stale quote authorized unavailable content.");
+        f.Available = false; Check(!f.Shop.Purchase(ContentCatalog.MintDeskId).Success && f.State.Coins == 1000m, "Stale quote authorized unavailable content.");
     }
     private static void FreeReward()
     {
-        using var f = new Fixture(); f.State.TotalMeals = 10;
+        using var f = new Fixture(); f.State.TotalMeals = 30;
         Check(!f.Shop.Purchase(ContentCatalog.MintDeskId).Changed, "Eligible reward was sold.");
-        Check(f.Shop.ClaimReward(ContentCatalog.MintDeskId).Changed && f.State.Coins == 100, "Reward cost coins or did not grant.");
+        Check(f.Shop.ClaimReward(ContentCatalog.MintDeskId).Changed && f.State.Coins == 1000m, "Reward cost coins or did not grant.");
         Check(!f.Shop.ClaimReward(ContentCatalog.MintDeskId).Changed && f.State.AppliedWalletDebits.Count == 0, "Repeat reward created a receipt.");
     }
     private static void MissingRewardArt()
@@ -126,8 +129,8 @@ internal static class Program
         using var f = new Fixture(); var otherStore = new PetStore(f.Directory); var otherState = otherStore.Load()!;
         var otherShop = new ShopTransactions(otherStore, () => otherState, _ => true);
         Check(f.Shop.Purchase(ContentCatalog.MintDeskId).Changed, "First writer failed.");
-        Check(!otherShop.Purchase(ContentCatalog.MidnightComputerId).Success && otherState.Coins == 100, "Stale writer overwrote another purchase.");
-        Check(new PetStore(f.Directory).Load()!.Coins == 80, "Stale writer changed durable balance.");
+        Check(!otherShop.Purchase(ContentCatalog.MidnightComputerId).Success && otherState.Coins == 1000m, "Stale writer overwrote another purchase.");
+        Check(new PetStore(f.Directory).Load()!.Coins == 850m, "Stale writer changed durable balance.");
     }
     private static void DeferredEquipment()
     {
@@ -151,7 +154,7 @@ internal static class Program
     {
         using var f = new Fixture(); f.Shop.Purchase(ContentCatalog.MintDeskId);
         for (int i = 0; i < 3; i++) { f.Shop.Equip(ContentCatalog.MintDeskId, false); f.Shop.Equip(ContentCatalog.DefaultDeskId, false); }
-        Check(f.State.Coins == 80 && f.State.AppliedWalletDebits.Count == 1, "Re-equipping charged more coins.");
+        Check(f.State.Coins == 850m && f.State.AppliedWalletDebits.Count == 1, "Re-equipping charged more coins.");
     }
 
     private static ShopWindow Window(Fixture f, bool confirm = true, Func<string, Task>? preview = null) => new(f.Shop,
@@ -163,9 +166,9 @@ internal static class Program
         try
         {
             Layout(window); var items = (ItemsControl)window.FindName("CardsItems");
-            Check(window.FilteredCount == ContentCatalog.Definitions.Count && items.Items.Count == 8 && window.PageCount == 2 && ((TextBlock)window.FindName("BalanceText")).Text == "100", "Shop did not expose its paged catalog and balance.");
+            Check(window.FilteredCount == ContentCatalog.Definitions.Count && items.Items.Count == 8 && window.PageCount == 3 && ((TextBlock)window.FindName("BalanceText")).Text == 1000m.ToString("N2"), "Shop did not expose its paged catalog and balance.");
             object tea = Card(items, ContentCatalog.TeaActionId);
-            Check(Property<string>(tea, "Acquisition").Contains("2 级") && Property<string>(tea, "PriceLabel").Contains("15"), "Reward condition or price absent.");
+            Check(Property<string>(tea, "Acquisition").Contains("2 级") && Property<string>(tea, "PriceLabel").Contains("120.00"), "Reward condition or price absent.");
             Save(window, "shop-all.png");
             f.Available = false; window.Refresh(); Layout(window);
             object computer = Card(items, ContentCatalog.MidnightComputerId);
@@ -179,6 +182,21 @@ internal static class Program
     {
         using var f = new Fixture(); var window = Window(f, confirm: false); string before = Snapshot(f.State);
         try { Layout(window); ClickCard(window, ContentCatalog.MintDeskId, preview: false); window.PendingOperation.GetAwaiter().GetResult(); Check(Snapshot(f.State) == before, "Cancelled confirmation bought content."); }
+        finally { window.Close(); }
+    }
+    private static void UiDecimalBalance()
+    {
+        using var f = new Fixture(1000.05m); var window = Window(f);
+        try
+        {
+            Layout(window);
+            Check(((TextBlock)window.FindName("BalanceText")).Text == 1000.05m.ToString("N2"), "Initial cents were hidden.");
+            Check(f.Shop.Purchase(ContentCatalog.MintDeskId).Changed, "Decimal wallet could not purchase.");
+            window.Refresh(); Layout(window);
+            Check(f.State.Coins == 850.05m && ((TextBlock)window.FindName("BalanceText")).Text == 850.05m.ToString("N2"),
+                "Purchase or refresh lost cents.");
+            Check(new PetStore(f.Directory).Load()!.Coins == 850.05m, "Serialized wallet lost cents.");
+        }
         finally { window.Close(); }
     }
     private static void UiPreview()
@@ -209,8 +227,11 @@ internal static class Program
         {
             Layout(window); var items = (ListBox)window.FindName("CardsItems");
             var ids = items.Items.Cast<object>().Select(x => Property<string>(x, "Id")).ToHashSet();
-            ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window);
-            foreach (var item in items.Items.Cast<object>()) Check(ids.Add(Property<string>(item, "Id")), "Pages duplicate an item.");
+            for (int page = 1; page < window.PageCount; page++)
+            {
+                ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window);
+                foreach (var item in items.Items.Cast<object>()) Check(ids.Add(Property<string>(item, "Id")), "Pages duplicate an item.");
+            }
             Check(ids.SetEquals(ContentCatalog.Definitions.Select(x => x.Id)), "Pages hide a catalog item.");
             Check(!((Button)window.FindName("NextButton")).IsEnabled && ((Button)window.FindName("PreviousButton")).IsEnabled, "Page boundary controls incorrect.");
             Check(ScrollViewer.GetVerticalScrollBarVisibility(items) == ScrollBarVisibility.Disabled, "Shop reverted to a long-scroll list.");
@@ -226,7 +247,7 @@ internal static class Program
         try
         {
             Layout(window); ((RadioButton)window.FindName("DeskCategory")).IsChecked = true; Layout(window);
-            Check(window.FilteredCount == 4 && ((ListBox)window.FindName("CardsItems")).Items.Cast<object>().All(x => Property<ContentType>(x, "Type") == ContentType.Desk), "Desk category filter incorrect.");
+            Check(window.FilteredCount == 7 && ((ListBox)window.FindName("CardsItems")).Items.Cast<object>().All(x => Property<ContentType>(x, "Type") == ContentType.Desk), "Desk category filter incorrect.");
             Save(window, "shop-desks.png");
             window.SelectOwned(true); Layout(window);
             Check(window.FilteredCount == 1, "Owned and category filters do not compose.");
@@ -266,9 +287,9 @@ internal static class Program
         {
             Check(((Image)dialog.FindName("ProductImage")).Source is BitmapSource, "Confirmation has no real product portrait.");
             Check(((TextBlock)dialog.FindName("ProductName")).Text == "薄荷小工位" &&
-                ((TextBlock)dialog.FindName("ProductPrice")).Text.Contains("20 鹰币") &&
-                ((TextBlock)dialog.FindName("CurrentBalance")).Text == "100 鹰币" &&
-                ((TextBlock)dialog.FindName("RemainingBalance")).Text == "80 鹰币", "Confirmation omitted exact item, price or balances.");
+                ((TextBlock)dialog.FindName("ProductPrice")).Text.Contains("150.00 鹰币") &&
+                ((TextBlock)dialog.FindName("CurrentBalance")).Text == $"{1000m:N2} 鹰币" &&
+                ((TextBlock)dialog.FindName("RemainingBalance")).Text == $"{850m:N2} 鹰币", "Confirmation omitted exact item, price or balances.");
             Save(dialog, "shop-purchase-confirmation.png");
             ((Button)dialog.FindName("CancelButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         });
@@ -278,6 +299,74 @@ internal static class Program
             Check(!((Button)dialog.FindName("ConfirmButton")).IsEnabled &&
                 ((TextBlock)dialog.FindName("RemainingBalance")).Text == "鹰币不足", "Insufficient balance remains confirmable.");
         }, balance: 0);
+    }
+    private static void UiEquipmentResponsive()
+    {
+        using var f = new Fixture(EconomyPolicy.MaximumCoins - 0.01m); var window = Window(f);
+        string before = Snapshot(f.State), disk = File.ReadAllText(f.Path);
+        try
+        {
+            foreach (string id in new[] { "computer.ultrabook", ContentCatalog.OfficeOutfitId, "desk.boardroom" })
+            {
+                // A 440-DIP decorated window has approximately 424 DIPs of client width.
+                Layout(window, 424, 620); Check(window.SelectItem(id), "Premium item is not selectable: " + id);
+                Layout(window, 424, 620);
+                var item = ContentCatalog.Get(id); var surface = (FrameworkElement)window.Content;
+                var details = (Border)window.FindName("DetailsPanel");
+                var title = Descendants<TextBlock>(details).Single(x => x.Text == item.Name);
+                Check(title.TextTrimming == TextTrimming.None, "Long item title was truncated in details: " + id);
+                var effects = Descendants<TextBlock>(details).Single(x => x.Text == EquipmentPresentation.Describe(item.Bonuses));
+                Check(effects.Text.Contains("赚钱") && effects.Text.Contains("工作经验"), "Work properties are missing: " + id);
+                if (item.Type != ContentType.Computer)
+                    Check(effects.Text.Contains("饱食衰减") && effects.Text.Contains("心情衰减"), "Four-stat details are incomplete: " + id);
+                foreach (string name in new[] { "CardsItems", "DetailsPanel", "NextButton", "ActionButton", "PreviewButton", "BalanceText" })
+                    AssertInside((FrameworkElement)window.FindName(name), surface, id + ":" + name);
+                foreach (var text in Descendants<TextBlock>(details))
+                    AssertInside(text, surface, id + ":" + text.Text);
+                Check((string?)((Button)window.FindName("ActionButton")).Tag == id && ((Button)window.FindName("ActionButton")).IsEnabled,
+                    "Premium equipment lost its reachable purchase action: " + id);
+                Check(((TextBlock)window.FindName("BalanceText")).Text == f.State.Coins.ToString("N2"), "Large balance lost cents.");
+                Save(window, "shop-440-" + id.Replace('.', '-') + ".png");
+            }
+            Check(window.SelectItem(ContentCatalog.OfficeOutfitId), "Office could not be restored for wide screenshot.");
+            Layout(window); Save(window, "shop-premium-wide.png");
+            Check(Snapshot(f.State) == before && File.ReadAllText(f.Path) == disk, "Responsive browsing changed wallet or ownership.");
+        }
+        finally { window.Close(); }
+    }
+    private static void PurchaseDialogEquipment()
+    {
+        using var f = new Fixture(EconomyPolicy.MaximumCoins - 0.01m);
+        string before = Snapshot(f.State), disk = File.ReadAllText(f.Path);
+        foreach (string id in new[] { "computer.ultrabook", ContentCatalog.OfficeOutfitId })
+        {
+            var item = ContentCatalog.Get(id);
+            bool? result = InPurchaseDialog(dialog =>
+            {
+                var surface = (FrameworkElement)dialog.Content;
+                Check(((Image)dialog.FindName("ProductImage")).Source is BitmapSource && ((Button)dialog.FindName("ConfirmButton")).IsEnabled,
+                    "Premium confirmation lacks real art or explicit confirm: " + id);
+                Check(((TextBlock)dialog.FindName("ProductName")).Text == item.Name &&
+                    ((TextBlock)dialog.FindName("ProductPrice")).Text.Contains(item.Price.ToString("N2")) &&
+                    ((TextBlock)dialog.FindName("CurrentBalance")).Text == $"{f.State.Coins:N2} 鹰币" &&
+                    ((TextBlock)dialog.FindName("RemainingBalance")).Text == $"{f.State.Coins - item.Price:N2} 鹰币",
+                    "Premium confirmation changed name, price or decimal balances: " + id);
+                string note = ((TextBlock)dialog.FindName("PurchaseNote")).Text;
+                Check(note.StartsWith(EquipmentPresentation.Describe(item.Bonuses), StringComparison.Ordinal), "Premium properties missing from confirmation: " + id);
+                foreach (string name in new[] { "ProductImage", "ProductName", "ProductPrice", "CurrentBalance", "RemainingBalance", "PurchaseNote", "CancelButton", "ConfirmButton" })
+                    AssertInside((FrameworkElement)dialog.FindName(name), surface, id + ":" + name);
+                Save(dialog, "shop-confirm-" + id.Replace('.', '-') + ".png");
+                ((Button)dialog.FindName("CancelButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }, balance: f.State.Coins, item: item);
+            Check(result != true, "Premium confirmation authorized purchase without consent.");
+        }
+        Check(Snapshot(f.State) == before && File.ReadAllText(f.Path) == disk, "Premium confirmation mutated saved progress.");
+    }
+    private static void AssertInside(FrameworkElement element, FrameworkElement surface, string context)
+    {
+        var rect = element.TransformToAncestor(surface).TransformBounds(new Rect(element.RenderSize));
+        Check(element.ActualWidth > 0 && element.ActualHeight > 0 && rect.X >= -1 && rect.Y >= -1 &&
+            rect.Right <= surface.ActualWidth + 1 && rect.Bottom <= surface.ActualHeight + 1, "Layout element clipped: " + context);
     }
     private static void PurchaseDialogDecisions()
     {
@@ -298,10 +387,10 @@ internal static class Program
         }) == true, "Enter on the explicit confirm choice failed.");
         Check(InPurchaseDialog(dialog => SendDialogKey(dialog, Key.Enter)) != true, "Enter on the initial cancel choice unexpectedly purchased.");
     }
-    private static bool? InPurchaseDialog(Action<PurchaseConfirmationWindow> inspect, int balance = 100)
+    private static bool? InPurchaseDialog(Action<PurchaseConfirmationWindow> inspect, decimal balance = 1000m, ContentDefinition? item = null)
     {
         var owner = HiddenOwner(); owner.Show();
-        var dialog = new PurchaseConfirmationWindow(ContentCatalog.Get(ContentCatalog.MintDeskId), balance) { Owner = owner };
+        var dialog = new PurchaseConfirmationWindow(item ?? ContentCatalog.Get(ContentCatalog.MintDeskId), balance) { Owner = owner };
         Exception? failure = null; bool callback = false;
         dialog.Loaded += (_, _) => dialog.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
         {
@@ -361,7 +450,7 @@ internal static class Program
 
     private static void HonorRewards()
     {
-        using var f = new Fixture(); f.State.TotalMeals = 10; int opens = 0;
+        using var f = new Fixture(); f.State.TotalMeals = 30; int opens = 0;
         var window = new HonorWallWindow(() => f.State, _ => opens++, id => f.Shop.ClaimReward(id).Message, f.Shop.IsAvailable);
         try
         {
@@ -371,7 +460,7 @@ internal static class Program
             var button = Descendants<Button>((DependencyObject)window.Content).Single(x => ReferenceEquals(x.DataContext, card) && (string?)x.Content == "领取奖励");
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window, 840, 1200);
             card = items.Items.Cast<object>().Single(x => Property<string?>(x, "RewardContentId") == ContentCatalog.MintDeskId);
-            Check(Property<string>(card, "RewardLabel").Contains("已拥有") && f.State.Coins == 100, "Honor failed to refresh ownership or charged coins.");
+            Check(Property<string>(card, "RewardLabel").Contains("已拥有") && f.State.Coins == 1000m, "Honor failed to refresh ownership or charged coins.");
             var rewardIds = new HashSet<string>(StringComparer.Ordinal);
             for (int page = 0; page < 32; page++)
             {
@@ -478,7 +567,7 @@ internal static class Program
         internal PetStore Store { get; }
         internal ShopTransactions Shop { get; }
         internal bool Available = true, Compatible = true;
-        internal Fixture(int coins = 100)
+        internal Fixture(decimal coins = 1000m)
         {
             State = new() { Coins = coins, LastUpdatedUtc = DateTimeOffset.UtcNow, WageLastUpdatedUtc = DateTimeOffset.UtcNow };
             Store = new(Directory); Check(Store.Load() is null && Store.Save(State), "Could not create isolated save.");
