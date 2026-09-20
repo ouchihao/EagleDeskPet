@@ -38,6 +38,43 @@ TIMES = {
     'HungryExit': (1.5, (0,23,46,67,90)),
 }
 FIFTEEN = (0,8,16,24,32,40,48,56,64,72,80,90,100,110,120)
+RPS_TIMES = {
+    **{clip: (2.8, (0,8,16,26,36,46,56,72,92,108,118,130,142,152,162,168))
+       for clip in ('RpsRock','RpsPaper','RpsScissors')},
+    **{clip: (2.4, (0,8,16,24,34,44,54,64,74,84,94,104,114,126,136,144))
+       for clip in ('RpsWin','RpsLose')},
+}
+TIMES.update(RPS_TIMES)
+RPS_ROUTE = 'Rps v2 is built separately by tools/prepare_rps_animation.py (16 authored keys per clip)'
+
+def guard_legacy_rps_request(args):
+    """Reject explicit old-pipeline requests before even rewriting outfit neutral."""
+    if 'Rps' in (args.groups or []) or any(clip in RPS_TIMES for clip in (args.clips or [])):
+        raise ValueError(RPS_ROUTE + '; no legacy outfit assets have been written')
+
+def audit_sources(assets:Path, outfit:str, refs:dict):
+    """Keep historical mapping files readable, but route RPS to individual v2 sheets."""
+    for group, info in refs.items():
+        if group != 'Rps':
+            yield assets/f'AnimationSources/{outfit}-{group.lower()}-sheet-v1.png', info
+    for clip in RPS_TIMES:
+        source = assets/f'AnimationSources/RpsV2/{outfit}-{clip[3:].lower()}-v2.png'
+        yield source, {'mapping': {clip: list(range(16))}}
+
+def rps_report_errors(clip:str, qa:dict, key_qa:dict, source_hash:str, source_order_hash:str|None=None):
+    """Reject stale five-key evidence even if the caller copied it beside new PNGs."""
+    seconds, positions = RPS_TIMES[clip]
+    errors = []
+    for label, report, count in (('final', qa, round(seconds*60)+1), ('keys', key_qa, 16)):
+        if not report.get('passed') or report.get('source_sha256') != source_hash:
+            errors.append(f'{clip}: {label} QA not passed or v2 source provenance changed')
+        if report.get('frame_count') != count or report.get('expected_frame_count') != count:
+            errors.append(f'{clip}: {label} QA has stale frame counts')
+        if report.get('authored_frame_indices') != list(positions):
+            errors.append(f'{clip}: {label} QA has stale authored timing')
+        if report.get('provenance',{}).get('source_order_metadata_sha256') != source_order_hash:
+            errors.append(f'{clip}: {label} QA source-order metadata changed')
+    return errors
 
 def clean_registered_alpha(frame:Image.Image) -> Image.Image:
     """Normalize near-opaque native artwork cores, retaining real AA coverage.
@@ -53,7 +90,8 @@ def clean_registered_alpha(frame:Image.Image) -> Image.Image:
 
 def load_mapping(assets:Path):
     info=json.loads((assets/'AnimationSources/OfficeReferences/mapping.json').read_text())
-    if set(info)!=set(GROUPS): raise ValueError('Office reference groups do not match the known catalog')
+    if set(info) not in (set(GROUPS), set(GROUPS)-{'Rps'}):
+        raise ValueError('Office reference groups do not match the known catalog')
     for group,item in info.items():
         if set(item['mapping'])!=set(GROUPS[group]):
             raise ValueError(f'{group}: unknown clip target in reference mapping')
@@ -73,6 +111,9 @@ def make_references(assets:Path):
     neutral_hash = hashlib.sha256(neutral.tobytes()).hexdigest()
     info = {}
     for group, clips in GROUPS.items():
+        if group == 'Rps':
+            print(RPS_ROUTE + '; reference sheets are supplied per clip',flush=True)
+            continue
         unique, by_hash, mapping = [], {}, {}
         for clip in clips:
             entries = []
@@ -111,12 +152,15 @@ def prepare_neutral(assets:Path):
     return frame
 
 def build(assets:Path,args):
+    guard_legacy_rps_request(args)
+    print(RPS_ROUTE + '; skipping Rps in this builder',flush=True)
     neutral = prepare_neutral(assets)
     refs = load_mapping(assets)
     target = assets/'Outfits/Office'
     preview = assets/'AnimationPreviews/Office'; preview.mkdir(parents=True,exist_ok=True)
     pipeline.measure_root_anchor = measure_eat_root
     for group, info in refs.items():
+        if group == 'Rps': continue
         if args.groups and group not in args.groups: continue
         source = assets/f'AnimationSources/office-{group.lower()}-sheet-v1.png'
         cells = [clean_registered_alpha(frame)
@@ -208,8 +252,10 @@ def audit(assets:Path):
     neutral = np.array(Image.open(target/'neutral.png').convert('RGBA'))
     errors, clips, endpoints = [], {}, {}
     total_bytes = (target/'neutral.png').stat().st_size
-    for group, info in refs.items():
-        source = assets/f'AnimationSources/office-{group.lower()}-sheet-v1.png'
+    for source, info in audit_sources(assets,'office',refs):
+        if not source.is_file():
+            errors.append(f'{source.name}: missing source artwork')
+            continue
         source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
         for clip, keys in info['mapping'].items():
             output = target/'Animations'/clip
@@ -226,6 +272,16 @@ def audit(assets:Path):
             qa = json.loads(report_path.read_text())
             if not qa.get('passed') or qa.get('source_sha256') != source_hash:
                 errors.append(f'{clip}: QA not passed or source provenance changed')
+            if clip in RPS_TIMES:
+                key_report_path = preview/f'{clip}-keys-qa.json'
+                key_qa = json.loads(key_report_path.read_text()) if key_report_path.is_file() else {}
+                order_path = source.with_suffix('.json')
+                order_hash = hashlib.sha256(order_path.read_bytes()).hexdigest() if order_path.is_file() else None
+                errors.extend(rps_report_errors(clip,qa,key_qa,source_hash,order_hash))
+                key_paths = sorted((target/'Keys'/clip).glob('key-*.png'))
+                if [path.name for path in key_paths] != [f'key-{i:02d}.png' for i in range(16)]:
+                    errors.append(f'{clip}: non-contiguous or incomplete v2 key sequence')
+                    continue
             for i,path in enumerate(paths):
                 with Image.open(path) as opened:
                     opened.load()

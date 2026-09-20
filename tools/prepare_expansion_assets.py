@@ -18,8 +18,10 @@ import work_asset_acceleration
 
 
 def prepare(assets: Path, family: str, neutral: Image.Image):
+    if family == "Rps":
+        raise ValueError("Rps uses the 16-key v2 builder: tools/prepare_rps_animation.py; the legacy 5-key builder is disabled")
     source = assets / "AnimationSources" / f"{family.lower()}-sheet-v1.png"
-    cells = align_cells(extract_native_cells(source, 5, 5 if family == "Rps" else 3), neutral)
+    cells = align_cells(extract_native_cells(source, 5, 3), neutral)
     if family == "Hungry":
         anchor = cells[6]
         return {
@@ -29,9 +31,6 @@ def prepare(assets: Path, family: str, neutral: Image.Image):
         }
     if family in ("Tea", "Annoyed"):
         return {family: (2.0, [neutral, *cells[1:14], neutral], (0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 90, 100, 110, 120))}
-    if family == "Rps":
-        return {name: (2.0, [neutral, *cells[row * 5 + 1:row * 5 + 4], neutral], (0, 24, 58, 93, 120))
-                for row, name in enumerate(("RpsRock", "RpsPaper", "RpsScissors", "RpsWin", "RpsLose"))}
     raise ValueError(family)
 
 
@@ -45,6 +44,8 @@ def main():
     parser.add_argument("--clips", nargs="*")
     parser.add_argument("--dependency-root", type=Path, help="Optional existing SciPy target directory for build-only acceleration")
     args = parser.parse_args()
+    if args.family == "Rps":
+        parser.error("Rps uses tools/prepare_rps_animation.py; no legacy RPS assets have been written")
     assets = args.assets.resolve(strict=True)
     neutral_path = assets / "mascot-animated-neutral.png"
     baseline = hashlib.sha256(neutral_path.read_bytes()).hexdigest()

@@ -18,6 +18,7 @@ import prepare_generated_sheets as pipeline
 from prepare_work_animation import align_cells, extract_native_cells
 from prepare_care_animation import measure_eat_root, add_temporal_qa
 import work_asset_acceleration
+from prepare_office_outfit import RPS_TIMES, RPS_ROUTE, guard_legacy_rps_request, audit_sources, rps_report_errors
 
 WORK = ['WorkEnter', 'WorkLoop', 'WorkToBusyV2', 'BusyLoop', 'WorkExit', 'BusyExitV2']
 GROUPS = {'Yawn':['Yawn'], 'Shy':['Shy'], 'Eat':['Eat'], 'Work':WORK,
@@ -38,6 +39,7 @@ TIMES = {
     'HungryExit': (1.5, (0,23,46,67,90)),
 }
 FIFTEEN = (0,8,16,24,32,40,48,56,64,72,80,90,100,110,120)
+TIMES.update(RPS_TIMES)
 
 def clean_registered_alpha(frame:Image.Image) -> Image.Image:
     """Normalize near-opaque native artwork cores, retaining real AA coverage.
@@ -53,7 +55,8 @@ def clean_registered_alpha(frame:Image.Image) -> Image.Image:
 
 def load_mapping(assets:Path):
     info=json.loads((assets/'AnimationSources/HoodieReferences/mapping.json').read_text())
-    if set(info)!=set(GROUPS): raise ValueError('Hoodie reference groups do not match the known catalog')
+    if set(info) not in (set(GROUPS), set(GROUPS)-{'Rps'}):
+        raise ValueError('Hoodie reference groups do not match the known catalog')
     for group,item in info.items():
         if set(item['mapping'])!=set(GROUPS[group]):
             raise ValueError(f'{group}: unknown clip target in reference mapping')
@@ -73,6 +76,9 @@ def make_references(assets:Path):
     neutral_hash = hashlib.sha256(neutral.tobytes()).hexdigest()
     info = {}
     for group, clips in GROUPS.items():
+        if group == 'Rps':
+            print(RPS_ROUTE + '; reference sheets are supplied per clip',flush=True)
+            continue
         unique, by_hash, mapping = [], {}, {}
         for clip in clips:
             entries = []
@@ -111,12 +117,15 @@ def prepare_neutral(assets:Path):
     return frame
 
 def build(assets:Path,args):
+    guard_legacy_rps_request(args)
+    print(RPS_ROUTE + '; skipping Rps in this builder',flush=True)
     neutral = prepare_neutral(assets)
     refs = load_mapping(assets)
     target = assets/'Outfits/Hoodie'
     preview = assets/'AnimationPreviews/Hoodie'; preview.mkdir(parents=True,exist_ok=True)
     pipeline.measure_root_anchor = measure_eat_root
     for group, info in refs.items():
+        if group == 'Rps': continue
         if args.groups and group not in args.groups: continue
         source = assets/f'AnimationSources/hoodie-{group.lower()}-sheet-v1.png'
         cells = [clean_registered_alpha(frame)
@@ -177,8 +186,10 @@ def audit(assets:Path):
     neutral = np.array(Image.open(target/'neutral.png').convert('RGBA'))
     errors, clips, endpoints = [], {}, {}
     total_bytes = (target/'neutral.png').stat().st_size
-    for group, info in refs.items():
-        source = assets/f'AnimationSources/hoodie-{group.lower()}-sheet-v1.png'
+    for source, info in audit_sources(assets,'hoodie',refs):
+        if not source.is_file():
+            errors.append(f'{source.name}: missing source artwork')
+            continue
         source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
         for clip, keys in info['mapping'].items():
             output = target/'Animations'/clip
@@ -195,6 +206,16 @@ def audit(assets:Path):
             qa = json.loads(report_path.read_text())
             if not qa.get('passed') or qa.get('source_sha256') != source_hash:
                 errors.append(f'{clip}: QA not passed or source provenance changed')
+            if clip in RPS_TIMES:
+                key_report_path = preview/f'{clip}-keys-qa.json'
+                key_qa = json.loads(key_report_path.read_text()) if key_report_path.is_file() else {}
+                order_path = source.with_suffix('.json')
+                order_hash = hashlib.sha256(order_path.read_bytes()).hexdigest() if order_path.is_file() else None
+                errors.extend(rps_report_errors(clip,qa,key_qa,source_hash,order_hash))
+                key_paths = sorted((target/'Keys'/clip).glob('key-*.png'))
+                if [path.name for path in key_paths] != [f'key-{i:02d}.png' for i in range(16)]:
+                    errors.append(f'{clip}: non-contiguous or incomplete v2 key sequence')
+                    continue
             for i,path in enumerate(paths):
                 with Image.open(path) as opened:
                     opened.load()
