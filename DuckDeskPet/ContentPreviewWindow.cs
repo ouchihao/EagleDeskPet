@@ -30,30 +30,27 @@ internal sealed class ContentPreviewWindow : Window
     {
         _item = item; _selection = selection; _available = available;
         Title = "大头鹰 · " + item.Name + "预览";
-        Width = 380; Height = 425; MinWidth = 340; MinHeight = 390;
-        Background = Brush("#FFF9EF"); Foreground = Brush("#493827");
+        Width = 400; Height = 485; MinWidth = 350; MinHeight = 390;
+        Background = PreviewStageChrome.Paper; Foreground = PreviewStageChrome.Ink;
         FontFamily = new FontFamily("Microsoft YaHei UI"); ShowInTaskbar = false; WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Themes/PetTheme.xaml") });
-        var root = new Grid { Margin = new Thickness(20), Background = Background };
+        var root = new Grid { Margin = new Thickness(17), Background = Background };
         root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         root.RowDefinitions.Add(new() { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new() { Height = GridLength.Auto });
-        var heading = new StackPanel();
-        heading.Children.Add(new TextBlock { Text = item.Name, FontSize = 21, FontWeight = FontWeights.Bold });
-        heading.Children.Add(new TextBlock { Text = "独立小舞台 · 不扣款、不领奖、不换装", FontSize = 10, Foreground = Brush("#85836C"), Margin = new(0, 6, 0, 10) });
-        root.Children.Add(heading);
-        var scene = new Grid { Width = 290, Height = 265, ClipToBounds = true, Background = Brush("#F1EFE5") };
+        root.Children.Add(PreviewStageChrome.Ticket(item.Name, "私享试映 · 不扣款、不领奖、不换装", "PREVIEW"));
+        var scene = new Grid { Width = 290, Height = 265, ClipToBounds = true, Background = Brushes.Transparent };
         var fire = Layer(); var back = Layer(); _pet = Layer(); var front = Layer(); var computer = Layer();
         foreach (var image in new[] { fire, back, _pet, front, computer }) scene.Children.Add(image);
         // A short/narrow window scales this self-contained stage instead of cropping feet or controls.
-        var viewport = new Viewbox { Child = scene, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly };
+        var viewport = PreviewStageChrome.Stage(scene);
         Grid.SetRow(viewport, 1); root.Children.Add(viewport);
         _stage = new WorkStageRenderer(back, front, computer, fire, character: _pet);
         var footer = new StackPanel { Margin = new(0, 12, 0, 0) };
-        _status = new TextBlock { Text = "正在准备预览…", TextWrapping = TextWrapping.Wrap, FontSize = 11, Foreground = Brush("#81745F"), Margin = new(0, 0, 0, 10) };
+        _status = new TextBlock { Text = "正在准备预览…", TextWrapping = TextWrapping.Wrap, FontSize = 11, Foreground = PreviewStageChrome.Muted, Margin = new(0, 0, 0, 10) };
         footer.Children.Add(_status);
         var controls = new DockPanel();
-        var close = new Button { Content = "看完啦", Style = (Style)FindResource("PetButton"), HorizontalAlignment = HorizontalAlignment.Right };
+        var close = new Button { Content = "看完啦", Style = (Style)FindResource("PetPrimaryButton"), HorizontalAlignment = HorizontalAlignment.Right };
         close.Click += (_, _) => Close(); DockPanel.SetDock(close, Dock.Right); controls.Children.Add(close);
         _pause = new Button { Content = "暂停预览", Style = (Style)FindResource("PetButton"), HorizontalAlignment = HorizontalAlignment.Left, IsEnabled = false };
         _pause.Click += (_, _) => { _paused = !_paused; _pause.Content = _paused ? "继续预览" : "暂停预览"; UpdateClock(); };
@@ -137,5 +134,4 @@ internal sealed class ContentPreviewWindow : Window
         _stage.Apply(_scene ? new ClipSample(_clip, ClipPlaybackPhase.Playing, progress, 1) : ClipSample.Idle);
     }
     private static Image Layer() => new() { Width = 256, Height = 232, Stretch = Stretch.Uniform, IsHitTestVisible = false };
-    private static SolidColorBrush Brush(string color) => (SolidColorBrush)new BrushConverter().ConvertFromString(color)!;
 }

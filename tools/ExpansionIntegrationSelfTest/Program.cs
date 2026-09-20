@@ -37,6 +37,8 @@ internal static class Program
             Test("Preview pause/continue and authored finish affect only its private timeline", PreviewControls);
             Test("Unavailable requested outfit/workplace warns and previews real defaults without a save", PreviewFallback);
             Test("Closing during preview preload cancels work and releases every retained frame", ClosePreviewDuringLoad);
+            Test("Club theatre previews keep real layers and all controls visible at minimum/default sizes and 1x/1.28x on dark/light surrounds", PreviewChromeScreenshots);
+            Test("Content theatre loads actual desk/action resources, pauses privately and has no mutable care services", ContentTheatre);
             File.WriteAllText(Path.Combine(_output, "report.json"), JsonSerializer.Serialize(new
             { passed = Failures.Count == 0, assertions = Assertions, failures = Failures,
               ownVisualTreeOnly = true, desktopCapture = false, userStateAccess = false }, new JsonSerializerOptions { WriteIndented = true }));
@@ -328,6 +330,89 @@ internal static class Program
         Check(!window.IsPrepared && !window.IsRenderLoopAttached && window.RetainedFrameCount == 0 &&
             PreviewDescendants<Image>((DependencyObject)window.Content).All(x => x.Source is null), "A completed stale preload resurrected a closed preview.");
     }
+    private static void PreviewChromeScreenshots()
+    {
+        var window = new HungryScenePreviewWindow(OutfitCatalog.DefaultId, new("work.default", "desk.mint", "computer.midnight"));
+        try
+        {
+            WaitUi(window.PrepareAsync());
+            int previewTick = 0;
+            // Include the complete entry, expressive loop, and authored exit,
+            // not merely an empty shell or a manually substituted neutral frame.
+            foreach (var (name, target) in new[] { ("entry", 45), ("loop", 145), ("exit", 365) })
+            {
+                while (previewTick < target) { StepPreview(window); previewTick++; }
+                foreach (bool compact in new[] { false, true })
+                    foreach (var (theme, surround) in new[] { ("dark", Brushes.Black), ("light", Brushes.FloralWhite) })
+                        foreach (double scale in new[] { 1.0, 1.28 })
+                            SaveWholePreview(window, $"theatre-hungry-{name}-{(compact ? "compact" : "normal")}-{theme}-{scale:0.00}x.png",
+                                compact ? new Size(334, 350) : new Size(404, 470), surround, scale);
+            }
+        }
+        finally { window.Close(); }
+    }
+    private static void ContentTheatre()
+    {
+        foreach (string id in new[] { ContentCatalog.MintDeskId, ContentCatalog.TeaActionId })
+        {
+            var item = ContentCatalog.Definitions.Single(x => x.Id == id);
+            var window = new ContentPreviewWindow(item, new("work.default", "desk.default", "computer.default"), _ => true);
+            try
+            {
+                WaitUi(window.PrepareAsync());
+                Check(PreviewDescendants<Image>((DependencyObject)window.Content).Any(x => x.Source is BitmapSource), "Content preview substituted decoration for real actor frames.");
+                Check(!typeof(ContentPreviewWindow).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Any(x => x.FieldType.Name is "PetStore" or "PetState" or "PetCareService" or "ContentOwnershipService"), "Content preview acquired a mutable gameplay service.");
+                var pause = PreviewDescendants<Button>((DependencyObject)window.Content).Single(x => (string?)x.Content == "暂停预览");
+                Check(pause.IsEnabled, "Prepared content preview cannot pause."); pause.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check((string?)pause.Content == "继续预览", "Pause did not update its own transport.");
+                foreach (bool compact in new[] { false, true })
+                    foreach (var (theme, surround) in new[] { ("dark", Brushes.Black), ("light", Brushes.FloralWhite) })
+                        foreach (double scale in new[] { 1.0, 1.28 })
+                            SaveWholePreview(window, $"theatre-{id}-{(compact ? "compact" : "normal")}-{theme}-{scale:0.00}x.png",
+                                compact ? new Size(334, 350) : new Size(384, 445), surround, scale);
+            }
+            finally { window.Close(); }
+        }
+    }
+    private static void SaveWholePreview(Window window, string filename, Size available, Brush surround, double scale)
+    {
+        window.Width = available.Width + 16; window.Height = available.Height + 40;
+        var surface = (FrameworkElement)window.Content;
+        // Hidden Window roots otherwise receive WPF's unconstrained top-level
+        // measure on UpdateLayout. Isolate this SAME visual tree in the exact
+        // client viewport instead of accidentally cropping a larger layout.
+        window.Content = null;
+        var viewport = new Grid { Width = available.Width, Height = available.Height };
+        viewport.Children.Add(surface);
+        try
+        {
+        viewport.Measure(available); viewport.Arrange(new Rect(new Point(), available)); viewport.UpdateLayout();
+        Check(surface.ActualWidth + surface.Margin.Left + surface.Margin.Right <= available.Width + .5 &&
+            surface.ActualHeight + surface.Margin.Top + surface.Margin.Bottom <= available.Height + .5,
+            $"Preview root exceeds requested viewport {available}: {surface.RenderSize}; width={surface.Width},height={surface.Height},min={surface.MinWidth}/{surface.MinHeight},max={surface.MaxWidth}/{surface.MaxHeight},align={surface.HorizontalAlignment}/{surface.VerticalAlignment},desired={surface.DesiredSize}.");
+        foreach (var button in PreviewDescendants<Button>(surface))
+        {
+            Rect bounds = button.TransformToAncestor(surface).TransformBounds(new Rect(button.RenderSize));
+            Check(bounds.Left >= -.5 && bounds.Top >= -.5 && bounds.Right <= surface.ActualWidth + .5 && bounds.Bottom <= surface.ActualHeight + .5,
+                $"Preview control clipped at {available}: {button.Content} {bounds}; surface {surface.RenderSize}.");
+        }
+        var theatre = PreviewDescendants<Viewbox>(surface).Single();
+        Check(theatre.ActualWidth > 100 && theatre.ActualHeight > 70, "Minimum-size preview collapsed the stage.");
+        Check(PreviewDescendants<Image>(theatre).All(x => x.Width == 256 && x.Height == 232), "UI scenery changed the registered actor/prop dimensions.");
+        var visual = new DrawingVisual();
+        using (var context = visual.RenderOpen())
+        {
+            context.DrawRectangle(surround, null, new Rect(0, 0, available.Width + 20, available.Height + 20));
+            context.DrawRectangle(window.Background, null, new Rect(10, 10, available.Width, available.Height));
+            context.DrawRectangle(new VisualBrush(surface) { AutoLayoutContent = false }, null, new Rect(27, 27, surface.ActualWidth, surface.ActualHeight));
+        }
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling((available.Width + 20) * scale), (int)Math.Ceiling((available.Height + 20) * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+        bitmap.Render(visual); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(Path.Combine(_output, filename)); encoder.Save(file);
+        }
+        finally { viewport.Children.Clear(); window.Content = surface; }
+    }
     private static void StepPreview(HungryScenePreviewWindow window) => typeof(HungryScenePreviewWindow)
         .GetMethod("AdvanceTimeline", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, new object[] { 1.0 / 60 });
     private static void ClickPreview(HungryScenePreviewWindow window, string text)
@@ -352,7 +437,7 @@ internal static class Program
     private static void SavePreview(Window window, string name)
     {
         LayoutPreview(window); var surface = (FrameworkElement)window.Content; var visual = new DrawingVisual();
-        using (var drawing = visual.RenderOpen()) drawing.DrawRectangle(new VisualBrush(surface), null, new Rect(0, 0, surface.ActualWidth, surface.ActualHeight));
+        using (var drawing = visual.RenderOpen()) drawing.DrawRectangle(new VisualBrush(surface) { AutoLayoutContent = false }, null, new Rect(0, 0, surface.ActualWidth, surface.ActualHeight));
         var bitmap = new RenderTargetBitmap((int)surface.ActualWidth, (int)surface.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap)); using var file = File.Create(Path.Combine(_output, name)); encoder.Save(file);
     }

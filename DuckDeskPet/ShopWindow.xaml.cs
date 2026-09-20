@@ -2,6 +2,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using DuckDeskPet.Core;
 
 namespace DuckDeskPet;
@@ -77,12 +80,22 @@ public partial class ShopWindow : Window
     private readonly Func<ContentDefinition, bool> _confirmPurchase;
     private bool _ready, _busy, _closed;
     private string? _signature;
+    private string? _selectedId;
+    private ContentType? _category;
+    private int _page;
+    private ShopCard[] _filtered = [];
+    private bool _presenting;
     private Task _operation = Task.CompletedTask;
     internal Task PendingOperation => _operation;
 
-    public static readonly DependencyProperty CardWidthProperty = DependencyProperty.Register(
-        nameof(CardWidth), typeof(double), typeof(ShopWindow), new PropertyMetadata(340.0));
-    public double CardWidth { get => (double)GetValue(CardWidthProperty); private set => SetValue(CardWidthProperty, value); }
+    public static readonly DependencyProperty GridColumnsProperty = DependencyProperty.Register(
+        nameof(GridColumns), typeof(int), typeof(ShopWindow), new PropertyMetadata(4));
+    public int GridColumns { get => (int)GetValue(GridColumnsProperty); private set => SetValue(GridColumnsProperty, value); }
+    public static readonly DependencyProperty GridRowsProperty = DependencyProperty.Register(
+        nameof(GridRows), typeof(int), typeof(ShopWindow), new PropertyMetadata(2));
+    public int GridRows { get => (int)GetValue(GridRowsProperty); private set => SetValue(GridRowsProperty, value); }
+    internal int FilteredCount => _filtered.Length;
+    internal int PageCount => Math.Max(1, (int)Math.Ceiling(_filtered.Length / (double)(GridColumns * GridRows)));
 
     internal ShopWindow(ShopTransactions transactions, Func<string, Task<ShopActionResult>> equipAsync,
         Func<string, Task> previewAsync, Func<string, Task> playAsync, Func<bool> interactionBusy,
@@ -90,20 +103,41 @@ public partial class ShopWindow : Window
     {
         _transactions = transactions; _equipAsync = equipAsync; _previewAsync = previewAsync;
         _playAsync = playAsync; _interactionBusy = interactionBusy;
-        _confirmPurchase = confirmPurchase ?? (item => MessageBox.Show(this,
-            $"用 {item.Price} 鹰币收藏「{item.Name}」？\n购买后永久拥有，不会自动装备，也不支持退款。",
-            "确认收藏", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK);
+        _confirmPurchase = confirmPurchase ?? (item => new PurchaseConfirmationWindow(item, _transactions.State.Coins)
+            { Owner = this }.ShowDialog() == true);
         InitializeComponent();
+        HeaderArt.Source = ShopThumbnails.TryLoadHeader();
+        MinWidth = Math.Min(MinWidth, Math.Max(300, SystemParameters.WorkArea.Width - 32));
+        MinHeight = Math.Min(MinHeight, Math.Max(440, SystemParameters.WorkArea.Height - 32));
         Width = Math.Min(Width, Math.Max(MinWidth, SystemParameters.WorkArea.Width - 32));
         Height = Math.Min(Height, Math.Max(MinHeight, SystemParameters.WorkArea.Height - 32));
         _ready = true; SelectOwned(ownedOnly);
-        Closed += (_, _) => _closed = true;
-        Loaded += (_, _) => UpdateCardWidth();
+        Closed += (_, _) => { _closed = true; CardsItems.BeginAnimation(OpacityProperty, null); };
+        IsVisibleChanged += (_, _) => { if (!IsVisible) CardsItems.BeginAnimation(OpacityProperty, null); };
+        Loaded += (_, _) => { KeepInsideWorkArea(); UpdateGridSize(); };
+    }
+
+    private void KeepInsideWorkArea()
+    {
+        // CenterOwner may put a large store half outside the screen when its tiny pet owner is
+        // parked in a desktop corner. Native monitor coordinates also handle mixed-DPI screens.
+        nint handle = new WindowInteropHelper(this).Handle;
+        if (handle == nint.Zero || !NativeMethods.GetWindowRect(handle, out var bounds)) return;
+        nint monitor = NativeMethods.MonitorFromWindow(handle, NativeMethods.MonitorDefaultToNearest);
+        var info = new NativeMethods.MonitorInfo { Size = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MonitorInfo>() };
+        if (monitor == nint.Zero || !NativeMethods.GetMonitorInfo(monitor, ref info)) return;
+        double scale = Math.Max(96, NativeMethods.GetDpiForWindow(handle)) / 96d;
+        MinWidth = Math.Min(MinWidth, info.Work.Width / scale);
+        MinHeight = Math.Min(MinHeight, info.Work.Height / scale);
+        int width = Math.Min(bounds.Width, info.Work.Width), height = Math.Min(bounds.Height, info.Work.Height);
+        int left = Math.Clamp(bounds.Left, info.Work.Left, info.Work.Right - width);
+        int top = Math.Clamp(bounds.Top, info.Work.Top, info.Work.Bottom - height);
+        NativeMethods.SetWindowPos(handle, nint.Zero, left, top, width, height, NativeMethods.SwpNoActivate | 0x0004);
     }
 
     internal void SelectOwned(bool ownedOnly)
     {
-        OwnedFilter.IsChecked = ownedOnly; ShopFilter.IsChecked = !ownedOnly; Refresh();
+        OwnedFilter.IsChecked = ownedOnly; ShopFilter.IsChecked = !ownedOnly; _page = 0; Refresh();
     }
     internal void Refresh()
     {
@@ -111,22 +145,85 @@ public partial class ShopWindow : Window
         var state = _transactions.State;
         var cards = ContentCatalog.Definitions.OrderBy(item => OwnedFilter.IsChecked != true && item.IsDefault ? 1 : 0)
             .Select(item => new ShopCard(item, state, _transactions, _interactionBusy(), _busy)).ToArray();
-        string signature = $"{state.Coins}|{OwnedFilter.IsChecked}|{_busy}|" + string.Join("|", cards.Select(x => x.Signature));
+        string signature = $"{state.Coins}|{OwnedFilter.IsChecked}|{_category}|{_busy}|" + string.Join("|", cards.Select(x => x.Signature));
         if (signature == _signature) return;
         _signature = signature;
         BalanceText.Text = state.Coins.ToString("N0");
-        CardsItems.ItemsSource = cards.Where(x => OwnedFilter.IsChecked != true || x.Owned).ToArray();
-        EmptyText.Visibility = CardsItems.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        CollectionText.Text = $"已收藏 {cards.Count(x => x.Owned)} / {cards.Length}";
+        _filtered = cards.Where(x => (OwnedFilter.IsChecked != true || x.Owned) && (_category is null || x.Type == _category)).ToArray();
+        PresentPage();
     }
-    private void Filter_OnChecked(object sender, RoutedEventArgs e) { if (_ready) Refresh(); }
-    private void Window_OnSizeChanged(object sender, SizeChangedEventArgs e) { if (_ready) UpdateCardWidth(); }
-    private void UpdateCardWidth()
+    private void Filter_OnChecked(object sender, RoutedEventArgs e) { if (_ready) { _page = 0; Refresh(); AnimateShelf(); } }
+    private void Category_OnChecked(object sender, RoutedEventArgs e)
     {
-        double available = Math.Max(300, CardScroll.ActualWidth - 38);
-        CardWidth = Math.Floor(available / (available >= 620 ? 2 : 1));
+        if (!_ready || sender is not RadioButton { Tag: string category }) return;
+        _category = Enum.TryParse<ContentType>(category, out var type) ? type : null;
+        _page = 0; Refresh(); AnimateShelf();
+    }
+    private void Window_OnSizeChanged(object sender, SizeChangedEventArgs e) { if (_ready) UpdateGridSize(); }
+    private void Shelf_OnSizeChanged(object sender, SizeChangedEventArgs e) { if (_ready) UpdateGridSize(); }
+    private void UpdateGridSize()
+    {
+        double width = ShelfViewport.ActualWidth, height = ShelfViewport.ActualHeight;
+        int columns = width >= 810 ? 4 : width >= 590 ? 3 : 2;
+        int rows = height >= 290 ? 2 : 1;
+        HeaderSubtitle.Visibility = ShopSurface.ActualWidth < 560 ? Visibility.Collapsed : Visibility.Visible;
+        HeaderRow.Height = new GridLength(ShopSurface.ActualHeight is > 0 and < 650 ? 92 : 112);
+        MiddleShelf.Visibility = rows == 2 ? Visibility.Visible : Visibility.Collapsed;
+        if (columns == GridColumns && rows == GridRows) return;
+        int oldFirst = _page * GridColumns * GridRows;
+        GridColumns = columns; GridRows = rows;
+        _page = oldFirst / (columns * rows); PresentPage();
+    }
+    private void PresentPage()
+    {
+        _page = Math.Clamp(_page, 0, PageCount - 1);
+        _presenting = true;
+        var visible = _filtered.Skip(_page * GridColumns * GridRows).Take(GridColumns * GridRows).ToArray();
+        CardsItems.ItemsSource = visible;
+        CardsItems.SelectedItem = visible.FirstOrDefault(x => x.Id == _selectedId) ?? visible.FirstOrDefault();
+        _presenting = false;
+        UpdateSelection();
+        EmptyText.Visibility = visible.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        DetailsPanel.Visibility = visible.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        PageText.Text = $"{_page + 1} / {PageCount}";
+        PageSummary.Text = $"{_filtered.Length} 件好物 · 选中查看详情";
+        PreviousButton.IsEnabled = _page > 0;
+        NextButton.IsEnabled = _page + 1 < PageCount;
+    }
+    internal bool SelectItem(string id)
+    {
+        int index = Array.FindIndex(_filtered, x => x.Id == id);
+        if (index < 0) return false;
+        _selectedId = id; _page = index / (GridColumns * GridRows); PresentPage(); return true;
+    }
+    private void Cards_OnSelectionChanged(object sender, SelectionChangedEventArgs e) { if (!_presenting) UpdateSelection(); }
+    private void UpdateSelection()
+    {
+        if (CardsItems.SelectedItem is ShopCard selected) _selectedId = selected.Id;
+        DetailsPanel.DataContext = CardsItems.SelectedItem;
+    }
+    private void Previous_OnClick(object sender, RoutedEventArgs e) => ChangePage(-1);
+    private void Next_OnClick(object sender, RoutedEventArgs e) => ChangePage(1);
+    private void ChangePage(int delta)
+    {
+        int page = Math.Clamp(_page + delta, 0, PageCount - 1);
+        if (page == _page) return;
+        _page = page; PresentPage(); AnimateShelf();
+    }
+    private void AnimateShelf()
+    {
+        if (!IsVisible || !SystemParameters.ClientAreaAnimation || SystemParameters.HighContrast) return;
+        // The catalog switches immediately; only its visual arrival is animated, never a transaction.
+        CardsItems.BeginAnimation(OpacityProperty, new DoubleAnimation(.55, 1, TimeSpan.FromMilliseconds(140))
+            { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }, FillBehavior = FillBehavior.Stop });
     }
     private void Close_OnClick(object sender, RoutedEventArgs e) => Close();
-    private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Escape) { e.Handled = true; Close(); } }
+    private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape) { e.Handled = true; Close(); }
+        else if (e.Key is Key.PageDown or Key.PageUp) { ChangePage(e.Key == Key.PageDown ? 1 : -1); e.Handled = true; }
+    }
     private void Preview_OnClick(object sender, RoutedEventArgs e)
     {
         if (_busy || sender is not Button { Tag: string id } || !ContentCatalog.TryGet(id, out var item) || !_transactions.IsAvailable(item!)) return;
@@ -169,14 +266,17 @@ public partial class ShopWindow : Window
     {
         internal ShopCard(ContentDefinition item, PetState state, ShopTransactions transactions, bool interactionBusy, bool busy)
         {
-            Id = item.Id; Name = item.Name; Description = item.Description;
+            Id = item.Id; Name = item.Name; Description = item.Description; Type = item.Type;
+            Thumbnail = ShopThumbnails.Get(item);
             Owned = ContentOwnershipService.Owns(state.Content, item.Id);
-            bool available = transactions.IsAvailable(item);
+            bool available = transactions.IsAvailable(item) && Thumbnail is not null;
             bool earned = ContentOwnershipService.IsRewardEligible(item, state);
             bool equipped = item.Slot is { } slot && state.Content.Equipped.GetValueOrDefault(slot, ContentCatalog.DefaultForSlot(slot)) == item.Id;
             bool pending = item.Slot is { } pendingSlot && state.Content.PendingEquipment.GetValueOrDefault(pendingSlot) == item.Id;
             bool otherPending = item.Slot is { } currentSlot && state.Content.PendingEquipment.ContainsKey(currentSlot) && !pending;
             Category = item.Type switch { ContentType.Desk => "工位 · 桌子", ContentType.Computer => "工位 · 电脑", ContentType.Outfit => "形象 · 全套装扮", _ => "互动 · 手动动作" };
+            ShortCategory = item.Type switch { ContentType.Desk => "工位 / 桌子", ContentType.Computer => "工位 / 电脑", ContentType.Outfit => "全套装扮", _ => "收藏动作" };
+            Badge = pending ? "待生效" : equipped ? "使用中" : Owned ? "已收藏" : earned ? "可领取" : "";
             PriceLabel = item.IsDefault ? "默认免费" : Owned ? "已拥有" : $"{item.Price} 鹰币";
             Acquisition = item.IsDefault ? "每只小鹰都有，不用购买。" : item.Reward is not null
                 ? $"{item.Price} 鹰币购买，或{item.Reward.Description}。" : $"工作积累鹰币，{item.Price} 鹰币永久收藏。";
@@ -197,6 +297,11 @@ public partial class ShopWindow : Window
             Signature = $"{Id}:{Owned}:{Status}:{ActionLabel}:{CanPreview}:{CanAct}";
         }
         public string Id { get; }
+        public ContentType Type { get; }
+        public ImageSource? Thumbnail { get; }
+        public Visibility MissingThumbnailVisibility => Thumbnail is null ? Visibility.Visible : Visibility.Collapsed;
+        public string ShortCategory { get; }
+        public string Badge { get; }
         public string Name { get; }
         public string Description { get; }
         public string Category { get; }

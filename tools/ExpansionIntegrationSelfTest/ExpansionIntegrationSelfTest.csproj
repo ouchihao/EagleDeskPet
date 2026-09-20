@@ -13,6 +13,8 @@
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
     <Compile Include="../../DuckDeskPet/HungryScenePreviewWindow.cs" Link="HungryScenePreviewWindow.cs" />
+    <Compile Include="../../DuckDeskPet/ContentPreviewWindow.cs" Link="ContentPreviewWindow.cs" />
+    <Compile Include="../../DuckDeskPet/PreviewStageChrome.cs" Link="PreviewStageChrome.cs" />
     <Page Include="../../DuckDeskPet/Themes/PetTheme.xaml" Link="Themes/PetTheme.xaml" />
     <Resource Include="../../DuckDeskPet/Assets/actions.json" Link="Assets/actions.json" />
     <Resource Include="../../DuckDeskPet/Assets/outfits.json" Link="Assets/outfits.json" Condition="Exists('../../DuckDeskPet/Assets/outfits.json')" />
@@ -22,5 +24,7 @@
     <Resource Include="../../DuckDeskPet/Assets/Animations/HungryEnter/frame-*.png" Link="Assets/Animations/HungryEnter/%(Filename)%(Extension)" />
     <Resource Include="../../DuckDeskPet/Assets/Animations/HungryLoop/frame-*.png" Link="Assets/Animations/HungryLoop/%(Filename)%(Extension)" />
     <Resource Include="../../DuckDeskPet/Assets/Animations/HungryExit/frame-*.png" Link="Assets/Animations/HungryExit/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/WorkLoop/frame-*.png" Link="Assets/Animations/WorkLoop/%(Filename)%(Extension)" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/Tea/frame-*.png" Link="Assets/Animations/Tea/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

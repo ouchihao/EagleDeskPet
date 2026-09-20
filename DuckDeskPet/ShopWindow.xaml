@@ -1,8 +1,8 @@
 <Window x:Class="DuckDeskPet.ShopWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="大头鹰 · 小商店与收藏" Width="760" Height="690" MinWidth="380" MinHeight="440"
-        Background="#FFF9EF" Foreground="#493827" FontFamily="Microsoft YaHei UI"
+        Title="大头鹰 · 鹰选好物" Width="960" Height="720" MinWidth="440" MinHeight="620"
+        Background="#FFF8EC" Foreground="#26384C" FontFamily="Microsoft YaHei UI"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         SizeChanged="Window_OnSizeChanged" PreviewKeyDown="Window_OnPreviewKeyDown">
     <Window.Resources>
@@ -10,62 +10,123 @@
             <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Themes/PetTheme.xaml"/></ResourceDictionary.MergedDictionaries>
             <Style TargetType="Button" BasedOn="{StaticResource PetButton}"/>
             <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
-            <Style TargetType="RadioButton"><Setter Property="Margin" Value="0,0,20,0"/><Setter Property="FontSize" Value="13"/><Setter Property="Cursor" Value="Hand"/></Style>
+            <Style x:Key="ShopTab" TargetType="RadioButton">
+                <Setter Property="Margin" Value="0,0,6,0"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Padding" Value="12,7"/>
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Pill" Background="#F1E9D9" CornerRadius="14" BorderThickness="1" BorderBrush="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True"><Setter TargetName="Pill" Property="Background" Value="#26384C"/><Setter Property="Foreground" Value="#FFF7E5"/></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Pill" Property="BorderBrush" Value="#BC9856"/></Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Pill" Property="BorderBrush" Value="#C99126"/><Setter TargetName="Pill" Property="BorderThickness" Value="2"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate></Setter.Value></Setter>
+            </Style>
+            <Style x:Key="ProductTile" TargetType="ListBoxItem">
+                <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleLabel}"/>
+                <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="5,5,5,9"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Cursor" Value="Hand"/><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Tile" Background="#FFFDF8" BorderBrush="#DED5C1" BorderThickness="1" CornerRadius="12">
+                        <ContentPresenter HorizontalAlignment="Stretch"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="#D8A233"/><Setter TargetName="Tile" Property="BorderThickness" Value="2"/><Setter TargetName="Tile" Property="Background" Value="#FFF4CF"/></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="#C28E31"/></Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Tile" Property="BorderBrush" Value="#354F65"/><Setter TargetName="Tile" Property="BorderThickness" Value="2"/></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate></Setter.Value></Setter>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid Background="{Binding Background, RelativeSource={RelativeSource AncestorType=Window}}">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <Border Background="#E8ECDD" Padding="24,20" BorderBrush="#D4DAC8" BorderThickness="0,0,0,1">
-            <StackPanel>
-                <Grid>
-                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel><TextBlock Text="EAGLE CLUB / 鹰币只在本机流通" FontSize="10" Foreground="#7A826A"/><TextBlock Text="小商店与收藏" FontSize="25" FontWeight="Bold" Margin="0,5,0,0"/></StackPanel>
-                    <Border Grid.Column="1" Background="#FFFDF5" CornerRadius="12" Padding="14,10" VerticalAlignment="Center" Margin="10,0,0,0">
-                        <StackPanel><TextBlock Text="我的鹰币" FontSize="10" Foreground="#8A7A59" HorizontalAlignment="Center"/><TextBlock x:Name="BalanceText" FontSize="23" FontWeight="Bold" HorizontalAlignment="Center" AutomationProperties.LiveSetting="Polite"/></StackPanel>
+    <Grid x:Name="ShopSurface" Background="#FFF8EC">
+        <Grid.RowDefinitions><RowDefinition x:Name="HeaderRow" Height="112"/><RowDefinition Height="Auto"/><RowDefinition Height="*" MinHeight="170"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Border Background="#DFE9DC" BorderBrush="#C7D4C1" BorderThickness="0,0,0,1" ClipToBounds="True">
+            <Grid>
+                <Image x:Name="HeaderArt" Stretch="UniformToFill" HorizontalAlignment="Right" Width="540" IsHitTestVisible="False"/>
+                <Border IsHitTestVisible="False"><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#FFDFE9DC" Offset="0"/><GradientStop Color="#FFDFE9DC" Offset="0.46"/><GradientStop Color="#00DFE9DC" Offset="0.78"/></LinearGradientBrush></Border.Background></Border>
+                <Grid Margin="23,13"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="EAGLE CLUB  /  LITTLE TREASURES" FontSize="10" FontWeight="SemiBold" Foreground="#587467"/>
+                        <TextBlock Text="鹰选好物" FontSize="27" FontWeight="Bold" Margin="0,4,0,2"/>
+                        <TextBlock x:Name="HeaderSubtitle" Text="钱是辛苦赚的，快乐是认真挑的。" FontSize="11" Foreground="#567365"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#FDF5DA" CornerRadius="15" Padding="13,9" VerticalAlignment="Top" BorderBrush="#DEB966" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="30" Height="30" Margin="0,0,9,0"><Ellipse Fill="#E9BB54" Stroke="#B48531" StrokeThickness="1"/><Ellipse Margin="4" Stroke="#FFF0BB" StrokeThickness="1"/><TextBlock Text="鹰" FontWeight="Bold" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#80591D"/></Grid>
+                            <StackPanel><TextBlock Text="我的鹰币" FontSize="10" Foreground="#8B7448"/><TextBlock x:Name="BalanceText" FontSize="20" FontWeight="Bold" AutomationProperties.LiveSetting="Polite"/></StackPanel>
+                        </StackPanel>
                     </Border>
                 </Grid>
-                <TextBlock Text="购买是收藏，装备才上身。预览只在独立小舞台播放。" Foreground="#79806A" FontSize="11" Margin="0,10,0,15"/>
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="ShopFilter" Content="逛小商店" GroupName="ContentFilter" IsChecked="True" Checked="Filter_OnChecked"/>
-                    <RadioButton x:Name="OwnedFilter" Content="我的收藏" GroupName="ContentFilter" Checked="Filter_OnChecked"/>
-                </StackPanel>
-            </StackPanel>
-        </Border>
-        <ScrollViewer x:Name="CardScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,12,12,20">
-            <StackPanel>
-                <ItemsControl x:Name="CardsItems">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="{Binding CardWidth, RelativeSource={RelativeSource AncestorType=Window}}" HorizontalAlignment="Center"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="#FFFEFA" BorderBrush="#E4D8C2" BorderThickness="1" CornerRadius="13" Padding="17" Margin="6" AutomationProperties.Name="{Binding AccessibleLabel}">
-                                <StackPanel>
-                                    <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Category}" Foreground="#758263" FontSize="10"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding PriceLabel}" Foreground="#9B7437" FontSize="12" FontWeight="Bold"/>
-                                    </Grid>
-                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="18"/>
-                                    <TextBlock Text="{Binding Description}" Foreground="#81745F" FontSize="11" Margin="0,7,0,10" MinHeight="30"/>
-                                    <TextBlock Text="{Binding Acquisition}" Foreground="#758263" FontSize="11" MinHeight="32"/>
-                                    <Border Background="#F5F0E5" CornerRadius="7" Padding="9,7" Margin="0,8,0,12" MinHeight="45">
-                                        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#81745F"/>
-                                    </Border>
-                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                        <Button Content="预览" HorizontalAlignment="Left" Tag="{Binding Id}" IsEnabled="{Binding CanPreview}" Click="Preview_OnClick" Padding="11,7"/>
-                                        <Button Grid.Column="1" Content="{Binding ActionLabel}" Tag="{Binding Id}" IsEnabled="{Binding CanAct}" Click="Action_OnClick" Padding="12,7" Margin="8,0,0,0"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock x:Name="EmptyText" Text="收藏还在路上，先看看免费默认款吧。" Visibility="Collapsed" Margin="20,35" HorizontalAlignment="Center" Foreground="#8C806A"/>
-            </StackPanel>
-        </ScrollViewer>
-        <Border Grid.Row="2" Background="#F4EFE4" BorderBrush="#E4DCCA" BorderThickness="0,1,0,0" Padding="24,13">
-            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <StackPanel Margin="0,0,14,0"><TextBlock x:Name="StatusText" Text="不收费、不联网，不用开通会员。" FontSize="11" Foreground="#7D765F" AutomationProperties.LiveSetting="Polite"/><TextBlock Text="工位更换会等待当前工作或动作安全结束。" FontSize="10" Foreground="#99907B" Margin="0,4,0,0"/></StackPanel>
-                <Button Grid.Column="1" Content="先逛到这" VerticalAlignment="Center" Click="Close_OnClick"/>
             </Grid>
+        </Border>
+        <Grid Grid.Row="1" Margin="20,10,20,4">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <DockPanel LastChildFill="False">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <RadioButton x:Name="ShopFilter" Content="好物商店" Style="{StaticResource ShopTab}" GroupName="Ownership" IsChecked="True" Checked="Filter_OnChecked"/>
+                    <RadioButton x:Name="OwnedFilter" Content="我的收藏" Style="{StaticResource ShopTab}" GroupName="Ownership" Checked="Filter_OnChecked"/>
+                </StackPanel>
+                <TextBlock x:Name="CollectionText" DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="11" Foreground="#77806D"/>
+            </DockPanel>
+            <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+                <RadioButton x:Name="AllCategory" Content="全部" Tag="all" Style="{StaticResource ShopTab}" Padding="12,5" GroupName="Category" IsChecked="True" Checked="Category_OnChecked"/>
+                <RadioButton x:Name="DeskCategory" Content="桌子" Tag="Desk" Style="{StaticResource ShopTab}" Padding="12,5" GroupName="Category" Checked="Category_OnChecked"/>
+                <RadioButton x:Name="ComputerCategory" Content="电脑" Tag="Computer" Style="{StaticResource ShopTab}" Padding="12,5" GroupName="Category" Checked="Category_OnChecked"/>
+                <RadioButton x:Name="OutfitCategory" Content="装扮" Tag="Outfit" Style="{StaticResource ShopTab}" Padding="12,5" GroupName="Category" Checked="Category_OnChecked"/>
+                <RadioButton x:Name="ActionCategory" Content="动作" Tag="Action" Style="{StaticResource ShopTab}" Padding="12,5" GroupName="Category" Checked="Category_OnChecked"/>
+            </WrapPanel>
+        </Grid>
+        <Grid x:Name="ShelfViewport" Grid.Row="2" Margin="16,3,16,0" SizeChanged="Shelf_OnSizeChanged">
+            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="32"/></Grid.RowDefinitions>
+            <Border Background="#F0E5D0" CornerRadius="16" BorderBrush="#DCCAAF" BorderThickness="1"/>
+            <Grid Margin="5,0,5,0" IsHitTestVisible="False"><Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions><Border x:Name="MiddleShelf" Height="7" VerticalAlignment="Bottom" Background="#C9A576" Margin="0,0,0,2" CornerRadius="2"/><Border Grid.Row="1" Height="7" VerticalAlignment="Bottom" Background="#C9A576" Margin="0,0,0,2" CornerRadius="2"/></Grid>
+            <ListBox x:Name="CardsItems" Background="Transparent" Foreground="#26384C" BorderThickness="0" Padding="3" SelectionMode="Single" ItemContainerStyle="{StaticResource ProductTile}" SelectionChanged="Cards_OnSelectionChanged"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled" KeyboardNavigation.DirectionalNavigation="Contained">
+                <ListBox.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="{Binding GridColumns, RelativeSource={RelativeSource AncestorType=Window}}" Rows="{Binding GridRows, RelativeSource={RelativeSource AncestorType=Window}}"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+                <ListBox.ItemTemplate><DataTemplate>
+                    <Grid Margin="10,7"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding ShortCategory}" FontSize="9" Foreground="#8A8878"/>
+                            <TextBlock Text="{Binding Badge}" Grid.Column="1" FontSize="9" FontWeight="Bold" Foreground="#477762"/>
+                        </Grid>
+                        <Grid Grid.Row="1" Margin="7,3,7,5">
+                            <Ellipse Fill="#12000000" Height="6" Margin="10,0" VerticalAlignment="Bottom"/>
+                            <Image Source="{Binding Thumbnail}" Stretch="Uniform" MaxHeight="87" RenderOptions.BitmapScalingMode="HighQuality" Margin="0,0,0,4"/>
+                            <TextBlock Text="图标未就绪" Visibility="{Binding MissingThumbnailVisibility}" FontSize="11" Foreground="#91816B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Grid.Row="2" Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" Margin="0,0,0,3"/>
+                        <TextBlock Grid.Row="3" Text="{Binding PriceLabel}" FontSize="11" FontWeight="Bold" Foreground="#A47226" HorizontalAlignment="Center"/>
+                    </Grid>
+                </DataTemplate></ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="EmptyText" Text="这个货架还空着，换个分类逛逛吧。" Visibility="Collapsed" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#82735B"/>
+            <Grid Grid.Row="1" Margin="5,4,5,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock x:Name="PageSummary" FontSize="10" Foreground="#82775E" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="PreviousButton" Content="‹" Padding="11,2" Click="Previous_OnClick" AutomationProperties.Name="上一页商品"/>
+                    <TextBlock x:Name="PageText" FontSize="11" Margin="10,0" VerticalAlignment="Center"/>
+                    <Button x:Name="NextButton" Content="›" Padding="11,2" Click="Next_OnClick" AutomationProperties.Name="下一页商品"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+        <Border x:Name="DetailsPanel" Grid.Row="3" Background="#FFFDF7" CornerRadius="14" BorderBrush="#DFD5C0" BorderThickness="1" Padding="14,10" Margin="20,8,20,7">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock x:Name="DescriptionText" Text="{Binding Description}" FontSize="11" Foreground="#6F796C" Margin="0,3,0,0"/>
+                    <TextBlock Text="{Binding Acquisition}" FontSize="10" Foreground="#897757" Margin="0,4,0,0"/>
+                    <TextBlock Text="{Binding Status}" FontSize="10" Foreground="#517461" Margin="0,4,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <Button x:Name="PreviewButton" Content="预览" Tag="{Binding Id}" IsEnabled="{Binding CanPreview}" Click="Preview_OnClick" MinWidth="106" Padding="12,7"/>
+                    <Button x:Name="ActionButton" Style="{StaticResource PetPrimaryButton}" Content="{Binding ActionLabel}" Tag="{Binding Id}" IsEnabled="{Binding CanAct}" Click="Action_OnClick" Margin="0,6,0,0" MinWidth="106" Padding="12,7"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border Grid.Row="4" Background="#EFE8D8" Padding="20,8" BorderBrush="#E1D7C1" BorderThickness="0,1,0,0">
+            <TextBlock x:Name="StatusText" Text="本机小商店 · 不联网，不花真钱。装备会等待当前动作安全结束。" FontSize="10" Foreground="#7E765F" AutomationProperties.LiveSetting="Polite"/>
         </Border>
     </Grid>
 </Window>

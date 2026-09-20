@@ -2,6 +2,8 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -36,6 +38,14 @@ internal static class Program
             ("UI shows balance, prices, conditions, owned and unavailable states", UiStates),
             ("UI purchase confirmation cancellation changes no progress", UiCancelPurchase),
             ("UI preview dispatch is read-only and does not buy or equip", UiPreview),
+            ("Every real catalog entry has a frozen, transparent-cropped art icon", UiIcons),
+            ("Shelf pagination exposes every item without a long vertical scroll", UiPages),
+            ("Category and owned filters compose without modifying progress", UiFilters),
+            ("Narrow and short windows retain reachable product details and paging", UiResponsive),
+            ("Real modal purchase dialog shows installed art, price and balances without spending", PurchaseDialogContent),
+            ("Real modal confirmation accepts only confirm; cancel, Escape and close return false", PurchaseDialogDecisions),
+            ("Purchase dialog supports Tab focus and Enter while preserving safe initial cancel", PurchaseDialogKeyboard),
+            ("Default shop modal rechecks resource availability after its message pump", UiModalRevalidation),
             ("Honor wall maps real rewards and refreshes ownership without progress changes", HonorRewards),
             ("Opening the honor wall never claims a reward automatically", HonorReadOnly),
             ("Actual isolated preview loads the production workplace without save changes", RealPreview),
@@ -153,7 +163,7 @@ internal static class Program
         try
         {
             Layout(window); var items = (ItemsControl)window.FindName("CardsItems");
-            Check(items.Items.Count == ContentCatalog.Definitions.Count && ((TextBlock)window.FindName("BalanceText")).Text == "100", "Shop did not expose its catalog and balance.");
+            Check(window.FilteredCount == ContentCatalog.Definitions.Count && items.Items.Count == 8 && window.PageCount == 2 && ((TextBlock)window.FindName("BalanceText")).Text == "100", "Shop did not expose its paged catalog and balance.");
             object tea = Card(items, ContentCatalog.TeaActionId);
             Check(Property<string>(tea, "Acquisition").Contains("2 级") && Property<string>(tea, "PriceLabel").Contains("15"), "Reward condition or price absent.");
             Save(window, "shop-all.png");
@@ -182,6 +192,173 @@ internal static class Program
         }
         finally { window.Close(); }
     }
+    private static void UiIcons()
+    {
+        foreach (var item in ContentCatalog.Definitions)
+        {
+            var image = ShopThumbnails.Get(item) as BitmapSource;
+            Check(image is { IsFrozen: true } && image.PixelWidth > 20 && image.PixelHeight > 20,
+                "Missing or tiny real thumbnail: " + item.Id);
+            Check(ReferenceEquals(image, ShopThumbnails.Get(item)), "Repeated refresh redecoded icon: " + item.Id);
+        }
+    }
+    private static void UiPages()
+    {
+        using var f = new Fixture(); var window = Window(f); string before = Snapshot(f.State);
+        try
+        {
+            Layout(window); var items = (ListBox)window.FindName("CardsItems");
+            var ids = items.Items.Cast<object>().Select(x => Property<string>(x, "Id")).ToHashSet();
+            ((Button)window.FindName("NextButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window);
+            foreach (var item in items.Items.Cast<object>()) Check(ids.Add(Property<string>(item, "Id")), "Pages duplicate an item.");
+            Check(ids.SetEquals(ContentCatalog.Definitions.Select(x => x.Id)), "Pages hide a catalog item.");
+            Check(!((Button)window.FindName("NextButton")).IsEnabled && ((Button)window.FindName("PreviousButton")).IsEnabled, "Page boundary controls incorrect.");
+            Check(ScrollViewer.GetVerticalScrollBarVisibility(items) == ScrollBarVisibility.Disabled, "Shop reverted to a long-scroll list.");
+            Check(window.SelectItem(ContentCatalog.HoodieOutfitId) && (string?)((Button)window.FindName("PreviewButton")).Tag == ContentCatalog.HoodieOutfitId, "Off-page item does not select into details.");
+            Layout(window);
+            Save(window, "shop-page-2.png"); Check(Snapshot(f.State) == before, "Browsing pages mutated progress.");
+        }
+        finally { window.Close(); }
+    }
+    private static void UiFilters()
+    {
+        using var f = new Fixture(); var window = Window(f); string before = Snapshot(f.State);
+        try
+        {
+            Layout(window); ((RadioButton)window.FindName("DeskCategory")).IsChecked = true; Layout(window);
+            Check(window.FilteredCount == 4 && ((ListBox)window.FindName("CardsItems")).Items.Cast<object>().All(x => Property<ContentType>(x, "Type") == ContentType.Desk), "Desk category filter incorrect.");
+            Save(window, "shop-desks.png");
+            window.SelectOwned(true); Layout(window);
+            Check(window.FilteredCount == 1, "Owned and category filters do not compose.");
+            ((RadioButton)window.FindName("ActionCategory")).IsChecked = true; Layout(window);
+            Check(window.FilteredCount == 0 && ((TextBlock)window.FindName("EmptyText")).Visibility == Visibility.Visible &&
+                ((Border)window.FindName("DetailsPanel")).Visibility == Visibility.Collapsed, "Empty collection retains a stale buy button.");
+            Save(window, "shop-empty-collection.png"); Check(Snapshot(f.State) == before, "Filters mutated progress.");
+        }
+        finally { window.Close(); }
+    }
+    private static void UiResponsive()
+    {
+        using var f = new Fixture(); var window = Window(f);
+        try
+        {
+            Layout(window, 424, 620);
+            Check(window.GridColumns == 2 && window.PageCount >= 3, "Narrow window did not increase pages and reduce columns.");
+            var surface = (FrameworkElement)window.Content;
+            foreach (string name in new[] { "CardsItems", "DetailsPanel", "NextButton", "ActionButton", "PreviewButton" })
+            {
+                var element = (FrameworkElement)window.FindName(name);
+                var rect = element.TransformToAncestor(surface).TransformBounds(new Rect(element.RenderSize));
+                Check(rect.X >= 0 && rect.Y >= 0 && rect.Right <= surface.ActualWidth + 1 && rect.Bottom <= surface.ActualHeight + 1,
+                    "Responsive element clipped: " + name);
+            }
+            Save(window, "shop-narrow.png");
+            Layout(window, 944, 560); Check(window.GridRows == 1, "Short work area did not reduce shelf rows.");
+            Save(window, "shop-short.png");
+            Layout(window); Check(window.GridColumns == 4 && window.GridRows == 2, "Restored size kept compact pagination.");
+        }
+        finally { window.Close(); }
+    }
+    private static void PurchaseDialogContent()
+    {
+        using var f = new Fixture(); string before = Snapshot(f.State), disk = File.ReadAllText(f.Path);
+        bool? result = InPurchaseDialog(dialog =>
+        {
+            Check(((Image)dialog.FindName("ProductImage")).Source is BitmapSource, "Confirmation has no real product portrait.");
+            Check(((TextBlock)dialog.FindName("ProductName")).Text == "薄荷小工位" &&
+                ((TextBlock)dialog.FindName("ProductPrice")).Text.Contains("20 鹰币") &&
+                ((TextBlock)dialog.FindName("CurrentBalance")).Text == "100 鹰币" &&
+                ((TextBlock)dialog.FindName("RemainingBalance")).Text == "80 鹰币", "Confirmation omitted exact item, price or balances.");
+            Save(dialog, "shop-purchase-confirmation.png");
+            ((Button)dialog.FindName("CancelButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        });
+        Check(result != true && Snapshot(f.State) == before && File.ReadAllText(f.Path) == disk, "Merely asking the question mutated progress.");
+        InPurchaseDialog(dialog =>
+        {
+            Check(!((Button)dialog.FindName("ConfirmButton")).IsEnabled &&
+                ((TextBlock)dialog.FindName("RemainingBalance")).Text == "鹰币不足", "Insufficient balance remains confirmable.");
+        }, balance: 0);
+    }
+    private static void PurchaseDialogDecisions()
+    {
+        Check(InPurchaseDialog(dialog => ((Button)dialog.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent))) == true, "Explicit confirm did not return true.");
+        Check(InPurchaseDialog(dialog => ((Button)dialog.FindName("CancelButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent))) != true, "Cancel authorized spending.");
+        Check(InPurchaseDialog(dialog => dialog.Close()) != true, "Window close authorized spending.");
+        Check(InPurchaseDialog(dialog => ((Button)dialog.FindName("CloseButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent))) != true, "Title close authorized spending.");
+        Check(InPurchaseDialog(dialog => SendDialogKey(dialog, Key.Escape)) != true, "Escape authorized spending.");
+    }
+    private static void PurchaseDialogKeyboard()
+    {
+        Check(InPurchaseDialog(dialog =>
+        {
+            var cancel = (Button)dialog.FindName("CancelButton"); var confirm = (Button)dialog.FindName("ConfirmButton");
+            Check(cancel.IsKeyboardFocused, "Initial keyboard focus was not the safe cancel choice.");
+            Check(cancel.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)) && confirm.IsKeyboardFocused, "Tab traversal did not reach confirm.");
+            SendDialogKey(dialog, Key.Enter);
+        }) == true, "Enter on the explicit confirm choice failed.");
+        Check(InPurchaseDialog(dialog => SendDialogKey(dialog, Key.Enter)) != true, "Enter on the initial cancel choice unexpectedly purchased.");
+    }
+    private static bool? InPurchaseDialog(Action<PurchaseConfirmationWindow> inspect, int balance = 100)
+    {
+        var owner = HiddenOwner(); owner.Show();
+        var dialog = new PurchaseConfirmationWindow(ContentCatalog.Get(ContentCatalog.MintDeskId), balance) { Owner = owner };
+        Exception? failure = null; bool callback = false;
+        dialog.Loaded += (_, _) => dialog.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+        {
+            try
+            {
+                callback = true;
+                Check(ReferenceEquals(dialog.Owner, owner) && !IsWindowEnabled(new WindowInteropHelper(owner).Handle), "ShowDialog did not disable the correct owner.");
+                dialog.UpdateLayout(); inspect(dialog);
+            }
+            catch (Exception exception) { failure = exception; }
+            finally { if (dialog.IsVisible) dialog.Close(); }
+        }));
+        try
+        {
+            bool? result = dialog.ShowDialog();
+            Check(callback && IsWindowEnabled(new WindowInteropHelper(owner).Handle), "Modal callback did not run or owner stayed disabled.");
+            if (failure is not null) throw failure;
+            return result;
+        }
+        finally { if (dialog.IsVisible) dialog.Close(); owner.Close(); }
+    }
+    private static Window HiddenOwner() => new()
+    {
+        Width = 420, Height = 520, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual,
+        WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false,
+    };
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool IsWindowEnabled(nint window);
+    private static void SendDialogKey(PurchaseConfirmationWindow dialog, Key key) => dialog.RaiseEvent(new KeyEventArgs(
+        Keyboard.PrimaryDevice, PresentationSource.FromVisual(dialog), Environment.TickCount, key) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+    private static void UiModalRevalidation()
+    {
+        using var f = new Fixture(); string before = Snapshot(f.State);
+        var owner = HiddenOwner(); owner.Show();
+        var window = new ShopWindow(f.Shop, id => Task.FromResult(f.Shop.Equip(id, false)), _ => Task.CompletedTask,
+            _ => Task.CompletedTask, () => false) { Owner = owner, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual };
+        // Give the shop an HWND for ownership without displaying it on the user's desktop.
+        new WindowInteropHelper(window).EnsureHandle();
+        bool answered = false;
+        try
+        {
+            Layout(window);
+            window.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+            {
+                var dialog = Application.Current.Windows.OfType<PurchaseConfirmationWindow>().Single();
+                f.Available = false; answered = true;
+                ((Button)dialog.FindName("ConfirmButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }));
+            ClickCard(window, ContentCatalog.MintDeskId, preview: false);
+            WaitUi(window.PendingOperation);
+            Check(answered && Snapshot(f.State) == before && !f.State.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId),
+                "Modal confirmation bypassed live resource revalidation.");
+        }
+        finally { window.Close(); owner.Close(); }
+    }
+
     private static void HonorRewards()
     {
         using var f = new Fixture(); f.State.TotalMeals = 10; int opens = 0;
@@ -195,7 +372,16 @@ internal static class Program
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window, 840, 1200);
             card = items.Items.Cast<object>().Single(x => Property<string?>(x, "RewardContentId") == ContentCatalog.MintDeskId);
             Check(Property<string>(card, "RewardLabel").Contains("已拥有") && f.State.Coins == 100, "Honor failed to refresh ownership or charged coins.");
-            Check(items.Items.Cast<object>().Count(x => Property<string?>(x, "RewardContentId") is not null) == 2, "Gallery invented unrelated rewards.");
+            var rewardIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int page = 0; page < 32; page++)
+            {
+                foreach (var visible in items.Items.Cast<object>())
+                    if (Property<string?>(visible, "RewardContentId") is { } rewardId) rewardIds.Add(rewardId);
+                var next = (Button)window.FindName("NextPageButton");
+                if (!next.IsEnabled) break;
+                next.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window, 840, 1200);
+            }
+            Check(rewardIds.SetEquals(ContentCatalog.Definitions.Where(x => x.Reward is not null).Select(x => x.Id)), "Gallery omitted or invented reward mappings across pages.");
             ((Button)window.FindName("CollectionButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Check(opens == 1, "Collection shortcut did not dispatch.");
             Save(window, "honor-rewards.png");
         }
@@ -240,7 +426,10 @@ internal static class Program
     private static object Card(ItemsControl items, string id) => items.Items.Cast<object>().Single(x => Property<string>(x, "Id") == id);
     private static void ClickCard(ShopWindow window, string id, bool preview)
     {
-        var button = Descendants<Button>((DependencyObject)window.Content).Single(x => (string?)x.Tag == id && ((string?)x.Content == "预览") == preview);
+        Check(window.SelectItem(id), "Requested item is not present in the selected category.");
+        Layout(window);
+        var button = (Button)window.FindName(preview ? "PreviewButton" : "ActionButton");
+        Check((string?)button.Tag == id && button.IsEnabled, "Selected item did not enable the expected detail action.");
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     }
     private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
@@ -251,9 +440,10 @@ internal static class Program
             foreach (var descendant in Descendants<T>(child)) yield return descendant;
         }
     }
-    private static void Layout(Window window, double width = 740, double height = 900)
+    private static void Layout(Window window, double width = 944, double height = 681)
     {
         var surface = (FrameworkElement)window.Content;
+        surface.Width = width; surface.Height = height;
         surface.Measure(new Size(width, height)); surface.Arrange(new Rect(0, 0, width, height)); surface.UpdateLayout();
     }
     private static void Save(Window window, string name)

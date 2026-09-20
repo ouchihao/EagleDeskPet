@@ -7,9 +7,12 @@
     <ProjectReference Include="../../DuckDeskPet.Core/DuckDeskPet.Core.csproj" />
     <Compile Include="../../DuckDeskPet/PetStore.cs" Link="PetStore.cs" />
     <Compile Include="../../DuckDeskPet/ShopWindow.xaml.cs" Link="ShopWindow.xaml.cs" />
+    <Compile Include="../../DuckDeskPet/ShopThumbnails.cs" Link="ShopThumbnails.cs" />
+    <Compile Include="../../DuckDeskPet/PurchaseConfirmationWindow.xaml.cs" Link="PurchaseConfirmationWindow.xaml.cs" />
     <Compile Include="../../DuckDeskPet/HonorWallWindow.xaml.cs" Link="HonorWallWindow.xaml.cs" />
     <Compile Include="../../DuckDeskPet/NativeMethods.cs" Link="NativeMethods.cs" />
     <Compile Include="../../DuckDeskPet/ContentPreviewWindow.cs" Link="ContentPreviewWindow.cs" />
+    <Compile Include="../../DuckDeskPet/PreviewStageChrome.cs" Link="PreviewStageChrome.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />
     <Compile Include="../../DuckDeskPet/RasterFramePlayer.cs" Link="RasterFramePlayer.cs" />
@@ -18,9 +21,14 @@
     <Compile Include="../../DuckDeskPet/SceneDefinition.cs" Link="SceneDefinition.cs" />
     <Compile Include="../../DuckDeskPet/SceneCatalog.cs" Link="SceneCatalog.cs" />
     <Page Include="../../DuckDeskPet/ShopWindow.xaml" Link="ShopWindow.xaml" />
+    <Page Include="../../DuckDeskPet/PurchaseConfirmationWindow.xaml" Link="PurchaseConfirmationWindow.xaml" />
     <Page Include="../../DuckDeskPet/HonorWallWindow.xaml" Link="HonorWallWindow.xaml" />
     <Page Include="../../DuckDeskPet/Themes/PetTheme.xaml" Link="Themes/PetTheme.xaml" />
     <Resource Include="../../DuckDeskPet/Assets/mascot-animated-neutral.png" Link="Assets/mascot-animated-neutral.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Outfits/Office/neutral.png" Link="Assets/Outfits/Office/neutral.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Outfits/Hoodie/neutral.png" Link="Assets/Outfits/Hoodie/neutral.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/Tea/frame-0060.png" Link="Assets/Animations/Tea/frame-0060.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Ui/club-shop-v1.png" Link="Assets/Ui/club-shop-v1.png" Condition="Exists('../../DuckDeskPet/Assets/Ui/club-shop-v1.png')" />
     <Resource Include="../../DuckDeskPet/Assets/Badges/*-v2.png" Link="Assets/Badges/%(Filename)%(Extension)" />
     <Resource Include="../../DuckDeskPet/Assets/actions.json" Link="Assets/actions.json" />
     <Resource Include="../../DuckDeskPet/Assets/SceneProps/work-scenes.json" Link="Assets/SceneProps/work-scenes.json" />
