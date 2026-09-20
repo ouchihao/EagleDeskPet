@@ -4,9 +4,9 @@
 
 一只陪你上班、摸头会害羞、饿了要干饭，还能替 AI 和 GitHub 传话的桌面小鹰。
 
-**Windows x64 · C# / WPF · v1.9.0 Demo · 最高 60 Hz 动画时间轴**
+**Windows x64 · C# / WPF · v1.10.0 Demo · 最高 60 Hz 动画时间轴**
 
-v1.9 Demo 功能已实现：最新真实应用联调 **9/9 通过**，三套形象、四张桌子和四种电脑的 48 种工作组合已复查。见 [本版更新](docs/RELEASE-NOTES-v1.9.md) / [验证与未测边界](docs/VALIDATION-v1.9.md)；不把短时窗口采样当作每台电脑的物理 60 FPS 保证。
+v1.10 把日常界面升级为“小鹰俱乐部”：商品图标货架、紧凑猜拳小窗、18 枚荣誉和三页养成面板。继承 v1.9 的三套完整形象、四张桌子和四种电脑；见 [本版更新](docs/RELEASE-NOTES-v1.10.md) / [验证与未测边界](docs/VALIDATION-v1.10.md)。界面动效不替代宠物逐帧表演，也不承诺每台电脑的物理 60 FPS。
 
 [快速上手](docs/QUICK-START.md) · [AI 一键接入](docs/AI-AUTO-SETUP.md) · [GitHub 通知](docs/GITHUB-NOTIFICATIONS.md) · [MCP 文档](docs/MCP.md) · [需求与路线图](docs/REQUIREMENTS.md)
 
@@ -16,7 +16,11 @@ v1.9 Demo 功能已实现：最新真实应用联调 **9/9 通过**，三套形�
 
 <img src="docs/images/v1.9-hoodie-arcade-work.png" width="240" alt="v1.9 实际桌宠窗口：摸鱼卫衣搭配电竞桌和电脑">
 
-*本版实际窗口：摸鱼卫衣 + 电竞工位。截图来自隔离测试，不含桌面或私人内容。*
+*v1.9 实际窗口：摸鱼卫衣 + 电竞工位，v1.10 继续保留。截图来自隔离测试，不含桌面或私人内容。*
+
+<img src="docs/images/v1.10-shop.png" width="760" alt="v1.10 鹰选好物：真实商品图标、双排货架、分类筛选与独立预览">
+
+*挑一张桌子，换一身心情。鹰币在本机积累，不花真钱。*
 
 </div>
 
@@ -28,11 +32,12 @@ v1.9 Demo 功能已实现：最新真实应用联调 **9/9 通过**，三套形�
 | 摸头与喂饭 | 全身害羞、捧碗干饭；一碗完整吃完再续，开工 / 暂停不吞掉排队的饭；三摸护头，不额外刷奖励 |
 | 挂机养成 | 积累粮食、饱食度、心情、经验和等级；没有死亡惩罚 |
 | 工作赚钱 | 持续办公、满 30 分钟忙碌；每有效工作分钟 +1 经验和 +1 鹰币，本次启动收入单独显示 |
-| 鹰币小卖部 | 预览、购买、收藏动作和桌子 / 电脑 / 整套服装；装备等安全收场后生效 |
+| 鹰选好物 | 多列双排商品格、真实图标、分类 / 收藏筛选和翻页；独立预览，确认收藏后再装备 |
 | 自主情绪 | 默认关闭；饿了抱空碗，心情低时闹别扭；场景有进入、循环、退出和冷却 |
-| 猜拳小游戏 | 宠物先选拳，完整出招后揭晓；无下注，最多每 5 分钟心情 +2 |
+| 猜拳小游戏 | 304×352 紧凑小窗，选拳后演出约 5 秒；宠物先选拳，完整出招后揭晓，无下注 |
 | 职场碎碎念 | 60 条普通短句 + 16 条情境短句，按工作、饥饿、低心情等选择，每分钟最多一句，可关闭 |
-| 荣誉展览馆 | 9 枚金银铜浮雕徽章；10 顿饭解锁薄荷桌，2 级解锁喝茶，和商店共享拥有记录 |
+| 荣誉展览馆 | 6 个系列、18 枚金银铜徽章，按系列 / 获得状态分页；原薄荷桌和喝茶奖励保留 |
+| 宠物俱乐部 | 日常陪伴、工位与钱包、消息与设置分为三页；奶油、薄荷和蜂蜜金主题，窗口与切页轻过渡 |
 | AI 传话 | 可选 MCP 通知桥；一键配置本机 Codex、Claude Code、CodeBuddy Code 的结束提醒 |
 | GitHub 消息 | 可选连接通知收件箱，提醒提及、请求评审、指派等动态，点击返回 PR / Issue |
 | 任务小信使 | 按来源和任务更新、去重、未读和静音；只有来源明确报告才显示成功或失败 |
@@ -43,10 +48,20 @@ v1.9 Demo 功能已实现：最新真实应用联调 **9/9 通过**，三套形�
 <summary>看看荣誉展览馆</summary>
 
 <p align="center">
-<img src="docs/images/honor-wall.png" width="720" alt="三条成长路线、九枚金银铜大头鹰浮雕徽章">
+<img src="docs/images/v1.10-honors.png" width="760" alt="v1.10 荣誉收藏馆：六个系列十八枚徽章，分页查看">
 </p>
 
-截图使用测试进度展示全部徽章，实际需要达到对应条件后解锁。
+截图使用隔离测试进度；每页展示部分徽章，实际需要达到对应条件后解锁。新增工位值班、装扮收藏和朝夕搭档，门槛见[快速上手](docs/QUICK-START.md#小卖部收藏与荣誉奖励)。
+
+</details>
+
+<details>
+<summary>俱乐部面板与猜拳小窗</summary>
+
+<img src="docs/images/v1.10-care.png" width="590" alt="v1.10 俱乐部面板：日常陪伴、工位与钱包、消息与设置三页">
+<img src="docs/images/v1.10-rps.png" width="248" alt="v1.10 紧凑猜拳小窗，图形拳型按钮与双方对战展示">
+
+猜拳中的小鹰仍在桌面完整表演；小窗负责选拳和提示，不替代角色动画。约 5 秒指选拳后的演出，不包含你思考选拳、首次预载或上一动作收尾的时间。
 
 </details>
 
@@ -60,10 +75,10 @@ v1.9 Demo 功能已实现：最新真实应用联调 **9/9 通过**，三套形�
 | --- | --- |
 | 按住左键拖动 | 移动小鹰，保存位置 |
 | 单击 / 右键“摸摸头” | 温柔摸头害羞，短时连续摸头会抗议 |
-| 右键“我的饭搭子” | 查看养成状态、喂饭和设置 |
+| 右键“我的饭搭子” | 打开三页俱乐部面板，查看养成、工位钱包和消息设置 |
 | 右键“开始工作 / 取消工作” | 入场办公 / 完整收工 |
-| 右键“鹰币小卖部 · 我的收藏” | 独立预览、购买、装备；预览不扣钱、不改变宠物 |
-| 右键“石头剪刀布” | 开一局约 10 秒的小游戏；先收工再玩 |
+| 右键“鹰币小卖部 · 我的收藏” | 逛商品货架、选分类或收藏；选中后独立预览、购买、装备 |
+| 右键“石头剪刀布” | 在小窗选拳，演出约 5 秒；先收工再玩，不含预载与前一动作收尾时间 |
 | 右键“自主情绪小剧场” | 开关自动情绪；“预览空碗小剧场…”为独立只读预览 |
 | 双击 | 有可返回的 AI 通知时打开配置的应用，否则打开养成面板 |
 | 右键菜单 | 调整大小、置顶、暂停、显示帧率、开关碎碎念、查看荣誉与消息 |
@@ -84,6 +99,8 @@ v1.9 Demo 功能已实现：最新真实应用联调 **9/9 通过**，三套形�
 | 闪电小电脑 | 35 | 无 |
 | 摸鱼卫衣 | 45 | 无 |
 
+商店正常窗口每页 4 列 × 2 排，窄窗减少列数、矮窗减少排数，继续分页而不是变成长清单。商品格显示真实桌子、电脑、服装或动作图标；选中后查看价格、条件和当前状态。购买会弹出同风格确认小窗，明确商品、扣款和购买后余额；“先等等”、关闭或 Esc 均取消。
+
 买到后永久拥有；预览、重复播放和重复装备不收费、不额外发奖。荣誉和购买走同一份拥有记录，不能重复扣款。
 
 进度自动保存在本机，离线或长时间挂起最多补算 2 小时，在饥饿耗尽处截断；v1.8 旧档升级不追发历史工资。“本次启动已赚”包括本次启动补算的工资，不因购物减少，不是钱包余额。关闭程序不等于取消工作，想结束这轮工作请先点“取消工作”。详细规则见[快速上手](docs/QUICK-START.md)。
@@ -101,12 +118,12 @@ cd EagleDeskPet
 如果系统对本地脚本有执行限制，请按你的设备或组织策略允许运行该脚本。也可以不运行脚本，直接执行：
 
 ```powershell
-dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.9.0
-dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.9.0
-Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.9.0\THIRD-PARTY-NOTICES.md
+dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.10.0
+dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.10.0
+Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.10.0\THIRD-PARTY-NOTICES.md
 ```
 
-脚本从主工程版本读取默认输出目录，本版为 `dist/v1.9.0/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
+脚本从主工程版本读取默认输出目录，本版为 `dist/v1.10.0/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
 
 ## 让它替 AI 和 GitHub 传话
 
@@ -143,6 +160,8 @@ Token 仅在应用中填写，**不要放进代码、Issue 或聊天记录**。�
 
 WPF 跟随桌面合成器，以最高 60 Hz 时间轴选帧，图片预解码后播放。**60 Hz 素材与调度不等于所有电脑恒定 60 FPS**；显示器刷新率、系统负载、远程桌面等都会影响实际表现。
 
+v1.10 的窗口打开和面板切页采用约 180 ms 的轻过渡，遵循 Windows 减弱动画设置；高对比度下也停用这些动效。它们只作用于界面，不翻转、淡化或截断桌面小鹰的动作。猜拳准备缩至 0.6 秒，出拳和结果反应各保留 2 秒完整演出，取消了游戏阶段之间多余的站立等待；普通互动结束后站立 2 秒的规则不变。
+
 v1.9 新增 10 段默认形象动画、1150 张运行帧；办公服和摸鱼卫衣各覆盖 19 段、2299 张帧和独立站姿，不是往鹰身上贴静态衣服。三套当前形象共 6900 张运行 PNG 已完整解码验证；桌子与电脑独立搭配。按需预载会占用显著内存，资源与验证边界见 [v1.9 素材说明](docs/ASSETS-v1.9.md)。
 
 [工作动画制作说明](docs/WORK-ANIMATION-ASSETS.md) · [v1.9 新动作提示词](DuckDeskPet/Assets/AnimationSources/expansion-v1-prompts.md) · [九枚徽章提示词](docs/BADGE-ASSETS-v2.md)
@@ -170,7 +189,7 @@ dotnet run --project .\tools\WorkStageSelfTest\WorkStageSelfTest.csproj -c Relea
 dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 ```
 
-更多测试入口与适用范围见[开发与测试](docs/DEVELOPMENT.md)。当前结果见 [v1.9 验证记录](docs/VALIDATION-v1.9.md)，[v1.8 验证记录](docs/VALIDATION-v1.8.md)仅作历史基线；模拟事件和自动化测试不代表已验证每种客户端版本、真实账号消息或长时间物理屏幕帧率。
+更多测试入口与适用范围见[开发与测试](docs/DEVELOPMENT.md)。当前结果见 [v1.10 验证记录](docs/VALIDATION-v1.10.md)，[v1.9 验证记录](docs/VALIDATION-v1.9.md)和 [v1.8 验证记录](docs/VALIDATION-v1.8.md)作为历史基线；模拟事件和自动化测试不代表已验证每种客户端版本、真实账号消息或长时间物理屏幕帧率。
 
 ## 数据与隐私
 
