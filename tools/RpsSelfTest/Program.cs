@@ -23,7 +23,8 @@ internal static class Program
             ("Pet choice is committed once before player input and not disclosed early", Precommit),
             ("Duplicate clicks, starts and presentation completions cannot change a round", DuplicateInput),
             ("Invalid randomness and enum input fail without starting a round", InvalidInput),
-            ("Ten-second pacing has complete preparation, throw and reaction gates", FullPacing),
+            ("Responsive 4.6-second minimum keeps complete throw and reaction gates", FullPacing),
+            ("Exclusive game starts immediately without bypassing ordinary or scene ownership", ExclusiveStarts),
             ("Clock alone cannot reveal a result before the throw completes", PresentationGate),
             ("Stale round and phase callbacks are ignored", StaleCallbacks),
             ("Only one mood claim is possible after a completed round", SingleSettlement),
@@ -104,15 +105,44 @@ internal static class Program
     {
         var clock = new FakeTime(); var game = NewGame(clock); game.Choose(RpsChoice.Paper);
         game.CompletePresentation(game.RoundId, RpsCue.Prepare);
-        clock.Advance(2.99); game.Advance(); Check(game.Phase == RpsPhase.Preparing, "Preparation ended too early.");
+        clock.Advance(.59); game.Advance(); Check(game.Phase == RpsPhase.Preparing, "Preparation ended too early.");
         clock.Advance(.01); game.Advance(); Check(game.Phase == RpsPhase.Throwing, "Throw did not follow preparation.");
         Check(game.Snapshot.Outcome is null && game.Snapshot.PetChoice == RpsChoice.Rock, "Throw result was exposed early.");
         Step(game, clock, RpsCue.Throw, 2);
         Check(game.Phase == RpsPhase.Reacting && game.Snapshot.Outcome == RpsOutcome.PlayerWin, "Wrong reveal.");
-        game.CompletePresentation(game.RoundId, RpsCue.React); clock.Advance(4.99); game.Advance();
+        game.CompletePresentation(game.RoundId, RpsCue.React); clock.Advance(1.99); game.Advance();
         Check(game.Phase == RpsPhase.Reacting, "Reaction/hold ended too early.");
         clock.Advance(.01); game.Advance();
-        Check(game.Phase == RpsPhase.Completed && game.Snapshot.RoundElapsedSeconds == 10, "Round was not ten seconds.");
+        Check(game.Phase == RpsPhase.Completed && Math.Abs(game.Snapshot.RoundElapsedSeconds - 4.6) < 1e-8, "Minimum round was not 4.6 seconds.");
+    }
+    private static void ExclusiveStarts()
+    {
+        var behavior = new PetBehaviorController();
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsRock), "Unowned game bypassed automatic action ownership.");
+        behavior.SuspendAutomatic(true);
+        Check(behavior.TryStartExclusiveGameAction(ClipKind.RpsRock) && behavior.CurrentSample is { Kind: ClipKind.RpsRock, Progress: 0, Sequence: 1 }, "Owned idle did not synchronously return the authored first frame.");
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsPaper), "Game interrupted a current action.");
+        while (behavior.CurrentSample.Kind != ClipKind.Idle) behavior.Advance(.05);
+        Check(behavior.TryStartExclusiveGameAction(ClipKind.RpsWin) && behavior.CurrentSample.Sequence == 2, "Reaction inserted an unwanted two-second idle beat.");
+        while (behavior.CurrentSample.Kind != ClipKind.Idle) behavior.Advance(.05);
+        behavior.QueueReaction(PetBehaviorKind.Fed);
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.Shy) && behavior.PendingCount == 1, "Game stole queued food.");
+        for (int i = 0; i < 39; i++) behavior.Advance(.05);
+        Check(behavior.CurrentSample.Kind == ClipKind.Idle && behavior.PendingCount == 1, "Ordinary feeding lost its two-second idle beat.");
+        behavior.Advance(.05);
+        Check(behavior.CurrentSample.Kind == ClipKind.Eat, "Ordinary feeding did not start at two seconds.");
+        behavior = new PetBehaviorController(); behavior.SuspendAutomatic(true); behavior.SetWorkState(true, false);
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsRock), "Game stole pending work.");
+        behavior.Advance(.01); Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsRock), "Game stole active work.");
+        behavior = new PetBehaviorController(); behavior.SuspendAutomatic(true); behavior.RequestHungryScene();
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsRock), "Game stole pending hungry props.");
+        for (int i = 0; i < 40; i++) behavior.Advance(.05);
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsRock), "Game stole active hungry props.");
+        behavior = new PetBehaviorController(); behavior.SuspendAutomatic(true); behavior.SetPaused(true);
+        Check(!behavior.TryStartExclusiveGameAction(ClipKind.RpsRock), "Game bypassed pause.");
+        bool rejected = false;
+        try { behavior.TryStartExclusiveGameAction(ClipKind.Eat); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "General feeding used a game-only shortcut.");
     }
     private static void PresentationGate()
     {
@@ -174,7 +204,7 @@ internal static class Program
     {
         var clock = new FakeTime(); var game = NewGame(clock); Complete(game, clock); Check(game.TryTakeReward(null, out _), "Initial reward absent.");
         game.StartRound(); Complete(game, clock); Check(!game.TryTakeReward(null, out _), "Immediate replay farmed mood.");
-        clock.Advance(280); game.StartRound(); Complete(game, clock); Check(game.TryTakeReward(null, out _), "Five-minute cooldown did not expire.");
+        clock.Advance(300); game.StartRound(); Complete(game, clock); Check(game.TryTakeReward(null, out _), "Five-minute cooldown did not expire.");
     }
     private static void RestartCooldown()
     {
@@ -209,12 +239,14 @@ internal static class Program
         try
         {
             Load(window); Save(window, "rps-choice.png"); Click(window, "PaperButton");
+            Check(window.Width <= 320 && window.Height <= 360 && window.ResizeMode == ResizeMode.NoResize, "Game is not a compact companion window.");
             Check(!Find<Button>(window, "RockButton").IsEnabled && !Find<Button>(window, "ReplayButton").IsEnabled, "Choices remained active after input.");
-            clock.Advance(3); window.Refresh();
+            clock.Advance(.6); window.Refresh();
             Check(Find<TextBlock>(window, "StageText").Text == "出拳！" && game.Snapshot.Outcome is null && awards == 0, "UI revealed or settled too soon.");
+            Check(Find<TextBlock>(window, "PetHandLabel").Text == "已选好", "Panel spoiled the hand before its animation ended.");
             clock.Advance(2); window.Refresh(); Check(Find<TextBlock>(window, "StageText").Text == "你赢了！", "UI disagrees with result.");
             Check(awards == 0, "Reaction began by awarding instead of finishing the round.");
-            clock.Advance(5); window.Refresh(); window.Refresh();
+            clock.Advance(2); window.Refresh(); window.Refresh();
             Check(awards == 1 && Find<Button>(window, "ReplayButton").IsEnabled, "Completed round did not settle once and unlock replay.");
             Check(cues.Select(x => x.Cue).SequenceEqual(new[] { RpsCue.Prepare, RpsCue.Throw, RpsCue.React, RpsCue.ReturnToIdle }), "Incomplete or duplicate performance cues.");
             Check(cues[0].PetChoice is null && cues[0].Outcome is null && cues[1].Outcome is null, "Early request leaked a result.");
@@ -300,7 +332,9 @@ internal static class Program
     private static void Complete(RockPaperScissorsGame game, FakeTime clock)
     {
         game.Choose(RpsChoice.Paper);
-        Step(game, clock, RpsCue.Prepare, 3); Step(game, clock, RpsCue.Throw, 2); Step(game, clock, RpsCue.React, 5);
+        Step(game, clock, RpsCue.Prepare, RockPaperScissorsGame.PreparationSeconds);
+        Step(game, clock, RpsCue.Throw, RockPaperScissorsGame.ThrowSeconds);
+        Step(game, clock, RpsCue.React, RockPaperScissorsGame.ReactionSeconds);
     }
     private static T Find<T>(RpsWindow window, string name) where T : FrameworkElement => (T)window.FindName(name);
     private static void Load(RpsWindow window) => window.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
@@ -326,8 +360,10 @@ internal static class Program
         if (_output is null) return;
         Directory.CreateDirectory(_output);
         var content = (FrameworkElement)window.Content;
-        content.Measure(new Size(440, 450)); content.Arrange(new Rect(0, 0, 440, 450)); content.UpdateLayout();
-        var bitmap = new RenderTargetBitmap(880, 900, 192, 192, PixelFormats.Pbgra32); bitmap.Render(content);
+        content.Measure(new Size(window.Width, window.Height)); content.Arrange(new Rect(0, 0, window.Width, window.Height)); content.UpdateLayout();
+        // Render steady state rather than the first, deliberately translucent transition tick.
+        Find<Border>(window, "StageSurface").BeginAnimation(UIElement.OpacityProperty, null);
+        var bitmap = new RenderTargetBitmap((int)window.Width * 2, (int)window.Height * 2, 192, 192, PixelFormats.Pbgra32); bitmap.Render(content);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var stream = File.Create(Path.Combine(_output, name)); encoder.Save(stream);
     }

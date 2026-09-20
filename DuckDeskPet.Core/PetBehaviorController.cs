@@ -21,7 +21,7 @@ public enum PetBehaviorRequestResult
 
 /// <summary>
 /// Semantic requests sit above the raster timeline. They never replace a clip in
-/// flight, and every next reaction waits for the complete two-second idle beat.
+/// flight, and normal reactions wait for the complete two-second idle beat.
 /// The wrapped timeline is owned here; callers must not request clips on it.
 /// </summary>
 public sealed class PetBehaviorController
@@ -108,6 +108,27 @@ public sealed class PetBehaviorController
         }
 
         return Enqueue(new(PetBehaviorKind.ManualAction, kind));
+    }
+
+    /// <summary>
+    /// A minigame already holding exclusive automatic-action ownership can start
+    /// its next authored clip at the current idle boundary. This never interrupts,
+    /// drains, replaces or skips an existing request; ordinary requests still
+    /// use their two-second idle beat. The whitelist prevents use as a general
+    /// shortcut around feeding, work or scene admission rules.
+    /// </summary>
+    public bool TryStartExclusiveGameAction(ClipKind kind)
+    {
+        if (kind is not (ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors or
+            ClipKind.RpsWin or ClipKind.RpsLose or ClipKind.Shy))
+            throw new ArgumentOutOfRangeException(nameof(kind));
+        if (!_timeline.IsAutomaticSuspended || IsPaused || _pending.Count != 0 ||
+            _timeline.PendingClip.HasValue || CurrentSample.Kind != ClipKind.Idle ||
+            _workDesired || _workScene.IsActive || _hungryDesired || _hungryScene.IsActive)
+            return false;
+        if (_timeline.RequestClip(kind) != ClipRequestResult.Started) return false;
+        _idleElapsed = 0;
+        return true;
     }
 
     public PetBehaviorRequestResult QueueReaction(PetBehaviorKind kind) => kind switch

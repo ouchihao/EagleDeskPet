@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using DuckDeskPet.Core;
 
@@ -31,7 +33,7 @@ public partial class RpsWindow : Window
         InitializeComponent();
         MaxHeight = Math.Max(MinHeight, SystemParameters.WorkArea.Height - 24);
         Height = Math.Min(Height, MaxHeight);
-        _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(100) };
+        _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(40) };
         _timer.Tick += Timer_OnTick;
         Closing += Window_OnClosing;
         Closed += (_, _) => { _timer.Stop(); _timer.Tick -= Timer_OnTick; _roundCancellation.Dispose(); };
@@ -56,7 +58,7 @@ public partial class RpsWindow : Window
         _presentedPhase = RpsPhase.Idle;
         _settled = false;
         _cleaned = true;
-        RewardText.Text = "每 5 分钟最多心情 +2；不获得经验或鹰币。";
+        RewardText.Text = "每 5 分钟最多心情 +2 · 无经验或鹰币奖励";
         Refresh();
     }
 
@@ -68,6 +70,13 @@ public partial class RpsWindow : Window
     }
     private void Replay_OnClick(object sender, RoutedEventArgs e) => StartRound();
     private void Exit_OnClick(object sender, RoutedEventArgs e) => Close();
+    private void Title_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && e.OriginalSource is not Button)
+        {
+            try { DragMove(); } catch (InvalidOperationException) { /* The pointer may already have been released. */ }
+        }
+    }
     private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape) { e.Handled = true; Close(); }
@@ -81,25 +90,39 @@ public partial class RpsWindow : Window
         bool canChoose = state.Phase == RpsPhase.AwaitingChoice && !_paused && !_cleaning;
         RockButton.IsEnabled = PaperButton.IsEnabled = ScissorsButton.IsEnabled = canChoose;
         ReplayButton.IsEnabled = state.Phase is RpsPhase.Completed or RpsPhase.Cancelled && !_paused && !_cleaning && _cleaned && _performance.IsCompleted;
-        RoundProgress.Value = Math.Min(10, state.RoundElapsedSeconds);
+        RoundProgress.Value = state.Phase switch
+        {
+            RpsPhase.Preparing => .15,
+            RpsPhase.Throwing => .45,
+            RpsPhase.Reacting => .8,
+            RpsPhase.Completed => 1,
+            _ => 0,
+        };
+        PlayerPlaceholder.Visibility = state.PlayerChoice.HasValue ? Visibility.Collapsed : Visibility.Visible;
+        PlayerHand.Visibility = state.PlayerChoice.HasValue ? Visibility.Visible : Visibility.Collapsed;
+        if (state.PlayerChoice is { } hand) PlayerHand.Data = (Geometry)FindResource(hand + "Hand");
+        // Deliberately keep the pet's hand secret throughout preparation AND the
+        // authored throw. A panel label must not spoil the desktop performance.
+        PetHandLabel.Text = state.Phase is RpsPhase.Reacting or RpsPhase.Completed ? Label(state.PetChoice) : "已选好";
         (StageText.Text, DetailText.Text) = state.Phase switch
         {
-            RpsPhase.AwaitingChoice => ("小鹰已选好，轮到你了！", "它不能偷看后改拳。选一个，看看谁更会摸鱼。"),
-            RpsPhase.Preparing => ("石头、剪刀、布——", $"你选了{Label(state.PlayerChoice)}。拳已锁定，小鹰正在蓄势。"),
-            RpsPhase.Throwing => ("出拳！", "先看小鹰完整出招，结果马上揭晓。"),
+            RpsPhase.AwaitingChoice => ("小鹰已选好，轮到你了！", "选一拳，它可不能偷看后改拳。"),
+            RpsPhase.Preparing => ("石头、剪刀、布——", $"{Label(state.PlayerChoice)}已锁定，准备出招！"),
+            RpsPhase.Throwing => ("出拳！", "看旁边的小鹰，结果马上揭晓。"),
             RpsPhase.Reacting or RpsPhase.Completed => (OutcomeTitle(state.Outcome),
-                $"你：{Label(state.PlayerChoice)}　小鹰：{Label(state.PetChoice)}\n{OutcomeLine(state.Outcome)}"),
+                OutcomeLine(state.Outcome)),
             RpsPhase.Cancelled => ("这一局先收摊", state.Cancellation switch
             {
-                RpsCancelReason.Paused => "已取消本局，不结算奖励；等收好动作再继续。",
-                RpsCancelReason.TimedOut => "刚才停留太久，本局作废，没有发放奖励。",
-                RpsCancelReason.PresentationFailed => "动作暂时没接上，本局作废，没有发放奖励。",
+                RpsCancelReason.Paused => "先收好动作，本局不结算奖励。",
+                RpsCancelReason.TimedOut => "刚才停留太久，本局不结算奖励。",
+                RpsCancelReason.PresentationFailed => "动作没接上，本局不结算奖励。",
                 _ => "本局已取消，没有发放奖励。",
             }),
             _ => ("小鹰正在偷偷选拳…", "不用下注，也不会扣饭。"),
         };
         if (_presentedPhase == state.Phase) return;
         _presentedPhase = state.Phase;
+        AnimateStage();
         if (_game.CurrentPerformance is { } performance)
             _performance = PlayAsync(performance, _roundCancellation.Token);
         else if (state.Phase == RpsPhase.Completed)
@@ -112,6 +135,14 @@ public partial class RpsWindow : Window
             _roundCancellation.Cancel();
             _performance = CleanUpAfterAsync(_performance);
         }
+    }
+
+    private void AnimateStage()
+    {
+        if (!SystemParameters.ClientAreaAnimation) return;
+        // Only the panel's text/stage eases in; never fade, flip or retime the
+        // actual eagle sprite. Every authored action frame still plays intact.
+        StageSurface.BeginAnimation(OpacityProperty, new DoubleAnimation(.72, 1, TimeSpan.FromMilliseconds(140)));
     }
 
     private async Task PlayAsync(RpsPerformance performance, CancellationToken cancellationToken)
@@ -134,11 +165,11 @@ public partial class RpsWindow : Window
         try
         {
             if (!_game.TryTakeReward(_getLastRewardUtc(), out var claim) || claim is null)
-                RewardText.Text = "本局完成。心情奖励还在冷却，开心不用等冷却。";
+                RewardText.Text = "奖励还在冷却，开心不用等冷却。";
             else
                 RewardText.Text = _tryCommitReward(claim)
-                    ? "本局完成 · 心情 +2。下次奖励至少间隔 5 分钟。"
-                    : "本局完成；奖励未保存，本次没有额外增加心情。";
+                    ? "心情 +2！下一份奖励 5 分钟后再来。"
+                    : "奖励未保存，本次没有额外增加心情。";
         }
         catch (Exception) { RewardText.Text = "本局完成；奖励未保存，没有重复发放。"; }
     }
@@ -190,7 +221,7 @@ public partial class RpsWindow : Window
         _timer.Stop();
         _game.Cancel(RpsCancelReason.WindowClosed);
         _roundCancellation.Cancel();
-        RockButton.IsEnabled = PaperButton.IsEnabled = ScissorsButton.IsEnabled = ReplayButton.IsEnabled = ExitButton.IsEnabled = false;
+        RockButton.IsEnabled = PaperButton.IsEnabled = ScissorsButton.IsEnabled = ReplayButton.IsEnabled = ExitButton.IsEnabled = TitleCloseButton.IsEnabled = false;
         StageText.Text = "正在收好这一局…";
         await CleanUpAfterAsync(_performance);
         _allowClose = true;
@@ -200,5 +231,5 @@ public partial class RpsWindow : Window
 
     private static string Label(RpsChoice? choice) => choice switch { RpsChoice.Rock => "石头", RpsChoice.Paper => "布", RpsChoice.Scissors => "剪刀", _ => "未出拳" };
     private static string OutcomeTitle(RpsOutcome? outcome) => outcome switch { RpsOutcome.PlayerWin => "你赢了！", RpsOutcome.PetWin => "小鹰赢了！", _ => "平局，默契拉满！" };
-    private static string OutcomeLine(RpsOutcome? outcome) => outcome switch { RpsOutcome.PlayerWin => "小鹰：刚才那局不算，我翅膀打滑了。", RpsOutcome.PetWin => "小鹰：不好意思，摸鱼也是有天赋的。", _ => "小鹰：这把不叫平局，叫英雄所见略同。" };
+    private static string OutcomeLine(RpsOutcome? outcome) => outcome switch { RpsOutcome.PlayerWin => "这把不算，我翅膀打滑了。", RpsOutcome.PetWin => "不好意思，摸鱼也是有天赋的。", _ => "英雄所见略同，再来一把？" };
 }

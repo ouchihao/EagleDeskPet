@@ -1,8 +1,9 @@
 <Window x:Class="DuckDeskPet.RpsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="大头鹰 · 摸鱼猜拳局" Width="460" Height="470" MinWidth="380" MinHeight="400"
-        Background="#FFF9EF" Foreground="#493827" FontFamily="Microsoft YaHei UI"
+        Title="大头鹰 · 摸鱼猜拳局" Width="304" Height="352" MinWidth="304" MinHeight="352"
+        Background="Transparent" Foreground="#493827" FontFamily="Microsoft YaHei UI"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Loaded="Window_OnLoaded" PreviewKeyDown="Window_OnPreviewKeyDown">
     <Window.Resources>
@@ -10,47 +11,71 @@
             <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Themes/PetTheme.xaml"/></ResourceDictionary.MergedDictionaries>
             <Style TargetType="Button" BasedOn="{StaticResource PetButton}"/>
             <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+            <!-- Editable hand tokens; the eagle itself keeps its original artwork. -->
+            <Geometry x:Key="RockHand">M 7,31 L 7,18 Q 7,13 11,13 Q 15,13 15,18 L 15,11 Q 15,6 19,6 Q 23,6 23,11 L 23,10 Q 23,5 27,5 Q 31,5 31,10 L 31,14 Q 31,10 35,10 Q 39,10 39,15 L 39,30 Q 39,40 29,42 L 19,42 Q 9,39 7,31 Z M 8,25 L 20,25 Q 27,25 26,30 Q 26,34 19,34 M 15,17 L 15,23 M 23,12 L 23,23 M 31,15 L 31,24</Geometry>
+            <Geometry x:Key="ScissorsHand">M 10,31 L 5,27 Q 1,21 6,19 Q 9,18 13,23 L 15,25 L 11,7 Q 10,1 15,1 Q 18,1 19,6 L 24,23 L 29,5 Q 31,0 35,2 Q 38,4 36,9 L 31,26 Q 37,22 40,27 Q 43,31 38,38 Q 35,43 25,44 Q 15,43 10,36 Z M 19,27 Q 29,25 31,30 Q 31,35 25,35 M 14,27 L 19,31</Geometry>
+            <Geometry x:Key="PaperHand">M 12,31 L 4,23 Q 0,18 4,15 Q 7,13 11,18 L 14,21 L 14,9 Q 14,4 18,4 Q 22,4 22,9 L 22,21 L 22,5 Q 22,0 26,0 Q 30,0 30,5 L 30,21 L 30,8 Q 30,3 34,4 Q 38,5 38,9 L 38,24 L 38,16 Q 38,11 42,12 Q 46,13 45,18 L 44,31 Q 43,44 30,44 L 24,44 Q 16,42 12,31 Z</Geometry>
+            <Style x:Key="HandToken" TargetType="Path">
+                <Setter Property="Width" Value="33"/><Setter Property="Height" Value="34"/>
+                <Setter Property="Stretch" Value="Uniform"/><Setter Property="Fill" Value="#F8CE7D"/>
+                <Setter Property="Stroke" Value="#8E623C"/><Setter Property="StrokeThickness" Value="2.1"/>
+                <Setter Property="StrokeStartLineCap" Value="Round"/><Setter Property="StrokeEndLineCap" Value="Round"/>
+                <Setter Property="StrokeLineJoin" Value="Round"/>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid Background="{Binding Background, RelativeSource={RelativeSource AncestorType=Window}}">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <Border Background="#E8ECDD" Padding="24,20,24,17" BorderBrush="#D4DAC8" BorderThickness="0,0,0,1">
-            <StackPanel>
-                <TextBlock Text="EAGLE CLUB / 工间休息" FontSize="10" Foreground="#7A826A"/>
-                <TextBlock Text="摸鱼猜拳局" FontSize="25" FontWeight="Bold" Margin="0,5,0,0"/>
-                <TextBlock Text="输赢随缘，鹰格不能输。" Foreground="#79806A" FontSize="12" Margin="0,6,0,0"/>
-            </StackPanel>
-        </Border>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel Margin="24,20">
-                <Border Background="#FFFFFF" BorderBrush="#E6DCC9" BorderThickness="1" CornerRadius="14" Padding="17">
-                    <StackPanel>
-                        <TextBlock x:Name="StageText" Text="小鹰正在偷偷选拳…" FontSize="16" FontWeight="Bold" AutomationProperties.LiveSetting="Polite"/>
-                        <TextBlock x:Name="DetailText" Text="不用下注，也不会扣饭。" FontSize="12" Foreground="#81755F" Margin="0,9,0,0" MinHeight="34"/>
-                        <ProgressBar x:Name="RoundProgress" Height="4" Minimum="0" Maximum="10" Value="0" Margin="0,13,0,0"
-                                     BorderThickness="0" Foreground="#8E9E7B" Background="#EFEBE0" AutomationProperties.Name="本局演出进度"/>
-                    </StackPanel>
-                </Border>
-                <UniformGrid Columns="3" Margin="-4,17,-4,0">
-                    <Button x:Name="RockButton" Click="Choice_OnClick" Tag="Rock" Margin="4,0" Padding="8,13" AutomationProperties.Name="选择石头">
-                        <StackPanel><TextBlock Text="石头" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="稳一点" FontSize="10" Foreground="#8B816B" HorizontalAlignment="Center" Margin="0,4,0,0"/></StackPanel>
-                    </Button>
-                    <Button x:Name="ScissorsButton" Click="Choice_OnClick" Tag="Scissors" Margin="4,0" Padding="8,13" AutomationProperties.Name="选择剪刀">
-                        <StackPanel><TextBlock Text="剪刀" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="皮一下" FontSize="10" Foreground="#8B816B" HorizontalAlignment="Center" Margin="0,4,0,0"/></StackPanel>
-                    </Button>
-                    <Button x:Name="PaperButton" Click="Choice_OnClick" Tag="Paper" Margin="4,0" Padding="8,13" AutomationProperties.Name="选择布">
-                        <StackPanel><TextBlock Text="布" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="全拿捏" FontSize="10" Foreground="#8B816B" HorizontalAlignment="Center" Margin="0,4,0,0"/></StackPanel>
-                    </Button>
-                </UniformGrid>
-                <TextBlock x:Name="RewardText" Text="每 5 分钟最多心情 +2；不获得经验或鹰币。" Foreground="#8B816B" FontSize="11" Margin="2,14,2,0"/>
-            </StackPanel>
-        </ScrollViewer>
-        <Border Grid.Row="2" Background="#F4EFE4" BorderBrush="#E4DCCA" BorderThickness="0,1,0,0" Padding="24,13">
-            <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Button x:Name="ReplayButton" Content="再来一局" HorizontalAlignment="Left" Click="Replay_OnClick" IsEnabled="False"/>
-                <Button x:Name="ExitButton" Grid.Column="1" Content="收摊退出" Click="Exit_OnClick" Margin="10,0,0,0"/>
+    <Border Margin="7" Background="#FFF9EF" BorderBrush="#D7C19F" BorderThickness="1" CornerRadius="19">
+        <Border.Effect><DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.16" Color="#433628"/></Border.Effect>
+        <Grid Margin="13,10,13,10">
+            <Grid.RowDefinitions><RowDefinition Height="36"/><RowDefinition Height="128"/><RowDefinition Height="76"/><RowDefinition Height="42"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Grid MouseLeftButtonDown="Title_OnMouseLeftButtonDown" Background="Transparent">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="28"/></Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="EAGLE CLUB  /  工间休息" FontSize="8" Foreground="#94876E"/>
+                    <TextBlock Text="摸鱼猜拳局" FontSize="17" FontWeight="Bold" Margin="0,1,0,0"/>
+                </StackPanel>
+                <Button x:Name="TitleCloseButton" Grid.Column="1" Content="×" FontSize="19" Padding="0" Height="27"
+                        VerticalAlignment="Top" Background="Transparent" BorderBrush="Transparent" Click="Exit_OnClick" AutomationProperties.Name="关闭猜拳小窗"/>
             </Grid>
-        </Border>
-    </Grid>
+            <Border x:Name="StageSurface" Grid.Row="1" CornerRadius="13" BorderBrush="#DCE1CF" BorderThickness="1" Margin="0,6,0,7" ClipToBounds="True">
+                <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#E5EDDA"/><GradientStop Color="#F5F0D9" Offset="1"/></LinearGradientBrush></Border.Background>
+                <Grid Margin="9,6,9,6">
+                    <Grid.RowDefinitions><RowDefinition Height="54"/><RowDefinition Height="23"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <Grid Width="205" HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="66"/><ColumnDefinition/><ColumnDefinition Width="66"/></Grid.ColumnDefinitions>
+                        <Ellipse Width="53" Height="53" Fill="#FFFFFF" Opacity="0.7"/>
+                        <Path x:Name="PlayerHand" Style="{StaticResource HandToken}" Data="{StaticResource RockHand}" Visibility="Collapsed"/>
+                        <TextBlock x:Name="PlayerPlaceholder" Text="?" Foreground="#BCA580" FontSize="31" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="VS" Foreground="#AD9270" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Ellipse Grid.Column="2" Width="53" Height="53" Fill="#FFFFFF" Opacity="0.7"/>
+                        <Image Grid.Column="2" Source="/Assets/mascot-animated-neutral.png" Width="61" Height="53" Stretch="Uniform"/>
+                        <Border Grid.Column="2" Background="#FFF8E6" BorderBrush="#D8C49E" BorderThickness="1" CornerRadius="9" Padding="4,1" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                            <TextBlock x:Name="PetHandLabel" Text="已选好" FontSize="8" FontWeight="Bold"/>
+                        </Border>
+                    </Grid>
+                    <TextBlock x:Name="StageText" Grid.Row="1" Text="小鹰正在偷偷选拳…" FontSize="13" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
+                    <TextBlock x:Name="DetailText" Grid.Row="2" Text="不用下注，也不会扣饭。" FontSize="10" Foreground="#82725C" TextAlignment="Center"/>
+                    <ProgressBar x:Name="RoundProgress" Grid.Row="2" Height="2" Minimum="0" Maximum="1" Value="0" Margin="4,0,4,-5"
+                                 VerticalAlignment="Bottom" BorderThickness="0" Foreground="#97A878" Background="#DEDCC8" AutomationProperties.Name="本局演出进度"/>
+                </Grid>
+            </Border>
+            <UniformGrid Grid.Row="2" Columns="3" Margin="-3,0,-3,0">
+                <Button x:Name="RockButton" Click="Choice_OnClick" Tag="Rock" Margin="3,0" Padding="5,6" AutomationProperties.Name="选择石头">
+                    <StackPanel><Path Data="{StaticResource RockHand}" Style="{StaticResource HandToken}"/><TextBlock Text="石头" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
+                </Button>
+                <Button x:Name="ScissorsButton" Click="Choice_OnClick" Tag="Scissors" Margin="3,0" Padding="5,6" AutomationProperties.Name="选择剪刀">
+                    <StackPanel><Path Data="{StaticResource ScissorsHand}" Style="{StaticResource HandToken}"/><TextBlock Text="剪刀" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
+                </Button>
+                <Button x:Name="PaperButton" Click="Choice_OnClick" Tag="Paper" Margin="3,0" Padding="5,6" AutomationProperties.Name="选择布">
+                    <StackPanel><Path Data="{StaticResource PaperHand}" Style="{StaticResource HandToken}"/><TextBlock Text="布" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
+                </Button>
+            </UniformGrid>
+            <TextBlock x:Name="RewardText" Grid.Row="3" Text="每 5 分钟心情 +2 · 不下注、不扣饭" Foreground="#96856D" FontSize="9" Margin="3,7,3,0" TextAlignment="Center"/>
+            <Grid Grid.Row="4">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <Button x:Name="ReplayButton" Content="再来一局" HorizontalAlignment="Left" Click="Replay_OnClick" IsEnabled="False" Padding="12,4" FontSize="11"/>
+                <Button x:Name="ExitButton" Grid.Column="1" Content="收摊" Click="Exit_OnClick" Margin="9,0,0,0" Background="Transparent" BorderBrush="Transparent" Padding="10,4" FontSize="11"/>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>

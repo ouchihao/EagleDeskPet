@@ -21,9 +21,9 @@ public sealed class RockPaperScissorsGame
 {
     public const int MoodReward = 2;
     public static readonly TimeSpan RewardCooldown = TimeSpan.FromMinutes(5);
-    public const double PreparationSeconds = 3;
+    public const double PreparationSeconds = 0.6;
     public const double ThrowSeconds = 2;
-    public const double ReactionSeconds = 5;
+    public const double ReactionSeconds = 2;
     public const double MaximumRoundSeconds = 20;
 
     private readonly Func<int> _nextPetChoice;

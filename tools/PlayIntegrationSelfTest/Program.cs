@@ -25,9 +25,9 @@ internal static class Program
                 ("Automatic hungry scene exits normally before game window opens", HungryExit),
                 ("Decode failure starts no game and restores prior suspension", DecodeFailure),
                 ("All three hands and outcomes await actual new animation sequences", Mappings),
-                ("Queued idle is not mistaken for complete; cancellation drains queued clip", CancelBeforeStart),
+                ("A pre-cancelled request starts no clip and cannot reward", CancelBeforeStart),
                 ("Cancellation mid-animation waits through the final frame", CancelDuringClip),
-                ("Pause waits for queued throw, forfeits reward and resumes safely", PauseResume),
+                ("Pause waits for immediate throw, forfeits reward and resumes safely", PauseResume),
                 ("Closing the real game window drains active throw before release", CloseGameWindow),
                 ("Pet exit during preload waits and never flashes a game window", ExitWhileLoading),
                 ("Pet exit during throw retries Close only after full teardown", ExitDuringThrow),
@@ -126,6 +126,8 @@ internal static class Program
             Check(pet.IsGameActive && pet.GameWindow is null && pet.Behavior.PendingCount == 1, "Preload failed to reserve or discarded deliberate action.");
             await Task.Delay(30);
             Check(pet.Behavior.CurrentSample.Sequence == original && !opening.IsCompleted, "Opening reset the current animation.");
+            await Until(pet, () => pet.Behavior.CurrentSample.Kind == ClipKind.Idle && pet.Behavior.PendingCount == 0);
+            Check(!opening.IsCompleted && pet.GameWindow is null, "Unready game window appeared before preload; old animation should drain concurrently.");
             pet.Frames.WarmGate.SetResult();
             await Drive(pet, opening);
             Check(pet.GameWindow is not null && pet.Behavior.CurrentSample.Sequence > original && pet.Behavior.PendingCount == 0, "Existing queue was not drained.");
@@ -176,7 +178,8 @@ internal static class Program
                 Guid round = await Prepare(pet);
                 Check(pet.Behavior.CurrentSample.Kind == ClipKind.Idle, "Preparation leaked a hand.");
                 var performance = pet.Perform(new(round, RpsCue.Throw, (RpsChoice)i));
-                Check(!performance.IsCompleted && pet.Behavior.CurrentSample.Kind == ClipKind.Idle && pet.Behavior.PendingCount == 1, "Queued idle was treated as completed throw.");
+                Check(!performance.IsCompleted && pet.Behavior.CurrentSample.Kind == hands[i] && pet.Behavior.PendingCount == 0 && pet.Behavior.CurrentSample.Progress == 0,
+                    "Immediate throw failed to start at its authored first frame or was mistaken for completion.");
                 await Until(pet, () => pet.Behavior.CurrentSample.Kind == hands[i]);
                 await Task.Delay(25);
                 Check(!performance.IsCompleted, "Started clip immediately acknowledged as complete.");
@@ -190,7 +193,20 @@ internal static class Program
         finally { await Close(pet); }
     }
 
-    private static async Task CancelBeforeStart() => await CancellationScenario(beforeStart: true);
+    private static async Task CancelBeforeStart()
+    {
+        var (pet, time, _) = NewPet();
+        try
+        {
+            await pet.OpenGameAsync(); Guid round = await Prepare(pet);
+            using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+            await ExpectFailure(pet.Perform(new(round, RpsCue.Throw, RpsChoice.Rock), cancellation.Token));
+            Check(pet.Behavior.CurrentSample.Kind == ClipKind.Idle && pet.Behavior.PendingCount == 0, "Already-cancelled request started an action.");
+            await pet.Perform(new(round, RpsCue.ReturnToIdle));
+            Check(!pet.Reward(new(round, 2, time.GetUtcNow())), "Cancelled request rewarded mood.");
+        }
+        finally { await Close(pet); }
+    }
     private static async Task CancelDuringClip() => await CancellationScenario(beforeStart: false);
     private static async Task CancellationScenario(bool beforeStart)
     {
@@ -214,8 +230,9 @@ internal static class Program
     {
         await pet.OpenGameAsync();
         Click(pet.GameWindow!, "RockButton");
-        time.Advance(3); pet.GameWindow!.Refresh();
-        Check(pet.Behavior.PendingCount == 1, "Real game window did not request throw.");
+        time.Advance(.6); pet.GameWindow!.Refresh();
+        Check(pet.Behavior.PendingCount == 0 && pet.Behavior.CurrentSample.Kind is ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors,
+            "Real game window did not begin its throw immediately after brief anticipation.");
     }
 
     private static async Task PauseResume()
@@ -284,7 +301,7 @@ internal static class Program
             Check(((TextBlock)window.FindName("StageText")).Text == "出拳！", "Time alone bypassed animation acknowledgement.");
             await Drive(pet, window.PendingOperation); window.Refresh();
             await Drive(pet, window.PendingOperation);
-            time.Advance(5); window.Refresh();
+            time.Advance(2); window.Refresh();
             Check(pet.CareState.LastGameRewardUtc == time.GetUtcNow() && pet.CareState.Mood > initialMood + 1.9, "Complete game did not save mood reward.");
             var saved = new PetStore(directory).Load();
             Check(saved is not null && saved.LastGameRewardUtc == pet.CareState.LastGameRewardUtc && saved.Mood == pet.CareState.Mood, "Mood/cursor were not saved together.");

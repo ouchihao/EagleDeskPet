@@ -43,10 +43,9 @@ public partial class PetWindow
         try
         {
             // Decode before the round clock starts; no missing-art idle stand-in.
-            await _framePlayer.WarmClipsAsync(GameClips);
+            await Task.WhenAll(_framePlayer.WarmClipsAsync(GameClips), WaitForGameIdleAsync(CancellationToken.None));
             if (GameClips.Any(kind => !_framePlayer.IsClipReady(kind)))
                 throw new InvalidOperationException("Guessing-game animation is unavailable.");
-            await WaitForGameIdleAsync(CancellationToken.None);
             if (_gamePauseRequested || _gameExitRequested || _isClosing) return;
             var window = new RpsWindow(PerformGameAsync, () => CareState.LastGameRewardUtc, CommitGameReward,
                 new RockPaperScissorsGame(timeProvider: _gameTime, lastGameRewardUtc: CareState.LastGameRewardUtc))
@@ -124,7 +123,7 @@ public partial class PetWindow
                     throw new InvalidOperationException("Invalid game preparation.");
                 _gameRound = performance.RoundId;
                 _gameThrown = _gameReactionComplete = _gameRewardConsumed = _gamePresentationFailed = false;
-                // The game enforces its three-second preparation. Stay neutral;
+                // The game enforces a brief 0.6-second anticipation. Stay neutral;
                 // revealing a hand here would leak the precommitted choice.
                 await WaitForGameIdleAsync(cancellationToken);
                 return;
@@ -170,7 +169,7 @@ public partial class PetWindow
         await WaitForGameIdleAsync(cancellationToken);
         if (!_framePlayer.IsClipReady(kind)) throw new InvalidOperationException("Game frames were not preloaded.");
         long previousSequence = _behavior.CurrentSample.Sequence;
-        if (_behavior.RequestAction(kind) != PetBehaviorRequestResult.Queued)
+        if (!_gameOwnsAutomatic || !_behavior.TryStartExclusiveGameAction(kind))
             throw new InvalidOperationException("Game animation request was not accepted.");
         long startedSequence;
         while (true)
@@ -180,8 +179,8 @@ public partial class PetWindow
             if (sample.Kind == kind && sample.Sequence > previousSequence) { startedSequence = sample.Sequence; break; }
             if (_behavior.IsPaused || _isClosing || (sample.Sequence > previousSequence && sample.Kind != kind))
                 throw new InvalidOperationException("Game animation was displaced before it started.");
-            // Idle immediately after enqueue is NOT completion: the scheduler
-            // deliberately holds an idle beat before starting this new sequence.
+            // A start acknowledgement is not completion: still require this
+            // new sequence to reach its authored ending and return to idle.
             await Task.Delay(16, cancellationToken);
         }
         while (true)
