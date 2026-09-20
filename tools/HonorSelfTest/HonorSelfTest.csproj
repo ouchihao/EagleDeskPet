@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../DuckDeskPet.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../DuckDeskPet/PetStore.cs" Link="PetStore.cs" />
   </ItemGroup>
 </Project>

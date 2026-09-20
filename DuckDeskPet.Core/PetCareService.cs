@@ -39,10 +39,8 @@ public sealed class PetCareService
     public const double WorkMoodLossPerHour = 10.0;
     public const double WorkExperienceIntervalSeconds = 60.0;
 
-    private static readonly HashSet<string> KnownAchievements = new(StringComparer.Ordinal)
-    {
-        "first-meal", "gentle-hands", "level-2",
-    };
+    private static readonly HashSet<string> KnownAchievements =
+        new(HonorCatalog.Definitions.Select(x => x.Id), StringComparer.Ordinal);
 
     public PetCareService(PetState? saved, DateTimeOffset now)
     {
@@ -223,6 +221,7 @@ public sealed class PetCareService
             Unlock("level-2");
         }
         ContentOwnershipService.GrantEligibleRewards(State.Content, State);
+        HonorCatalog.RecordEarned(State);
     }
 
     private void Unlock(string id)
@@ -285,6 +284,7 @@ public sealed class PetCareService
             Achievements = (saved.Achievements ?? new()).Where(KnownAchievements.Contains).Distinct(StringComparer.Ordinal).ToList(),
         };
         ContentOwnershipService.GrantEligibleRewards(state.Content, state);
+        HonorCatalog.RecordEarned(state);
         return state;
     }
 

@@ -24,6 +24,10 @@ public partial class HonorWallWindow : Window
     private readonly DispatcherTimer _sheenTimer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(7.2) };
     private int _sheenIndex;
     private bool _closed;
+    private int _page;
+    private int _pageSize = 6;
+    private int _pageCount = 1;
+    private sealed record SeriesChoice(HonorSeries? Series, string Name);
 
     public static readonly DependencyProperty CardWidthProperty = DependencyProperty.Register(
         nameof(CardWidth), typeof(double), typeof(HonorWallWindow), new PropertyMetadata(254.0));
@@ -39,10 +43,15 @@ public partial class HonorWallWindow : Window
         _stateProvider = stateProvider ?? throw new ArgumentNullException(nameof(stateProvider));
         _openShop = openShop; _claimReward = claimReward; _contentAvailable = contentAvailable;
         InitializeComponent();
+        SeriesFilter.ItemsSource = new[] { new SeriesChoice(null, "全部系列") }
+            .Concat(HonorCatalog.Series.Select(x => new SeriesChoice(x.Series, x.Name))).ToArray();
+        SeriesFilter.SelectedIndex = 0;
         ShopButton.IsEnabled = CollectionButton.IsEnabled = openShop is not null;
         // Work-area units are already DPI-independent; keep native chrome,
         // resizing and keyboard behavior on small screens and high-DPI displays.
         var area = SystemParameters.WorkArea;
+        MinWidth = Math.Min(MinWidth, Math.Max(280, area.Width - 32));
+        MinHeight = Math.Min(MinHeight, Math.Max(360, area.Height - 32));
         Width = Math.Min(Width, Math.Max(360, area.Width - 32));
         Height = Math.Min(Height, Math.Max(360, area.Height - 32));
         _ready = true;
@@ -68,6 +77,7 @@ public partial class HonorWallWindow : Window
             SystemParameters.StaticPropertyChanged -= SystemParameters_OnChanged;
             foreach (var motion in _medalMotions.Values) motion.Stop();
             _medalMotions.Clear();
+            StopPageMotion();
         };
     }
 
@@ -84,23 +94,63 @@ public partial class HonorWallWindow : Window
         ApplyFilter();
     }
 
-    private void ApplyFilter()
+    private void ApplyFilter(bool animate = false)
     {
         if (_lastSnapshot is null) return;
+        var state = _stateProvider();
+        HonorSeries? series = (SeriesFilter.SelectedItem as SeriesChoice)?.Series;
         var cards = _lastSnapshot
             .Where(x => EarnedFilter.IsChecked == true ? x.IsEarned : LockedFilter.IsChecked != true || !x.IsEarned)
-            .Select(x => new HonorCard(x, _stateProvider(), ContentAvailable, _claimReward is not null, _openShop is not null)).ToArray();
-        CardsItems.ItemsSource = cards;
+            .Where(x => series is null || x.Definition.Series == series)
+            .ToArray();
+        _pageCount = Math.Max(1, (cards.Length + _pageSize - 1) / _pageSize);
+        _page = Math.Clamp(_page, 0, _pageCount - 1);
+        CardsItems.ItemsSource = cards.Skip(_page * _pageSize).Take(_pageSize)
+            .Select(x => new HonorCard(x, state, ContentAvailable, _claimReward is not null, _openShop is not null)).ToArray();
+        PageText.Text = $"{_page + 1} / {_pageCount} 柜 · {cards.Length} 枚";
+        PreviousPageButton.IsEnabled = _page > 0;
+        NextPageButton.IsEnabled = _page + 1 < _pageCount;
         UpdateAnimationActivity();
-        EmptyText.Visibility = cards.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyPanel.Visibility = cards.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyText.Visibility = EmptyPanel.Visibility;
         EmptyText.Text = EarnedFilter.IsChecked == true
-            ? "第一枚徽章还在等你。给小鹰喂一口饭，先拿一个开门红。"
-            : "九枚全亮！本鹰宣布：你是这个桌面的荣誉收藏家。";
+            ? "这个系列的第一枚徽章还在等你。一起照料小鹰，慢慢把它点亮。"
+            : "这一柜都亮了！本鹰宣布：你就是荣誉收藏家。";
+        StopPageMotion();
+        if (animate && IsLoaded && SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast)
+        {
+            CardsItems.BeginAnimation(OpacityProperty, new DoubleAnimation(0.55, 1, TimeSpan.FromMilliseconds(180)) { FillBehavior = FillBehavior.Stop });
+            ((TranslateTransform)CardsItems.RenderTransform).BeginAnimation(TranslateTransform.YProperty,
+                new DoubleAnimation(7, 0, TimeSpan.FromMilliseconds(180)) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }, FillBehavior = FillBehavior.Stop });
+        }
     }
+
+    private void StopPageMotion()
+    {
+        CardsItems.BeginAnimation(OpacityProperty, null);
+        ((TranslateTransform)CardsItems.RenderTransform).BeginAnimation(TranslateTransform.YProperty, null);
+    }
+
+    private void Series_OnChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready) return;
+        _page = 0;
+        ApplyFilter(true);
+    }
+
+    private void ChangePage(int delta)
+    {
+        int next = Math.Clamp(_page + delta, 0, _pageCount - 1);
+        if (next == _page) return;
+        _page = next;
+        ApplyFilter(true);
+    }
+    private void PreviousPage_OnClick(object sender, RoutedEventArgs e) => ChangePage(-1);
+    private void NextPage_OnClick(object sender, RoutedEventArgs e) => ChangePage(1);
 
     private void Filter_OnChecked(object sender, RoutedEventArgs e)
     {
-        if (_ready) ApplyFilter();
+        if (_ready) { _page = 0; ApplyFilter(true); }
     }
 
     private void Window_OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -110,9 +160,16 @@ public partial class HonorWallWindow : Window
 
     private void UpdateCardWidth()
     {
-        double available = Math.Max(260, CardScroll.ActualWidth - 51);
-        int columns = available >= 705 ? 3 : available >= 470 ? 2 : 1;
+        double available = Math.Max(270, CardScroll.ActualWidth - 14);
+        FooterCaption.Visibility = CardScroll.ActualWidth >= 500 ? Visibility.Visible : Visibility.Collapsed;
+        int columns = available >= 810 ? 3 : available >= 540 ? 2 : 1;
         CardWidth = Math.Floor(available / columns);
+        int newPageSize = columns * (CardScroll.ActualHeight >= 480 ? 2 : 1);
+        if (_pageSize == newPageSize) return;
+        int first = _page * _pageSize;
+        _pageSize = newPageSize;
+        _page = first / _pageSize;
+        ApplyFilter();
     }
 
     private void KeepInsideWorkArea()
@@ -137,6 +194,12 @@ public partial class HonorWallWindow : Window
 
     private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (!SeriesFilter.IsDropDownOpen && e.Key is Key.PageDown or Key.PageUp)
+        {
+            ChangePage(e.Key == Key.PageDown ? 1 : -1);
+            e.Handled = true;
+            return;
+        }
         if (e.Key != Key.Escape) return;
         Close();
         e.Handled = true;
@@ -163,13 +226,18 @@ public partial class HonorWallWindow : Window
     // No CompositionTarget.Rendering subscription: short, compositor-driven sweeps
     // belong only to the open foreground gallery, not the always-running pet.
     private bool AnimationsAllowed => !_closed && IsLoaded && IsVisible && IsActive
-        && WindowState != WindowState.Minimized && SystemParameters.ClientAreaAnimation;
+        && WindowState != WindowState.Minimized && SystemParameters.ClientAreaAnimation && !SystemParameters.HighContrast;
 
     private void SystemParameters_OnChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(SystemParameters.ClientAreaAnimation)) return;
-        if (Dispatcher.CheckAccess()) UpdateAnimationActivity();
-        else Dispatcher.BeginInvoke(UpdateAnimationActivity);
+        if (e.PropertyName is not (nameof(SystemParameters.ClientAreaAnimation) or nameof(SystemParameters.HighContrast))) return;
+        void Update()
+        {
+            if (!SystemParameters.ClientAreaAnimation || SystemParameters.HighContrast) StopPageMotion();
+            UpdateAnimationActivity();
+        }
+        if (Dispatcher.CheckAccess()) Update();
+        else Dispatcher.BeginInvoke(Update);
     }
 
     private bool CanAnimate(FrameworkElement host)
@@ -318,9 +386,10 @@ public partial class HonorWallWindow : Window
             Description = definition.Description;
             TierLabel = definition.Tier switch { HonorTier.Gold => "金级", HonorTier.Silver => "银级", _ => "铜级" };
             TierTint = Brush(definition.Tier switch { HonorTier.Gold => "#F1E0A6", HonorTier.Silver => "#E1E5E5", _ => "#EED6BF" });
-            string series = definition.Series switch { HonorSeries.Meals => "meals", HonorSeries.Affection => "affection", _ => "growth" };
-            BadgeUri = $"pack://application:,,,/EagleDeskPet;component/Assets/Badges/{series}-{definition.Tier.ToString().ToLowerInvariant()}-v2.png";
-            SeriesLabel = definition.Series switch { HonorSeries.Meals => "干饭搭子", HonorSeries.Affection => "摸头交情", _ => "成长足迹" };
+            var series = HonorCatalog.Series.Single(x => x.Series == definition.Series);
+            string version = definition.Series is HonorSeries.Work or HonorSeries.Collection or HonorSeries.Bond ? "v3" : "v2";
+            BadgeUri = $"pack://application:,,,/EagleDeskPet;component/Assets/Badges/{series.BadgeKey}-{definition.Tier.ToString().ToLowerInvariant()}-{version}.png";
+            SeriesLabel = series.Name;
             RimBrush = Brush(definition.Tier switch { HonorTier.Gold => "#B18B35", HonorTier.Silver => "#8F979F", _ => "#9E7045" });
             ProgressLabel = definition.Series == HonorSeries.Growth
                 ? $"Lv.{progress.Current} / Lv.{definition.Target}"

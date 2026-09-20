@@ -164,7 +164,12 @@ internal static class CareTests
         Near(0, invalid.State.Mood);
         Near(0, invalid.State.FoodProgressSeconds);
         Equal(Start, invalid.State.LastUpdatedUtc);
-        Equal(1, invalid.State.Achievements.Count);
+        // Normalization records every milestone proven by the bounded counters;
+        // maximum XP proves the three growth tiers, but no arbitrary or duplicate flag.
+        var expectedHonors = new[] { "first-meal", "level-2", "growth-silver", "growth-gold" };
+        Equal(expectedHonors.Length, invalid.State.Achievements.Count);
+        Check(expectedHonors.All(id => invalid.State.Achievements.Count(actual => actual == id) == 1),
+            "Normalization failed to deduplicate known honors, discard unknown IDs, or record proven growth tiers.");
         Throws<NotSupportedException>(() => new PetCareService(new PetState { Version = 999 }, Start));
     }
 

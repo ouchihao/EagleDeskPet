@@ -104,6 +104,7 @@ public static class ContentOwnershipService
         if (candidate.OwnedContentIds.Count + granted.Length > MaximumOwnedContents)
             throw new InvalidDataException("Content ownership is full.");
         foreach (string id in granted) candidate.OwnedContentIds.Add(id);
+        if (ReferenceEquals(candidate, progress.Content)) HonorCatalog.RecordEarned(progress);
         return Array.AsReadOnly(granted);
     }
 
@@ -130,6 +131,7 @@ public static class ContentOwnershipService
         var quote = QuotePurchase(candidate, contentId, progress, isAvailable);
         if (!quote.CanPurchase) return quote;
         candidate.OwnedContentIds.Add(contentId);
+        if (ReferenceEquals(candidate, progress.Content)) HonorCatalog.RecordEarned(progress);
         return new(ContentOperationStatus.Granted, "已经放进你的收藏啦。", quote.Definition);
     }
 
