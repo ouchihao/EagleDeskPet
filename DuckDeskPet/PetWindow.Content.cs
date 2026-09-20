@@ -14,6 +14,7 @@ public partial class PetWindow
     private long _contentEquipmentRevision;
     private Task _contentOperation = Task.CompletedTask;
     private DateTimeOffset _nextContentRetry;
+    private (string Desk, string Computer, string Outfit)? _appliedBonusSelection;
     internal bool IsContentEquipmentApplying => _contentApplying;
     internal Task PendingContentOperation => _contentOperation;
 
@@ -27,7 +28,12 @@ public partial class PetWindow
         try { await ApplySavedContentVisualsAsync(); }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         { CareStatus = "收藏选择已保留；部分外观暂未加载，先使用默认或原来的外观。"; }
-        finally { _contentApplying = false; _contentEquipmentGate.Release(); }
+        finally
+        {
+            SynchronizeEquipmentBonuses();
+            _contentApplying = false;
+            _contentEquipmentGate.Release();
+        }
     }
 
     internal void RefreshContent()
@@ -40,6 +46,7 @@ public partial class PetWindow
     // Called after the renderer applies a frame. The fast path does no resource probes or I/O.
     internal void RefreshContentAtSafeBoundary()
     {
+        if (!_contentStopped && !_isClosing && _assetsReady) SynchronizeEquipmentBonuses();
         if (_contentStopped || _isClosing || _contentTransactions is null || _contentApplying || _contentPendingScheduled ||
             CareState.Content.PendingEquipment.Count == 0 || !ContentBoundaryIsSafe || DateTimeOffset.UtcNow < _nextContentRetry) return;
         _contentPendingScheduled = true;
@@ -164,8 +171,35 @@ public partial class PetWindow
             throw new InvalidDataException("No compatible available workplace selection.");
         await _workStage.RequestSelectionAsync(selection);
         if (_contentStopped || _isClosing) return;
-        await ApplyEquippedOutfitAsync();
+        try { await ApplyEquippedOutfitAsync(); }
+        finally
+        {
+            // RequestSelection prepares props; Apply commits them at the real
+            // standing boundary, so statistics must use ActiveSelection only.
+            _workStage.Apply(_behavior.CurrentSample);
+            SynchronizeEquipmentBonuses();
+        }
         if (warning is not null) CareStatus = warning;
+    }
+
+    private void SynchronizeEquipmentBonuses()
+    {
+        var actual = (_workStage.ActiveSelection.DeskId, _workStage.ActiveSelection.ComputerId, _framePlayer.CurrentOutfitId);
+        if (_appliedBonusSelection == actual && !_care.IsCatchUpPending) return;
+        string Resolve(ContentSlot slot, string visualId) => ContentCatalog.Definitions.FirstOrDefault(item =>
+            item.Slot == slot && (slot == ContentSlot.Outfit ? item.OutfitId : item.ScenePropId) == visualId)?.Id
+            ?? ContentCatalog.DefaultForSlot(slot);
+        var equipment = new Dictionary<ContentSlot, string>
+        {
+            [ContentSlot.Desk] = Resolve(ContentSlot.Desk, actual.Item1),
+            [ContentSlot.Computer] = Resolve(ContentSlot.Computer, actual.Item2),
+            [ContentSlot.Outfit] = Resolve(ContentSlot.Outfit, actual.Item3),
+        };
+        var now = DateTimeOffset.UtcNow;
+        if (_care.IsCatchUpPending) _care.BeginCatchUp(now, equipment);
+        else _care.SetEffectiveEquipment(now, equipment);
+        _appliedBonusSelection = actual;
+        _carePanel?.Refresh();
     }
 
     internal async Task PreviewContentAsync(string contentId)

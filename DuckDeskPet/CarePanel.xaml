@@ -90,7 +90,7 @@
                                 <TextBlock Text="工位值班表" Style="{StaticResource PetSectionTitle}"/>
                                 <TextBlock x:Name="WorkText" Text="工位空着" Margin="0,9,0,12" FontSize="12" Foreground="#6B7975"/>
                                 <Button x:Name="WorkButton" Content="开始工作" Background="#DDEBDE" HorizontalAlignment="Left" Click="Work_OnClick"/>
-                                <TextBlock Text="每分钟 +1 经验、+1 鹰币；30 分钟后进入忙碌。饿到 0 自动收工，也可随时取消工作。" FontSize="10" Foreground="#7D8174" Margin="0,12,0,0"/>
+                                <TextBlock Text="基础每分钟 +1 经验、+1 鹰币，装备可提高效率并减缓消耗；30 分钟后进入忙碌。饿到 0 自动收工，也可随时取消。" FontSize="10" Foreground="#7D8174" Margin="0,12,0,0"/>
                             </StackPanel>
                         </Border>
                         <TextBlock Text="隐藏 / 锁屏仍计时，离线最多补算 2 小时。每小时工作消耗 12 饱食、10 心情。鹰币仅为本地游戏币，无充值；旧档不追发工资。" FontSize="10" Foreground="#8A8575" Margin="3,13,3,0"/>

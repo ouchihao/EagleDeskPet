@@ -34,7 +34,10 @@ public partial class PetWindow
     private bool _preparingWork;
     private bool _assetsReady;
     internal PetState CareState => _care.State;
-    internal long EarnedCoinsThisRun => _care.EarnedCoinsThisRun;
+    internal decimal EarnedCoinsThisRun => _care.EarnedCoinsThisRun;
+    internal decimal MoneyPerWorkMinute => _care.MoneyPerWorkMinute;
+    internal decimal WorkExperiencePerMinute => _care.WorkExperiencePerMinute;
+    internal EquipmentBonuses CurrentEquipmentBonuses => _care.CurrentBonuses;
     internal bool NotificationsEnabled => _companion.NotificationsEnabled;
     internal bool ActiveBanterEnabled => _companion.ActiveBanterEnabled;
     internal bool WorkInProgress => CareState.IsWorking || _behavior.IsWorkSceneActive || _behavior.IsWorkRequested || _preparingWork;
@@ -47,7 +50,9 @@ public partial class PetWindow
 
     private void InitializeCare()
     {
-        _care = new PetCareService(_store.Load(), DateTimeOffset.UtcNow);
+        // Asset validation happens asynchronously. Never settle offline wages
+        // against an unverified saved selection while the loading screen is up.
+        _care = new PetCareService(_store.Load(), DateTimeOffset.UtcNow, deferInitialAdvance: true);
         _banter.Enabled = _companion.ActiveBanterEnabled;
         _emotions.Enabled = _companion.AutoEmotionScenesEnabled;
         _lastBanterTick = DateTimeOffset.UtcNow;

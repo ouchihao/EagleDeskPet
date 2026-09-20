@@ -21,7 +21,8 @@ public partial class CarePanel : Window
     internal void Refresh(string? message = null)
     {
         PetState state = _pet.CareState;
-        LevelText.Text = $"Lv.{state.Level}  ·  经验 {state.Experience % 100}/100";
+        LevelText.Text = state.IsMaximumLevel ? $"Lv.{state.Level} · 已满级" :
+            $"Lv.{state.Level}  ·  经验 {state.ExperienceIntoLevel:N0}/{state.NextLevelRequirement:N0}";
         FullnessBar.Value = state.Fullness;
         MoodBar.Value = state.Mood;
         FullnessText.Text = $"{state.Fullness:0} / 100";
@@ -30,11 +31,12 @@ public partial class CarePanel : Window
         var remaining = TimeSpan.FromSeconds(Math.Max(0, 300 - state.FoodProgressSeconds));
         IncomeText.Text = state.Food >= 99 ? "粮袋满啦，先吃一点再攒。" : $"下一份粮食 {remaining:mm\\:ss} · 离线最多积累 2 小时";
         StatusText.Text = message ?? _pet.CareStatus;
-        WalletText.Text = $"{state.Coins:N0} 鹰币";
-        RunWageText.Text = $"本次启动已赚 {_pet.EarnedCoinsThisRun:N0} 鹰币（含本次离线补算，不扣除购物支出）";
+        WalletText.Text = $"{state.Coins:N2} 鹰币";
+        RunWageText.Text = $"本次启动已赚 {_pet.EarnedCoinsThisRun:N2} 鹰币（含本次离线补算，不扣除购物支出）";
         WageText.Text = state.Coins >= EconomyPolicy.MaximumCoins
             ? "钱包已满；满额期间不积压可补领工资。"
-            : $"每有效工作分钟 +1 · 下枚还需 {Math.Ceiling(EconomyPolicy.WageIntervalSeconds - state.WageProgressSeconds):0} 秒工作";
+            : $"有效工作每分钟 +{_pet.MoneyPerWorkMinute:N2} 鹰币 / +{_pet.WorkExperiencePerMinute:0.##} 经验\n" +
+              $"当前装备：饱食衰减 −{_pet.CurrentEquipmentBonuses.FullnessDecayReduction:P0} · 心情衰减 −{_pet.CurrentEquipmentBonuses.MoodDecayReduction:P0}";
         var honors = HonorCatalog.Evaluate(state);
         AchievementsText.Text = $"点亮 {honors.Count(x => x.IsEarned)} / {honors.Count} 枚";
         GitHubStatusText.Text = _pet.GitHub.IsConnected ? $"@{_pet.GitHub.Login} · {_pet.GitHub.UnreadCount} 条本地未读" : "可选连接，不需要 GitHub 密码。";

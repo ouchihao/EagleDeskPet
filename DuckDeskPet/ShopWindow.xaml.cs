@@ -11,6 +11,33 @@ namespace DuckDeskPet;
 
 internal readonly record struct ShopActionResult(bool Success, bool Changed, string Message);
 
+internal static class EquipmentPresentation
+{
+    internal static string Describe(EquipmentBonuses bonus)
+    {
+        var parts = new List<string>();
+        if (bonus.WorkCoinBonus > 0) parts.Add($"赚钱 +{bonus.WorkCoinBonus:P0}");
+        if (bonus.WorkExperienceBonus > 0) parts.Add($"工作经验 +{bonus.WorkExperienceBonus:P0}");
+        if (bonus.FullnessDecayReduction > 0) parts.Add($"饱食衰减 −{bonus.FullnessDecayReduction:P0}");
+        if (bonus.MoodDecayReduction > 0) parts.Add($"心情衰减 −{bonus.MoodDecayReduction:P0}");
+        return parts.Count == 0 ? "无额外属性加成" : string.Join(" · ", parts);
+    }
+
+    internal static string Compare(EquipmentBonuses bonus, EquipmentBonuses current)
+    {
+        var parts = new List<string>();
+        void Add(string label, decimal difference)
+        {
+            if (difference != 0) parts.Add($"{label} {difference * 100:+0;-0} 个百分点");
+        }
+        Add("赚钱", bonus.WorkCoinBonus - current.WorkCoinBonus);
+        Add("经验", bonus.WorkExperienceBonus - current.WorkExperienceBonus);
+        Add("省粮", bonus.FullnessDecayReduction - current.FullnessDecayReduction);
+        Add("省心", bonus.MoodDecayReduction - current.MoodDecayReduction);
+        return parts.Count == 0 ? "与此槽位已选装备属性相同。" : "对比此槽位已选装备：" + string.Join(" · ", parts);
+    }
+}
+
 /// <summary>UI transaction coordinator: clone -> validate -> durable save -> publish, never the reverse.</summary>
 internal sealed class ShopTransactions(PetStore store, Func<PetState> state,
     Func<ContentDefinition, bool> isAvailable, Func<ContentOwnershipState, bool>? isCompatible = null)
@@ -148,7 +175,7 @@ public partial class ShopWindow : Window
         string signature = $"{state.Coins}|{OwnedFilter.IsChecked}|{_category}|{_busy}|" + string.Join("|", cards.Select(x => x.Signature));
         if (signature == _signature) return;
         _signature = signature;
-        BalanceText.Text = state.Coins.ToString("N0");
+        BalanceText.Text = state.Coins.ToString("N2");
         CollectionText.Text = $"已收藏 {cards.Count(x => x.Owned)} / {cards.Length}";
         _filtered = cards.Where(x => (OwnedFilter.IsChecked != true || x.Owned) && (_category is null || x.Type == _category)).ToArray();
         PresentPage();
@@ -268,6 +295,16 @@ public partial class ShopWindow : Window
         {
             Id = item.Id; Name = item.Name; Description = item.Description; Type = item.Type;
             Thumbnail = ShopThumbnails.Get(item);
+            Effects = EquipmentPresentation.Describe(item.Bonuses);
+            PrimaryEffect = item.Bonuses.WorkCoinBonus > 0 ? $"赚钱 +{item.Bonuses.WorkCoinBonus:P0}" :
+                item.Type == ContentType.Action ? "专属收藏动作" : "基础装备";
+            if (item.Slot is { } compareSlot)
+            {
+                string currentId = state.Content.Equipped.GetValueOrDefault(compareSlot, ContentCatalog.DefaultForSlot(compareSlot));
+                var current = ContentCatalog.TryGet(currentId, out var currentItem) ? currentItem!.Bonuses : EquipmentBonuses.None;
+                Comparison = EquipmentPresentation.Compare(item.Bonuses, current);
+            }
+            else Comparison = "手动播放，不影响工作收益。";
             Owned = ContentOwnershipService.Owns(state.Content, item.Id);
             bool available = transactions.IsAvailable(item) && Thumbnail is not null;
             bool earned = ContentOwnershipService.IsRewardEligible(item, state);
@@ -277,24 +314,24 @@ public partial class ShopWindow : Window
             Category = item.Type switch { ContentType.Desk => "工位 · 桌子", ContentType.Computer => "工位 · 电脑", ContentType.Outfit => "形象 · 全套装扮", _ => "互动 · 手动动作" };
             ShortCategory = item.Type switch { ContentType.Desk => "工位 / 桌子", ContentType.Computer => "工位 / 电脑", ContentType.Outfit => "全套装扮", _ => "收藏动作" };
             Badge = pending ? "待生效" : equipped ? "使用中" : Owned ? "已收藏" : earned ? "可领取" : "";
-            PriceLabel = item.IsDefault ? "默认免费" : Owned ? "已拥有" : $"{item.Price} 鹰币";
+            PriceLabel = item.IsDefault ? "默认免费" : Owned ? "已拥有" : $"{item.Price:N2} 鹰币";
             Acquisition = item.IsDefault ? "每只小鹰都有，不用购买。" : item.Reward is not null
-                ? $"{item.Price} 鹰币购买，或{item.Reward.Description}。" : $"工作积累鹰币，{item.Price} 鹰币永久收藏。";
+                ? $"{item.Price:N2} 鹰币购买，或{item.Reward.Description}。" : $"工作积累鹰币，{item.Price:N2} 鹰币永久收藏。";
             Status = !available ? Owned ? "已拥有，资源暂未就绪；权益和选择仍会保留。" : "资源尚未就绪，暂不售卖；不会扣款。"
                 : pending ? "待生效 · 当前工作或动作结束后更换。"
                 : equipped ? otherPending ? "当前正在用；可以取消排队，保留这一款。" : "当前正在用。"
                 : Owned ? item.Type == ContentType.Action ? "已解锁 · 点击主动播放，不加入自动待机。" : "已收藏 · 点击装备后才会更换。"
                 : earned ? "荣誉条件已达成，可免费领取，不用购买。"
-                : state.Coins < item.Price ? $"还差 {item.Price - state.Coins} 鹰币。" + (item.Reward is null ? "" : "也可以达成上方荣誉免费解锁。")
+                : state.Coins < item.Price ? $"还差 {item.Price - state.Coins:N2} 鹰币。" + (item.Reward is null ? "" : "也可以达成上方荣誉免费解锁。")
                 : "尚未拥有 · 购买前可以独立预览。";
             ActionLabel = Owned ? item.Type == ContentType.Action ? "来一段" : pending ? "等待生效" : equipped ? otherPending ? "保留当前" : "正在使用" : "装备"
-                : earned ? "免费领取" : available ? $"{item.Price} 币收藏" : "素材准备中";
+                : earned ? "免费领取" : available ? "购买收藏" : "素材准备中";
             CanPreview = available && !busy;
             CanAct = !busy && transactions.CanSave && (Owned
                 ? available && (item.Type == ContentType.Action ? !interactionBusy : !pending && (!equipped || otherPending))
                 : earned || (available && state.Coins >= item.Price));
-            AccessibleLabel = $"{Name}，{PriceLabel}。{Acquisition} {Status}";
-            Signature = $"{Id}:{Owned}:{Status}:{ActionLabel}:{CanPreview}:{CanAct}";
+            AccessibleLabel = $"{Name}，{PriceLabel}。{Effects}。{Acquisition} {Status}";
+            Signature = $"{Id}:{Owned}:{Status}:{ActionLabel}:{CanPreview}:{CanAct}:{Comparison}";
         }
         public string Id { get; }
         public ContentType Type { get; }
@@ -304,6 +341,9 @@ public partial class ShopWindow : Window
         public string Badge { get; }
         public string Name { get; }
         public string Description { get; }
+        public string Effects { get; }
+        public string PrimaryEffect { get; }
+        public string Comparison { get; }
         public string Category { get; }
         public string PriceLabel { get; }
         public string Acquisition { get; }

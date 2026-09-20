@@ -48,6 +48,7 @@ public partial class PetWindow : Window
         FpsBadge.Visibility = _settings.ShowFps ? Visibility.Visible : Visibility.Collapsed;
         _behavior.SetPaused(_settings.IsPaused);
         InitializeCare();
+        InitializeReminders();
 
         SourceInitialized += OnSourceInitialized;
         Loaded += OnLoaded;
@@ -72,6 +73,7 @@ public partial class PetWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         StartCare();
+        StartReminders();
         try
         {
             await _framePlayer.WarmAsync();
@@ -97,6 +99,7 @@ public partial class PetWindow : Window
         catch (Exception exception)
         {
             if (_isClosing) return;
+            SynchronizeEquipmentBonuses();
             CareStatus = "动画资源未能加载：" + exception.Message;
             Say(CareStatus);
         }
@@ -120,6 +123,7 @@ public partial class PetWindow : Window
         bool shouldShutdown = !_isClosing;
         _isClosing = true;
         UnsubscribeRendering();
+        StopReminders();
         StopCare();
         _framePlayer.Dispose();
         _windowSource?.RemoveHook(WindowMessageHook);

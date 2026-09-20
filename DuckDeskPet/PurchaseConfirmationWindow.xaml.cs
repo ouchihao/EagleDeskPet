@@ -9,15 +9,16 @@ namespace DuckDeskPet;
 /// caller to re-quote and attempt a durable transaction; displaying it never spends anything.</summary>
 public partial class PurchaseConfirmationWindow : Window
 {
-    internal PurchaseConfirmationWindow(ContentDefinition item, int balance)
+    internal PurchaseConfirmationWindow(ContentDefinition item, decimal balance)
     {
         ArgumentNullException.ThrowIfNull(item);
         InitializeComponent();
         ProductImage.Source = ShopThumbnails.Get(item);
         ProductName.Text = item.Name;
-        ProductPrice.Text = $"{item.Price:N0} 鹰币 · 永久收藏";
-        CurrentBalance.Text = $"{balance:N0} 鹰币";
-        RemainingBalance.Text = balance >= item.Price ? $"{balance - item.Price:N0} 鹰币" : "鹰币不足";
+        ProductPrice.Text = $"{item.Price:N2} 鹰币 · 永久收藏";
+        CurrentBalance.Text = $"{balance:N2} 鹰币";
+        RemainingBalance.Text = balance >= item.Price ? $"{balance - item.Price:N2} 鹰币" : "鹰币不足";
+        PurchaseNote.Text = EquipmentPresentation.Describe(item.Bonuses) + "\n购买不自动装备；装备实际生效后才提供加成。";
         ConfirmButton.IsEnabled = balance >= item.Price && !item.IsDefault && ProductImage.Source is not null;
         if (!ConfirmButton.IsEnabled) PurchaseNote.Text = "余额或商品素材未就绪，这次不能购买，不会扣除鹰币。";
         Loaded += (_, _) => CancelButton.Focus();
