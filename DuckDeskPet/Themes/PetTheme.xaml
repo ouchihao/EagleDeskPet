@@ -1,26 +1,89 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared club materials. Keep controls native, selectable and keyboard accessible. -->
+    <SolidColorBrush x:Key="PetInk" Color="#24364B"/>
+    <SolidColorBrush x:Key="PetMuted" Color="#707B83"/>
+    <SolidColorBrush x:Key="PetCream" Color="#FFF8EB"/>
+    <SolidColorBrush x:Key="PetGold" Color="#EAB85E"/>
+    <SolidColorBrush x:Key="PetMint" Color="#DDECE1"/>
+    <LinearGradientBrush x:Key="PetPaper" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFFCF5"/><GradientStop Color="#F5EDDC" Offset="1"/>
+    </LinearGradientBrush>
+    <Style x:Key="PetCard" TargetType="Border">
+        <Setter Property="Background" Value="#FFFEF9"/>
+        <Setter Property="BorderBrush" Value="#E4DACA"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+    <Style x:Key="PetSectionTitle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource PetInk}"/>
+        <Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
     <Style x:Key="PetButton" TargetType="Button">
-        <Setter Property="Background" Value="#EFE5CF"/>
-        <Setter Property="Foreground" Value="#493827"/>
-        <Setter Property="BorderBrush" Value="#D8C9AD"/>
+        <Setter Property="Background" Value="#F3E9D7"/>
+        <Setter Property="Foreground" Value="#24364B"/>
+        <Setter Property="BorderBrush" Value="#DBCCB1"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="13,8"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="12"/>
         <Setter Property="Template">
             <Setter.Value><ControlTemplate TargetType="Button">
                 <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="11" Padding="{TemplateBinding Padding}">
                     <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                 </Border>
                 <ControlTemplate.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="#F3DCAE"/></Trigger>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#B98B43"/><Setter TargetName="Surface" Property="Opacity" Value="0.88"/></Trigger>
                     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#926839"/><Setter TargetName="Surface" Property="BorderThickness" Value="2"/></Trigger>
-                    <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Background" Value="#E2C78F"/></Trigger>
+                    <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.68"/></Trigger>
                     <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.45"/></Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate></Setter.Value>
         </Setter>
+    </Style>
+    <Style x:Key="PetPrimaryButton" TargetType="Button" BasedOn="{StaticResource PetButton}">
+        <Setter Property="Background" Value="#24364B"/><Setter Property="Foreground" Value="#FFF8EB"/>
+        <Setter Property="BorderBrush" Value="#24364B"/><Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="PetIconButton" TargetType="Button" BasedOn="{StaticResource PetButton}">
+        <Setter Property="Padding" Value="8"/><Setter Property="MinWidth" Value="32"/>
+        <Setter Property="MinHeight" Value="32"/><Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style x:Key="PetChip" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="#68777B"/><Setter Property="Padding" Value="13,8"/>
+        <Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,6,4"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Chip" Background="#F2ECDD" CornerRadius="14" BorderBrush="Transparent" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" RecognizesAccessKey="True"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chip" Property="BorderBrush" Value="#CCB78E"/></Trigger>
+                <Trigger Property="IsChecked" Value="True"><Setter TargetName="Chip" Property="Background" Value="#24364B"/><Setter Property="Foreground" Value="#FFF8EB"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chip" Property="BorderBrush" Value="#B47F25"/><Setter TargetName="Chip" Property="BorderThickness" Value="2"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Chip" Property="Opacity" Value="0.45"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="PetTabItem" TargetType="TabItem">
+        <Setter Property="Foreground" Value="#778185"/><Setter Property="Padding" Value="19,11"/>
+        <Setter Property="Cursor" Value="Hand"/><Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabItem">
+            <Border x:Name="Tab" Background="Transparent" CornerRadius="10,10,0,0" Padding="{TemplateBinding Padding}" BorderBrush="Transparent" BorderThickness="0,0,0,3">
+                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" HorizontalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsSelected" Value="True"><Setter TargetName="Tab" Property="Background" Value="#FFFDF6"/><Setter TargetName="Tab" Property="BorderBrush" Value="#DDA851"/><Setter Property="Foreground" Value="#24364B"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Tab" Property="Background" Value="#F5EDDA"/></Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Tab" Property="BorderBrush" Value="#24364B"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style x:Key="PetMenuItem" TargetType="MenuItem">
         <Setter Property="Foreground" Value="#4D3B29"/>
@@ -75,10 +138,10 @@
         <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ContextMenu">
             <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="14" Padding="5,5,5,7">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" CornerRadius="10" Margin="2,2,2,5" Padding="11,9" Background="#EAECD9">
+                    <Border DockPanel.Dock="Top" CornerRadius="10" Margin="2,2,2,5" Padding="11,12" Background="#24364B">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="34"/></Grid.ColumnDefinitions>
-                            <StackPanel><TextBlock Text="大头鹰的工位" FontSize="14" FontWeight="Bold" Foreground="#4D4931"/><TextBlock Text="饭要按时吃，班要准点下。" FontSize="10" Foreground="#858164" Margin="0,3,0,0"/></StackPanel>
+                            <StackPanel><TextBlock Text="大头鹰 · 摸鱼俱乐部" FontSize="14" FontWeight="Bold" Foreground="#FFF7E5"/><TextBlock Text="上班有工牌，摸鱼有同伙。" FontSize="10" Foreground="#D7BE8E" Margin="0,4,0,0"/></StackPanel>
                             <Image Grid.Column="1" Source="/Assets/mascot-animated-neutral.png" Width="34" Height="39"/>
                         </Grid>
                     </Border>

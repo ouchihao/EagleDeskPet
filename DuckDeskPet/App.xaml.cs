@@ -23,6 +23,7 @@ public partial class App : Application
             return;
         }
 
+        PetUiMotion.RegisterForApplication(typeof(App).Assembly);
         MainWindow = new PetWindow();
         MainWindow.Show();
     }

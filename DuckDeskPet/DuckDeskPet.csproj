@@ -41,6 +41,9 @@
     <Resource Include="Assets\SceneProps\**\*.png" Exclude="Assets\SceneProps\Work\Fire\**;Assets\SceneProps\Work\desk.png;Assets\SceneProps\Work\desk-back.png;Assets\SceneProps\Work\desk-front.png" />
     <None Remove="Assets\Badges\*.png" />
     <Resource Include="Assets\Badges\*-v2.png" />
+    <Resource Include="Assets\Badges\*-v3.png" />
+    <None Remove="Assets\Ui\*.png" />
+    <Resource Include="Assets\Ui\*.png" />
   </ItemGroup>
 
 </Project>
