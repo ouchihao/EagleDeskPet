@@ -7,7 +7,7 @@ in memory, pumps its own dispatcher, and never reads or writes user saves or AI 
 dotnet build tools/OutfitSelfTest/OutfitSelfTest.csproj -c Release --artifacts-path .codex-build/outfit-artifacts
 dotnet .codex-build/outfit-artifacts/bin/OutfitSelfTest/release/OutfitSelfTest.dll
 # Optional: also decode every declared real resource, without launching the pet.
-dotnet .codex-build/outfit-artifacts/bin/OutfitSelfTest/release/OutfitSelfTest.dll --resources-root D:\Code\github\EagleDeskPet\DuckDeskPet
+dotnet .codex-build/outfit-artifacts/bin/OutfitSelfTest/release/OutfitSelfTest.dll --resources-root ./DuckDeskPet
 ```
 
 The fixture declares all 19 current animation clips regardless of which art packs are installed.

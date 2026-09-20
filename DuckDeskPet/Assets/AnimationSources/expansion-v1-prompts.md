@@ -2,7 +2,7 @@
 
 生成器：Codex 内置 imagegen；无外部付费 API 回退。生成源图保留 RGBA 原始 alpha，透明区 RGB 的棕色不是背景素材。构建用离线 RIFE 光流插帧，不是复制帧或整图淡化。
 
-参考角色：`../mascot-animated-neutral.png`。本地 `D:\Temp\pets` GIF 只作表演参考，以 ffmpeg `fps=10,scale=240:240,tile=4x3` 查看表情变化；不将原 GIF 作为发布资源。
+参考角色：`../mascot-animated-neutral.png`。用户提供的本地 GIF 只作表演参考，以 ffmpeg `fps=10,scale=240:240,tile=4x3` 查看表情变化；不将原 GIF 作为发布资源。
 
 ## 饥饿 / 喝茶 / 猜拳的生成要求摘要
 

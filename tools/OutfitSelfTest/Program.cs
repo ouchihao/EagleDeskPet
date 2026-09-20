@@ -64,10 +64,10 @@ internal static class Program
                 $"real {outfit.Id} resources fully decode without warnings");
             Check(result.SupportedClips.Count == 20 && result.SupportedClips.Contains(ClipKind.Idle),
                 $"real {outfit.Id} supports all 19 actions plus neutral");
-            Check(validated.Assets is { Actions.Count: 19 } assets && assets.Actions.Sum(x => x.FrameCount) == 2299,
-                $"real {outfit.Id} manifest declares exactly 19 clips and 2299 frames");
-            Check(pngReads == 2300,
-                $"real {outfit.Id} actually reads all 2299 frames and its neutral PNG");
+            Check(validated.Assets is { Actions.Count: 19 } assets && assets.Actions.Sum(x => x.FrameCount) == 2491,
+                $"real {outfit.Id} manifest declares exactly 19 clips and 2491 frames");
+            Check(pngReads == 2492,
+                $"real {outfit.Id} actually reads all 2491 frames and its neutral PNG");
             Console.WriteLine($"REAL {outfit.Id}: available={result.IsAvailable}; pngReads={pngReads}; warning={result.Warning ?? "none"}");
         }
         GC.Collect();
@@ -111,6 +111,12 @@ internal static class Program
         await Unavailable("wrong canvas dimensions", f => f.Files[OfficeRoot + "neutral.png"] = Fixture.Png(383, 346, Colors.Red));
         await Unavailable("wrong frame count", f => f.ChangeOffice(a => a.Actions[0].FrameCount--));
         await Unavailable("wrong duration", f => f.ChangeOffice(a => a.Actions[0].DurationSeconds = 1.99));
+        await Unavailable("old short guessing-game timing", f => f.ChangeOffice(a =>
+        {
+            var rock = a.Actions.Single(x => x.Clip == "RpsRock"); rock.FrameCount = 121; rock.DurationSeconds = 2;
+        }));
+        await Unavailable("missing extended gesture ending", f => f.Files.TryRemove(OfficeRoot + "Animations/RpsRock/frame-0168.png", out _));
+        await Unavailable("missing extended reaction ending", f => f.Files.TryRemove(OfficeRoot + "Animations/RpsWin/frame-0144.png", out _));
         await Unavailable("wrong phase", f => f.ChangeOffice(a => a.Actions[0].Phase = "loop"));
         await Unavailable("wrong group", f => f.ChangeOffice(a => a.Actions[0].Group = "Interaction"));
         await Unavailable("missing expansion clip", f => f.ChangeOffice(a => a.Actions.RemoveAll(x => x.Clip == "Tea")));
@@ -197,7 +203,7 @@ internal static class Program
         for (int round = 0; round < 3; round++)
         {
             await player.WarmClipsAsync(games);
-            Check(player.DecodedFrameCount == 1513 && games.All(player.IsClipReady), $"game round {round + 1} lazily warms six transient clips");
+            Check(player.DecodedFrameCount == 1705 && games.All(player.IsClipReady), $"game round {round + 1} lazily warms all extended transient clips");
             player.Apply(Sample(ClipKind.Tea));
             var displayed = image.Source;
             player.ReleaseClips(games.Concat(new[] { ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.Idle }));

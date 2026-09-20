@@ -15,11 +15,11 @@
     { "id": "hungry-loop", "clip": "HungryLoop", "name": "等饭小剧场", "group": "Interaction", "phase": "loop", "directory": "Assets/Animations/HungryLoop", "frameCount": 121, "durationSeconds": 2.0 },
     { "id": "hungry-exit", "clip": "HungryExit", "name": "收好空碗", "group": "Interaction", "phase": "exit", "directory": "Assets/Animations/HungryExit", "frameCount": 91, "durationSeconds": 1.5 },
     { "id": "tea", "clip": "Tea", "name": "喝茶缓一缓", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/Tea", "frameCount": 121, "durationSeconds": 2.0 },
-    { "id": "rps-rock", "clip": "RpsRock", "name": "出石头", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsRock", "frameCount": 121, "durationSeconds": 2.0 },
-    { "id": "rps-paper", "clip": "RpsPaper", "name": "出布", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsPaper", "frameCount": 121, "durationSeconds": 2.0 },
-    { "id": "rps-scissors", "clip": "RpsScissors", "name": "出剪刀", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsScissors", "frameCount": 121, "durationSeconds": 2.0 },
-    { "id": "rps-win", "clip": "RpsWin", "name": "得意小鹰", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsWin", "frameCount": 121, "durationSeconds": 2.0 },
-    { "id": "rps-lose", "clip": "RpsLose", "name": "输后捂脸", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsLose", "frameCount": 121, "durationSeconds": 2.0 },
+    { "id": "rps-rock", "clip": "RpsRock", "name": "出石头", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsRock", "frameCount": 169, "durationSeconds": 2.8 },
+    { "id": "rps-paper", "clip": "RpsPaper", "name": "出布", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsPaper", "frameCount": 169, "durationSeconds": 2.8 },
+    { "id": "rps-scissors", "clip": "RpsScissors", "name": "出剪刀", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsScissors", "frameCount": 169, "durationSeconds": 2.8 },
+    { "id": "rps-win", "clip": "RpsWin", "name": "得意小鹰", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsWin", "frameCount": 145, "durationSeconds": 2.4 },
+    { "id": "rps-lose", "clip": "RpsLose", "name": "输后捂脸", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/RpsLose", "frameCount": 145, "durationSeconds": 2.4 },
     { "id": "annoyed", "clip": "Annoyed", "name": "护头龇牙", "group": "Interaction", "phase": "once", "directory": "Assets/Animations/Annoyed", "frameCount": 121, "durationSeconds": 2.0 }
   ]
 }

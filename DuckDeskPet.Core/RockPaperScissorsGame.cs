@@ -22,8 +22,9 @@ public sealed class RockPaperScissorsGame
     public const int MoodReward = 2;
     public static readonly TimeSpan RewardCooldown = TimeSpan.FromMinutes(5);
     public const double PreparationSeconds = 0.6;
-    public const double ThrowSeconds = 2;
-    public const double ReactionSeconds = 2;
+    public const double ThrowSeconds = 2.8;
+    public const double ReactionSeconds = 2.4;
+    public const double DrawReactionSeconds = 2;
     public const double MaximumRoundSeconds = 20;
 
     private readonly Func<int> _nextPetChoice;
@@ -103,7 +104,7 @@ public sealed class RockPaperScissorsGame
         {
             RpsPhase.Preparing => PreparationSeconds,
             RpsPhase.Throwing => ThrowSeconds,
-            _ => ReactionSeconds,
+            _ => GetReactionSeconds(_outcome),
         };
         if (!_presentationCompleted || Elapsed(_phaseStarted) < minimum) return Snapshot;
         if (Phase == RpsPhase.Preparing) Begin(RpsPhase.Throwing);
@@ -146,6 +147,14 @@ public sealed class RockPaperScissorsGame
         claim = new(RoundId, MoodReward, now);
         return true;
     }
+
+    /// <summary>The draw keeps its existing complete shy performance, without a new idle hold.</summary>
+    public static double GetReactionSeconds(RpsOutcome outcome) => outcome switch
+    {
+        RpsOutcome.PlayerWin or RpsOutcome.PetWin => ReactionSeconds,
+        RpsOutcome.Draw => DrawReactionSeconds,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
+    };
 
     public static RpsOutcome Resolve(RpsChoice player, RpsChoice pet)
     {

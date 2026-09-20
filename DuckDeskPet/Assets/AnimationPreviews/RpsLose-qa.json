@@ -1,8 +1,8 @@
 {
   "passed": true,
   "errors": [],
-  "frame_count": 121,
-  "expected_frame_count": 121,
+  "frame_count": 145,
+  "expected_frame_count": 145,
   "canvas": [
     384,
     346
@@ -13,9 +13,9 @@
   },
   "root": {
     "measurement_source": "composited frame",
-    "maximum_torso_x_error": 0.5,
+    "maximum_torso_x_error": 1.0,
     "maximum_foot_contact_y_error": 0.0,
-    "maximum_adjacent_torso_x_step": 0.5,
+    "maximum_adjacent_torso_x_step": 1.0,
     "maximum_adjacent_foot_y_step": 0.0,
     "torso_x_tolerance": 4.0,
     "foot_y_tolerance": 1.5
@@ -23,10 +23,10 @@
   "boundary": {
     "minimum_clear_border_fraction": 1.0,
     "minimum_margins_left_top_right_bottom": [
-      108,
+      107,
       84,
-      100,
-      9
+      107,
+      8
     ],
     "detached_edge_contact_allowed": false,
     "detached_edge_contact_after_frame": null,
@@ -34,10 +34,10 @@
     "content_margin_violations": [],
     "main_character_minimum_clear_border_fraction": 1.0,
     "main_character_minimum_margins_left_top_right_bottom": [
-      108,
+      107,
       84,
-      100,
-      9
+      107,
+      8
     ],
     "main_character_margin_violations": [],
     "edge_contact_classification": [],
@@ -62,57 +62,57 @@
     "maximum_neutral_bright_pixels_per_frame": 4,
     "maximum_unsupported_low_alpha_pixels_per_frame": 2,
     "failed_frames": [],
-    "worst_frame": 69,
+    "worst_frame": 0,
     "worst_frame_measurement": {
-      "outer_edge_pixels": 958,
-      "low_alpha_edge_pixels": 842,
+      "outer_edge_pixels": 972,
+      "low_alpha_edge_pixels": 784,
       "unsupported_low_alpha_pixels": 0,
       "neutral_bright_edge_pixels": 0,
-      "color_polluted_edge_pixels": 2,
+      "color_polluted_edge_pixels": 0,
       "opaque_matte_island_pixels": 0,
       "opaque_matte_islands": [],
       "pale_lower_fringe_pixels": 0,
       "pale_lower_fringe_clusters": [],
-      "maximum_edge_color_residual": 52.0,
+      "maximum_edge_color_residual": 44.0,
       "edge_color_residual_limit": 48.0,
       "edge_color_search_radius": 4,
       "visible_pixels_by_background": {
-        "black": 1,
-        "dark_12151c": 1
+        "black": 0,
+        "dark_12151c": 0
       },
-      "maximum_visible_pixels": 1,
-      "maximum_visible_edge_fraction": 0.0010438413361169101
+      "maximum_visible_pixels": 0,
+      "maximum_visible_edge_fraction": 0.0
     },
     "total_visible_pixels_by_background": {
-      "black": 4,
-      "dark_12151c": 4
+      "black": 0,
+      "dark_12151c": 0
     },
     "strict_scope": "whole_frame",
     "whole_frame_diagnostic": {
-      "worst_frame": 69,
+      "worst_frame": 0,
       "worst_frame_measurement": {
-        "outer_edge_pixels": 958,
-        "low_alpha_edge_pixels": 842,
+        "outer_edge_pixels": 972,
+        "low_alpha_edge_pixels": 784,
         "unsupported_low_alpha_pixels": 0,
         "neutral_bright_edge_pixels": 0,
-        "color_polluted_edge_pixels": 2,
+        "color_polluted_edge_pixels": 0,
         "opaque_matte_island_pixels": 0,
         "opaque_matte_islands": [],
         "pale_lower_fringe_pixels": 0,
         "pale_lower_fringe_clusters": [],
-        "maximum_edge_color_residual": 52.0,
+        "maximum_edge_color_residual": 44.0,
         "edge_color_residual_limit": 48.0,
         "edge_color_search_radius": 4,
         "visible_pixels_by_background": {
-          "black": 1,
-          "dark_12151c": 1
+          "black": 0,
+          "dark_12151c": 0
         },
-        "maximum_visible_pixels": 1,
-        "maximum_visible_edge_fraction": 0.0010438413361169101
+        "maximum_visible_pixels": 0,
+        "maximum_visible_edge_fraction": 0.0
       },
       "total_visible_pixels_by_background": {
-        "black": 4,
-        "dark_12151c": 4
+        "black": 0,
+        "dark_12151c": 0
       },
       "detached_soft_prop_or_smoke_is_not_a_halo_failure": false
     }
@@ -137,7 +137,7 @@
       "foot_contact_y": 336.0
     },
     "raw": {
-      "torso_x_range": 1.5,
+      "torso_x_range": 1.0,
       "foot_contact_y_range": 0.0
     },
     "translation": {
@@ -145,9 +145,9 @@
       "maximum_absolute_y": 0.0,
       "maximum_adjacent_step_x": 0.5,
       "maximum_adjacent_step_y": 0.0,
-      "secondary_correction_maximum_x": 0.5,
+      "secondary_correction_maximum_x": 0.0,
       "secondary_correction_maximum_y": 0.0,
-      "secondary_correction_passes": 1,
+      "secondary_correction_passes": 0,
       "per_frame_offsets": [
         [
           0.0,
@@ -174,111 +174,11 @@
           0.0
         ],
         [
-          0.5,
+          0.0,
           0.0
         ],
         [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
-          0.0
-        ],
-        [
-          0.5,
+          0.0,
           0.0
         ],
         [
@@ -318,7 +218,95 @@
           0.0
         ],
         [
+          -0.0625,
+          0.0
+        ],
+        [
+          -0.125,
+          0.0
+        ],
+        [
+          -0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
           0.0,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          -0.25,
+          0.0
+        ],
+        [
+          -0.1875,
+          0.0
+        ],
+        [
+          -0.125,
+          0.0
+        ],
+        [
+          -0.0625,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          -0.0625,
+          0.0
+        ],
+        [
+          -0.125,
+          0.0
+        ],
+        [
+          -0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.0625,
           0.0
         ],
         [
@@ -358,7 +346,31 @@
           0.0
         ],
         [
-          0.0,
+          0.0625,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          -0.1875,
+          0.0
+        ],
+        [
+          -0.125,
+          0.0
+        ],
+        [
+          -0.0625,
           0.0
         ],
         [
@@ -398,7 +410,31 @@
           0.0
         ],
         [
-          0.0,
+          -0.0625,
+          0.0
+        ],
+        [
+          -0.125,
+          0.0
+        ],
+        [
+          -0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.0625,
           0.0
         ],
         [
@@ -438,7 +474,79 @@
           0.0
         ],
         [
+          0.04999999999999999,
+          0.0
+        ],
+        [
+          0.09999999999999998,
+          0.0
+        ],
+        [
+          0.15000000000000002,
+          0.0
+        ],
+        [
+          0.2,
+          0.0
+        ],
+        [
+          -0.25,
+          0.0
+        ],
+        [
+          -0.19999999999999996,
+          0.0
+        ],
+        [
+          -0.14999999999999997,
+          0.0
+        ],
+        [
+          -0.09999999999999998,
+          0.0
+        ],
+        [
+          -0.04999999999999999,
+          0.0
+        ],
+        [
           0.0,
+          0.0
+        ],
+        [
+          -0.05,
+          0.0
+        ],
+        [
+          -0.1,
+          0.0
+        ],
+        [
+          -0.15000000000000002,
+          0.0
+        ],
+        [
+          -0.2,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.19999999999999996,
+          0.0
+        ],
+        [
+          0.14999999999999997,
+          0.0
+        ],
+        [
+          0.09999999999999998,
+          0.0
+        ],
+        [
+          0.04999999999999999,
           0.0
         ],
         [
@@ -478,39 +586,31 @@
           0.0
         ],
         [
-          0.0,
+          0.0625,
           0.0
         ],
         [
-          0.0,
+          0.125,
           0.0
         ],
         [
-          0.0,
+          0.1875,
           0.0
         ],
         [
-          0.0,
+          0.25,
           0.0
         ],
         [
-          0.0,
+          0.3125,
           0.0
         ],
         [
-          0.0,
+          -0.125,
           0.0
         ],
         [
-          0.0,
-          0.0
-        ],
-        [
-          0.0,
-          0.0
-        ],
-        [
-          0.0,
+          -0.0625,
           0.0
         ],
         [
@@ -574,11 +674,23 @@
           0.0
         ],
         [
-          0.5,
+          0.0,
           0.0
         ],
         [
-          0.5,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
           0.0
         ],
         [
@@ -598,11 +710,664 @@
           0.0
         ],
         [
-          -0.5,
+          0.0,
           0.0
         ],
         [
-          -0.5,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    "authored_root_calibration": {
+      "enabled": true,
+      "frame_indices": [
+        0,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        90,
+        100,
+        108,
+        116,
+        124,
+        144
+      ],
+      "reconstructed_endpoint_root_offsets": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "endpoint_baseline_offsets": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.3125,
+          0.0
+        ],
+        [
+          0.375,
+          0.0
+        ],
+        [
+          0.4375,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.4375,
+          0.0
+        ],
+        [
+          0.375,
+          0.0
+        ],
+        [
+          0.3125,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.3125,
+          0.0
+        ],
+        [
+          0.375,
+          0.0
+        ],
+        [
+          0.4375,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.4375,
+          0.0
+        ],
+        [
+          0.375,
+          0.0
+        ],
+        [
+          0.3125,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.3125,
+          0.0
+        ],
+        [
+          0.375,
+          0.0
+        ],
+        [
+          0.4375,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.45,
+          0.0
+        ],
+        [
+          0.4,
+          0.0
+        ],
+        [
+          0.35,
+          0.0
+        ],
+        [
+          0.3,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.19999999999999996,
+          0.0
+        ],
+        [
+          0.14999999999999997,
+          0.0
+        ],
+        [
+          0.09999999999999998,
+          0.0
+        ],
+        [
+          0.04999999999999999,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.05,
+          0.0
+        ],
+        [
+          0.1,
+          0.0
+        ],
+        [
+          0.15000000000000002,
+          0.0
+        ],
+        [
+          0.2,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.30000000000000004,
+          0.0
+        ],
+        [
+          0.35000000000000003,
+          0.0
+        ],
+        [
+          0.4,
+          0.0
+        ],
+        [
+          0.45,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.5,
+          0.0
+        ],
+        [
+          0.4375,
+          0.0
+        ],
+        [
+          0.375,
+          0.0
+        ],
+        [
+          0.3125,
+          0.0
+        ],
+        [
+          0.25,
+          0.0
+        ],
+        [
+          0.1875,
+          0.0
+        ],
+        [
+          0.125,
+          0.0
+        ],
+        [
+          0.0625,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
           0.0
         ],
         [
@@ -633,28 +1398,78 @@
           0.0,
           0.0
         ]
-      ]
+      ],
+      "maximum_authored_translation": 0.0,
+      "method": "segmentwise linear endpoint measurement-bias baseline; only intra-segment drift is corrected",
+      "qa_thresholds_relaxed": false
     },
     "stabilized": {
-      "torso_x_range": 1.0,
+      "torso_x_range": 1.5,
       "foot_contact_y_range": 0.0,
-      "maximum_torso_x_error": 0.5,
+      "maximum_torso_x_error": 1.0,
       "maximum_foot_contact_y_error": 0.0
     }
   },
   "final_root_residual_correction": {
     "locked_authored_frames": [
       0,
-      120
+      16,
+      24,
+      32,
+      40,
+      48,
+      56,
+      64,
+      72,
+      80,
+      90,
+      100,
+      108,
+      116,
+      124,
+      144
     ],
     "corrected_frame_count": 0,
     "corrections": [],
-    "maximum_torso_x_error": 0.5,
+    "maximum_torso_x_error": 1.0,
     "maximum_foot_contact_y_error": 0.0,
-    "method": "integer whole-frame residual translation without resampling"
+    "authored_root_calibration": true,
+    "method": "preserve calibrated coordinates; unchanged final QA gates decide root bounds",
+    "qa_thresholds_relaxed": false
   },
   "interpolated_matte_cleanup": {
     "enabled": false
+  },
+  "calibrated_outer_edge_rgb_cleanup": {
+    "enabled": true,
+    "alpha_modified": false,
+    "opaque_pixels_modified": false,
+    "authored_frames_modified": false,
+    "qa_thresholds_relaxed": false,
+    "recolored_pixel_count": 10,
+    "observations": [
+      {
+        "frame": 61,
+        "recolored_outer_edge_pixels": 1
+      },
+      {
+        "frame": 70,
+        "recolored_outer_edge_pixels": 1
+      },
+      {
+        "frame": 131,
+        "recolored_outer_edge_pixels": 1
+      },
+      {
+        "frame": 133,
+        "recolored_outer_edge_pixels": 3
+      },
+      {
+        "frame": 134,
+        "recolored_outer_edge_pixels": 4
+      }
+    ],
+    "method": "RGB-only outer-alpha-edge repair from existing local >=245-alpha color support"
   },
   "component_policy_cleanup": {
     "enabled": false,
@@ -672,21 +1487,43 @@
     }
   },
   "authored_key_frames": {
-    "locked": false,
+    "locked": true,
     "frame_indices": [
       0,
+      16,
       24,
-      58,
-      93,
-      120
+      32,
+      40,
+      48,
+      56,
+      64,
+      72,
+      80,
+      90,
+      100,
+      108,
+      116,
+      124,
+      144
     ],
     "frame_intervals": [
-      24,
-      34,
-      35,
-      27
+      16,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      8,
+      10,
+      10,
+      8,
+      8,
+      8,
+      20
     ],
-    "all_exact": false,
+    "all_exact": true,
     "frames": [
       {
         "key": 0,
@@ -696,40 +1533,371 @@
       },
       {
         "key": 1,
-        "frame": 24,
-        "exact": false,
-        "premultiplied_mae": 0.0049013374373316765
+        "frame": 16,
+        "exact": true,
+        "premultiplied_mae": 0.0
       },
       {
         "key": 2,
-        "frame": 58,
-        "exact": false,
-        "premultiplied_mae": 0.0023365102242678404
+        "frame": 24,
+        "exact": true,
+        "premultiplied_mae": 0.0
       },
       {
         "key": 3,
-        "frame": 93,
-        "exact": false,
-        "premultiplied_mae": 0.002232064725831151
+        "frame": 32,
+        "exact": true,
+        "premultiplied_mae": 0.0
       },
       {
         "key": 4,
-        "frame": 120,
+        "frame": 40,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 5,
+        "frame": 48,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 6,
+        "frame": 56,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 7,
+        "frame": 64,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 8,
+        "frame": 72,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 9,
+        "frame": 80,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 10,
+        "frame": 90,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 11,
+        "frame": 100,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 12,
+        "frame": 108,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 13,
+        "frame": 116,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 14,
+        "frame": 124,
+        "exact": true,
+        "premultiplied_mae": 0.0
+      },
+      {
+        "key": 15,
+        "frame": 144,
         "exact": true,
         "premultiplied_mae": 0.0
       }
     ]
   },
   "temporal_sampling": {
-    "unique_pixel_frames": 120,
+    "unique_pixel_frames": 144,
     "adjacent_duplicate_indexes": [],
     "rife_directory_pair_sampling": "2*(segment_count-1) outputs; keep first segment_count inclusive t=0..1 samples"
   },
+  "frame_file_sha256": {
+    "frame-0000.png": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc",
+    "frame-0001.png": "9480c8e2f931fd46c9fa6e30d2da4821528075ed95245f86decc2aedb03b037e",
+    "frame-0002.png": "0e0a29433a6ea0e2ec340d3b3bd3648dc2a3a038ffe0fe8349f546376ea4a895",
+    "frame-0003.png": "737213e0a99154d7ce3138a00bfc593d9f823d69074d3129fcf587f6529b1c8d",
+    "frame-0004.png": "e8d6cff2f86bd4974d2a68f0708c22ba14a6e19a684572d86068acbaf27dde26",
+    "frame-0005.png": "ed69a67aff013cfc797e00602a593eaada52a5d3a02b6f8262eb753b606840a9",
+    "frame-0006.png": "a894ea6a35fc2af9d472016fe76236f3c041f1b29821430e968fe95a8abb5562",
+    "frame-0007.png": "824c0d0a8085e3b15f1ce80647895c0da067ececa8c473d7e2998b91c3263852",
+    "frame-0008.png": "b4047053f0a6305986db5d97611b420b47f78cdd2176302c8888aa3a5ec6e4b3",
+    "frame-0009.png": "c9177a436c961a90ed829cf60b711da359b0895f1bac8b527c2856a89c8d3803",
+    "frame-0010.png": "b6fb8c2a4a3758a35a927286709424baa7117cec79ead12d06b78c6f078adb3f",
+    "frame-0011.png": "4b9d98c7478dbfff0a2bb4a587ffae604539f90bb44a0144325d17b4e9ef23e4",
+    "frame-0012.png": "b580bb66a9695461e70a2bdd36a3bef9e91efbbb9ec6222bc5b268f0440c94ed",
+    "frame-0013.png": "88e45003a7785c50b9236b59c469f047b15e71215894e8fc136d94bb6aa099e2",
+    "frame-0014.png": "347553dc9001605ffcf1f3569b95722aa8f3877ad728a88ca9fdee86828c1b8d",
+    "frame-0015.png": "7f94fffba86d923837265abc00900801ea219154cc0727e6b03dc7feda66a682",
+    "frame-0016.png": "b3a1c2eaf684eb42f7eaa811519d32989c56832e0cc17d50644dd8f48780f1f0",
+    "frame-0017.png": "2780ab2f4905195ec3c623310ab57c54d53a7395e6da4c340caf603ec01294fd",
+    "frame-0018.png": "f7761973e69dac18d6f8d7727cddf6a137cb36e903e94e464b21b4995936dd4c",
+    "frame-0019.png": "e111b3ca7fcd435588d2cd8e0dbdd133a7388b689fde2963368dcafadda3bedd",
+    "frame-0020.png": "ca33cd20ad67daf714dd534f0da8ad5405b279259380f472b789105607c44245",
+    "frame-0021.png": "c4a41a5d2801e6bc7bc8ae1349cdc0c7bb1329bab681532fd78d1828869abf9c",
+    "frame-0022.png": "ba132a597bdc109493f5e4a732346383d9911dc2dbe43108daf516bf6aeb3a47",
+    "frame-0023.png": "a0ec175833a8d51a57e5757150a755c36940d63ae854f079d70bb7198cfef8cd",
+    "frame-0024.png": "bdc241344485bbb8623bbecd0da91fa4194824f9db2ea740b74554220b77c12a",
+    "frame-0025.png": "3a9df196612c6c4f8252b84cc1bb223e27ab02625d7b2f2ce49f2d13d3742e79",
+    "frame-0026.png": "a91fb169047260905783ff3ba8f0cd3acb17b0cf3698a366e1c3c8b47f3a8ae1",
+    "frame-0027.png": "e756fa75bb73f73b4889fbd54d5c23c5afac76430896660958b3c77d975eba27",
+    "frame-0028.png": "883e02822595aba116d654d6c539fb00810c97ffc5db3b1540b4c31fe9e6b16e",
+    "frame-0029.png": "86453fd8f1ec73ee4d3705a4f1d64fd96b28fe559ea59fc04f3dd884bb74c448",
+    "frame-0030.png": "4ddb2110c77dbfc3b959058d982f37ae63ea5af31825096bfb9d84ded971cd1a",
+    "frame-0031.png": "8604898adf81094fe30742becf25b5755651b2a4397e185b36ea8f332fc809c4",
+    "frame-0032.png": "b2afd523fd10b6c02f05372085996110341267a7be456e0d9e3627742ca7e0e6",
+    "frame-0033.png": "d671575c4a7ee2d74205fe113cab56038cf11aa82b8a5c7586b8073100170917",
+    "frame-0034.png": "49256ee1ff831bf7c8e0b8534a7f84be52130725dff3c44fd471de2aa0a933de",
+    "frame-0035.png": "a6c9aefa17c6b95e1415f65c3e9d11879747aabaf000fe2d61e98d6c5e6a7f36",
+    "frame-0036.png": "20734a0e201a0b9ce70c597a3747df5d58c465491fe30186e7baa7541c51c187",
+    "frame-0037.png": "456bb2ed3c9e397bf9c231966624414695016263f6607ea9a8159235e55c87cf",
+    "frame-0038.png": "a06a32ce9bf8be92d45f1606c18606cd9fe6ca38aa911f81ef3bb23d1f4d0aab",
+    "frame-0039.png": "5068b3a3cbbba0ab408ce79c636d5165ab7184e82d65af6121be09b7a3f3da3f",
+    "frame-0040.png": "6feaa5e968d3d23ca7235a2c7f00c794c910d6c3266c832b4ca60806270e6939",
+    "frame-0041.png": "1046a225a15de235b1273ebedaac8d40604ca0dff8c8cfd1da28c93e8bc8cf1b",
+    "frame-0042.png": "2fa79a85353b5397ac4d43871a0df841bc2949d2eb16a7ca2e3c31fd99d3ec44",
+    "frame-0043.png": "9ecde998946b4aa370c8d91580ae6abb9190e0c37a054f55f884377b09f8ada8",
+    "frame-0044.png": "21bedd3cd064940a0de3cc6a3f554ed9612e048176e0d92b29dd61fa144ed7c1",
+    "frame-0045.png": "7fed522bacd6bf3a1ee11a6ee784cc63ddbdc8e04aed7a24d55d619152dff085",
+    "frame-0046.png": "7b3ca64daa52505f114ea6fda9b9a8dce7ec5da4f029f9cc8985ea7e1435658e",
+    "frame-0047.png": "03769bbb9de5bc6b2261684f7f9cc664a4167b361b8701b1623c76759b45fe45",
+    "frame-0048.png": "22a5c5f92953fcf097455e15e94eafb408545537c0f6b09ac374637c4844dd8a",
+    "frame-0049.png": "bb96f433c8a35fec89171359f862247ab3475a9d5e7ee659564d7a4f2c247691",
+    "frame-0050.png": "ae57679be56ca2601ec892d51904d1c0bfc5ae3f9734239866aa0e5e431d276c",
+    "frame-0051.png": "805ac410af5270944f93d6006a1f4f62229fd925cfa2ba0a8ed3ecc676811a09",
+    "frame-0052.png": "187a3b6a39793ac20a55092269a55ed574688019627cf301be85f8cb4c62c633",
+    "frame-0053.png": "b5bbe27501093c2d1416d2102b20bdc0540479936e765abaf719233770a6d8ad",
+    "frame-0054.png": "95d5ec37acdb3ab6deff3b85aced09a63068d9e9c083d592d2fad9d266186d47",
+    "frame-0055.png": "5d188eac3832d780d53734b0450296a8b174be689a11d72e4c2c7ccc2391a7f5",
+    "frame-0056.png": "cf52b24bdb1e83d8a62524863c39805008cefb626a3d5a7594b7762658c14db9",
+    "frame-0057.png": "3b727205251d8efbf9cadecaf0468084876b4d80a486885bb079b2939eba599f",
+    "frame-0058.png": "9987a603cab39d469f56376539234b5cd2d38108fb1387ce8e4425e3848655d0",
+    "frame-0059.png": "abfa50dbd7c685e21784222e8587d1e423a29454a169240a1b3a89e442ada74d",
+    "frame-0060.png": "c34c29b69f95e12786d38bf7232ce50560865f1af8837ee6552b5092ac72100f",
+    "frame-0061.png": "c67e818ca08b3d1fa1667955d0843efecbdecd7db4fbbddcd5cc9f1dbeedf8f4",
+    "frame-0062.png": "4da68da39af0e5dcc3933d83b58b3325b483fa6ce620379e3a52c00049bf0b4d",
+    "frame-0063.png": "765e5ca93ce8de16d3646384c2e3fa9e47525528520f770b33f3b1ac5eab6629",
+    "frame-0064.png": "65d9fc455604489f1403702be95ca1f687e9c2f4ff994f81a7cf0b31e70e9400",
+    "frame-0065.png": "af28bc16e5b3c113392ca209c0af26f8e2eecc388aa461f5bae50fbb5b152d47",
+    "frame-0066.png": "7a7391217188977bc58028b42c4b6a14131a3d484f45611061c8a99c6cf958a3",
+    "frame-0067.png": "1eff4bc0360ea6d95421c7abfb245c699265a73188f9252ce94e4b391dc3b91d",
+    "frame-0068.png": "020f6f802ee5c713d3de912f46c06ef9ab96777df0ac4ef3735b7abce9965be6",
+    "frame-0069.png": "7f9320416c2ad0699f0cce6333074ef1638f0e19c8ee58bddb79cce894ebe880",
+    "frame-0070.png": "14cf9b3536db1a3bf1258714789c986b51c2258cd919915cc0a4b1ea041085a0",
+    "frame-0071.png": "2c363c352351ac1caea74576612289ebd67014e1e0613100b569ef61406d6f25",
+    "frame-0072.png": "65c0ca1f58fcd048fb6754c6024d7c515485317596d46dbb5a2ad9d1d2e0197b",
+    "frame-0073.png": "99a8d8a5c873592edb076e0efc6a4bf4edb51b3c4e8d10872c225a28ec0c173e",
+    "frame-0074.png": "5961841e45d369f18f073e6538a8aba8d4496da5819d15bbce51275a2efe8cf5",
+    "frame-0075.png": "a74f2d457819aeb81c0b140084ee0e072ccadea56ec06db0639f2013c8067a2a",
+    "frame-0076.png": "9f4827a545d2017588d9612ad6e446498b8c9d80e8f87ae645e4e92b8f7b6dbf",
+    "frame-0077.png": "3064647df3d62986b76c10fcfe6fd26bda9c1acb7dd6be71a8773cba11d60bf7",
+    "frame-0078.png": "c4c0569a569270f288d7df8504553526bcc28055cd5a65803bd0546cb70ab7c5",
+    "frame-0079.png": "3d1333eca48e7affd207c11384ee81bb0538520c7920c315e6c5b2db5df2b8e3",
+    "frame-0080.png": "fd46123179c3c11572b122cea6a425d7f2f6bf96be5cbbdaf2077e457d2449b5",
+    "frame-0081.png": "2739a1ef2d89c6cdd58dabd83e9586e2478ec1f6f6d5b5a62429a9eef4684994",
+    "frame-0082.png": "33b2b6f8818a8768ad283b974853b86c59544ae787a228a19624e427f2ceed9d",
+    "frame-0083.png": "7acb70be350b894e3d59ab0fb08a51b09c3c2d9e1c6404872d4d4c7fd2ce052d",
+    "frame-0084.png": "baa34ff1bcb735151661798eab496702ea78f1fa02cb5c170cbccb1bb8e95a26",
+    "frame-0085.png": "e05bd17cbfcd0c5300fffcbdb086b69058a07e0f4b0875240bc8ed11a40ddb5f",
+    "frame-0086.png": "c6a8a7a6ce77707f1bdbc38403ebfa0e1b7142a410c8f07b658929bb3825a55c",
+    "frame-0087.png": "a316eb0c5c29a590fa794d6445a2e0e97cad5d733449a17e544374cf495fd608",
+    "frame-0088.png": "e7561209bd235c7cc50880ad16add8858c1d53be360001a51888fe7b775d70aa",
+    "frame-0089.png": "2f2c3b13231287c65b6b434a8e6880ef43e7fe52bd159fb986273a4a371b489d",
+    "frame-0090.png": "f237b16c22ac916e465c1d547408550cac86094229f8796ecf8eace537ac6373",
+    "frame-0091.png": "a6af40c5cc88f3b51548ade8465056a88135c4de80865dcfa9675f60ef45b8f5",
+    "frame-0092.png": "6a46e71ff8313c94f923a623c92e6e07eb676a129d3515bf9b390eeb71f9ae21",
+    "frame-0093.png": "06081573238105d728e240eb4156d61d774940bb98f664f532fbf3637ff2e48b",
+    "frame-0094.png": "e3ce687ca02846a83fb8bd7855adb7aa13df160d7f2faff6473438200d771fab",
+    "frame-0095.png": "eb7c20fa152eaff495a19dd72a0378267bebf5ad9f97996d7ea081376ea3f4aa",
+    "frame-0096.png": "4ece5a304bc9221bb75c9156e581da36b0cdb31728c61f9bbd50069b2c2a194d",
+    "frame-0097.png": "455b5a75ccef8cea5bf176960c3ea49bb45ca61c5f2538e82cad2c37fab71986",
+    "frame-0098.png": "bf1bc2258d9ee7ef66bda943111d3a16bdd51ba4bb106d9be67dec6fa10823d6",
+    "frame-0099.png": "95a40f5c7a7b0c518cde1b8736c0969a6757f00f7703ad59b6df7be563cbffbf",
+    "frame-0100.png": "920762e8baced7a36a1f358c61ea21fe81129c26b9d42d70eaa879df8a45e0ea",
+    "frame-0101.png": "c537d9ca6b8a810e3773001f65b09b778454764bc730183742312e02fc93535d",
+    "frame-0102.png": "4719d1442d1fe0935b569efc2fc8a1878551b006a382b951f0a0eb2f956781bd",
+    "frame-0103.png": "40c0d60cd9f48cbf5951c62fb8381c4336351e9d90f6157d618fff39198c5ee6",
+    "frame-0104.png": "9db90a58d9a71fc89e3b9289e80c66c9f8010e899b6834f04f60ffe65546f39c",
+    "frame-0105.png": "2c7adbdac0bfe7a677d5f320b96b7c330805b0486fe535aff7b41e2f253daf4c",
+    "frame-0106.png": "9202848d2b3b7e427ba12c57fe85f4d19068b299b65c1b4f3b01e05f438d94f9",
+    "frame-0107.png": "9f0eda95f1a52b5119cfd2dec604ef0ab499937cfde16d4465d0a55ecaac2d92",
+    "frame-0108.png": "268f1a382292d4675627c825e0497bfa627abe26ad42da840aeb364a47284583",
+    "frame-0109.png": "c09eb39141f887783a222a36b1316f84252839cf2519d8f6cabf6bdc696a2786",
+    "frame-0110.png": "b0b862f15da9493396edc1696dbb1cde1feeadd94552f31d6c19cb074c46ff25",
+    "frame-0111.png": "10fa41698ff851f7b33a71951bf41a408df9d540f404e1d4a1d3d78aadb66bf3",
+    "frame-0112.png": "3c28b8b944a488ae189888e692b80897b7b41beae8cd8f82633d5e33fa52f475",
+    "frame-0113.png": "b58d0db7e971912cf7382d98ea03367beb4370e852e585e380f08fd6f34f2a8b",
+    "frame-0114.png": "bcb6099173c4bc531daadff72053876490ed232aec27cc445dd3177b3c19d3cf",
+    "frame-0115.png": "d3f1eb226924882d03f90f64078872c674fe62f97a32f9080457f4ce10c87fc6",
+    "frame-0116.png": "696fafeb0bd7f350def17e397ac4070c0fefaeaab5aa12a40640fcde1c9ac527",
+    "frame-0117.png": "01fdea6662390780d8b34d3b10d30682ec2486b91911f38574171bfd6278afd4",
+    "frame-0118.png": "9faa30a426b2afd846c941b0d57bf224f57b464a38c9d6e631a65fb9a46fed70",
+    "frame-0119.png": "ef601ccf71aff5323c418b99cb52f764b7fad24b5950f0655858b94b71d3ec60",
+    "frame-0120.png": "1bb2df6c8bf1ff8ea3628b955bb92d7559fb092dcdab69a5411dfed8581cff25",
+    "frame-0121.png": "d5ec2ad49b92c63a51e54a965efe8c6e632ac4889f53c7459025f0ab936dee22",
+    "frame-0122.png": "d9b26bc0ec51a2fc86cb891231193bd11e178c3c9f7a2f3d7c7ffdf59fcbbd54",
+    "frame-0123.png": "925f1ae1fa6bd94ce464a6f72b789863d622cc49b7ba64415dd6b50693c1c5fe",
+    "frame-0124.png": "84bac92e9f19e7ca0f33a6d4d58f8d7e16ed26356981dfe2f02962c7957956eb",
+    "frame-0125.png": "1832f6ec00c1886ee0abc151097c88b5382721f1ed373ae82b05fbcbc5c74aad",
+    "frame-0126.png": "ae412d525e13e7252c89e67588938cc9adb86cb171050f9e09d271fefc0711f5",
+    "frame-0127.png": "f8b763052ac2871c4e62bbf681ffd6d97f6b7f45868c323c2d5dc948408217ed",
+    "frame-0128.png": "e5599d964e8a1e2c6e9f39d5f7c242426cb89001ac52a215a44dcf029f0e19b0",
+    "frame-0129.png": "59b2fcea0df9c0930fd8810f955de2c9ee8cd622e812f950c125a8125e89fd4f",
+    "frame-0130.png": "6b2b732509884905cb6c528056961b5fa2b3258374e09a2c8a37127a50f9d9fd",
+    "frame-0131.png": "032ea343228b685f880327395f4cebb1f69874a0af490555727a28b2bd2d942b",
+    "frame-0132.png": "6834ad0363a715604de23c96bc2abe1a18807e14fe4dd04d695faea1428d6b97",
+    "frame-0133.png": "ff635093e65d1e19a7fbb4e29fbad837298c840c0b11ee9927b74374810e5cf9",
+    "frame-0134.png": "5916766e23e1d271cad7db56143267335ee3e2c7c68bcc41f6da4ec7e477753f",
+    "frame-0135.png": "d489801b14adfd18d22aa863dbab30bb3edaf3565b032dea50771b065d54f80d",
+    "frame-0136.png": "b517d2a2d8b5703a4b95d424575b1bee06e5f5c65505ded257e520e0a9a5fc45",
+    "frame-0137.png": "07cbcd20d6b1d7c8042c69a3564fde83734fc68806ff1fc5c423402d9e30c91a",
+    "frame-0138.png": "8a2ac21b2b528aed8581a7faee6ed6b527ab19c7494f0bc66c1bcded27f6783b",
+    "frame-0139.png": "9168c9791c7fda657a896779fe742b55fbc3eb6d15cbf2ad6a125653978c0375",
+    "frame-0140.png": "0578b058e373c59aa5cabad053605659da40da0db0b1909ed5503737038f608a",
+    "frame-0141.png": "00d687df3c302e63242e08f516d733c7663f47ddfc37551f79479b994047ecd8",
+    "frame-0142.png": "921afd149ee96558ec3feee22f854401d3519a867fd35d4bff31706b118c268e",
+    "frame-0143.png": "bd36d101a1c7665eeb80ab0b51dcb52a601566b4be6c141913a81a3e2de4c3d1",
+    "frame-0144.png": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc"
+  },
+  "key_file_sha256": {
+    "key-00.png": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc",
+    "key-01.png": "b3a1c2eaf684eb42f7eaa811519d32989c56832e0cc17d50644dd8f48780f1f0",
+    "key-02.png": "bdc241344485bbb8623bbecd0da91fa4194824f9db2ea740b74554220b77c12a",
+    "key-03.png": "b2afd523fd10b6c02f05372085996110341267a7be456e0d9e3627742ca7e0e6",
+    "key-04.png": "6feaa5e968d3d23ca7235a2c7f00c794c910d6c3266c832b4ca60806270e6939",
+    "key-05.png": "22a5c5f92953fcf097455e15e94eafb408545537c0f6b09ac374637c4844dd8a",
+    "key-06.png": "cf52b24bdb1e83d8a62524863c39805008cefb626a3d5a7594b7762658c14db9",
+    "key-07.png": "65d9fc455604489f1403702be95ca1f687e9c2f4ff994f81a7cf0b31e70e9400",
+    "key-08.png": "65c0ca1f58fcd048fb6754c6024d7c515485317596d46dbb5a2ad9d1d2e0197b",
+    "key-09.png": "fd46123179c3c11572b122cea6a425d7f2f6bf96be5cbbdaf2077e457d2449b5",
+    "key-10.png": "f237b16c22ac916e465c1d547408550cac86094229f8796ecf8eace537ac6373",
+    "key-11.png": "920762e8baced7a36a1f358c61ea21fe81129c26b9d42d70eaa879df8a45e0ea",
+    "key-12.png": "268f1a382292d4675627c825e0497bfa627abe26ad42da840aeb364a47284583",
+    "key-13.png": "696fafeb0bd7f350def17e397ac4070c0fefaeaab5aa12a40640fcde1c9ac527",
+    "key-14.png": "84bac92e9f19e7ca0f33a6d4d58f8d7e16ed26356981dfe2f02962c7957956eb",
+    "key-15.png": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc"
+  },
+  "outfit": "outfit.default",
+  "clip": "RpsLose",
+  "source_sha256": "e93462ccc94fb27f2dcb1c452c6c30b4fcaf04820f3eb6f47da2c985c4411253",
+  "neutral_sha256": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc",
+  "authored_frame_indices": [
+    0,
+    16,
+    24,
+    32,
+    40,
+    48,
+    56,
+    64,
+    72,
+    80,
+    90,
+    100,
+    108,
+    116,
+    124,
+    144
+  ],
   "provenance": {
     "generator": "built-in imagegen",
-    "sheet": "rps-sheet-v1.png",
-    "source_sha256": "cfc757b39ccc6dbc33917cc3e0f1f30f86d5bf3e1d65c8a4fbfe51260f8f89f1",
-    "method": "authored keys, paired RIFE RGB/alpha, planted-foot stabilization",
-    "neutral_sha256": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc"
+    "source": "AnimationSources/RpsV2/default-lose-v2.png",
+    "source_sha256": "e93462ccc94fb27f2dcb1c452c6c30b4fcaf04820f3eb6f47da2c985c4411253",
+    "source_layout": {
+      "columns": 4,
+      "rows": 4,
+      "cells": 16
+    },
+    "source_order": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "reused_source_cells": [],
+    "omitted_source_cells": [],
+    "source_order_metadata": null,
+    "source_order_metadata_sha256": null,
+    "neutral": "mascot-animated-neutral.png",
+    "neutral_sha256": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc",
+    "canonical_endpoint_key_positions": [
+      0,
+      15
+    ],
+    "canonical_endpoint_policy": "First and last cells are replaced by the existing outfit neutral, pixel-exact.",
+    "fps": 60,
+    "duration_seconds": 2.4,
+    "authored_frame_indices": [
+      0,
+      16,
+      24,
+      32,
+      40,
+      48,
+      56,
+      64,
+      72,
+      80,
+      90,
+      100,
+      108,
+      116,
+      124,
+      144
+    ],
+    "authored_time_seconds": [
+      0.0,
+      0.266667,
+      0.4,
+      0.533333,
+      0.666667,
+      0.8,
+      0.933333,
+      1.066667,
+      1.2,
+      1.333333,
+      1.5,
+      1.666667,
+      1.8,
+      1.933333,
+      2.066667,
+      2.4
+    ],
+    "expected_frame_count": 145,
+    "authored_keys_locked": true,
+    "segmentwise_interpolation": true,
+    "authored_root_calibration": true,
+    "method": "native-alpha extraction, one sheet-wide helmet registration, established alpha cleanup, paired RIFE RGB/alpha, planted-foot stabilization",
+    "qa_thresholds_relaxed": false,
+    "build_started_utc": "2026-09-20T09:20:13+00:00",
+    "report_written_utc": "2026-09-20T09:21:35+00:00"
   }
 }

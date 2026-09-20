@@ -25,6 +25,8 @@ internal static class Program
                 ("Automatic hungry scene exits normally before game window opens", HungryExit),
                 ("Decode failure starts no game and restores prior suspension", DecodeFailure),
                 ("All three hands and outcomes await actual new animation sequences", Mappings),
+                ("Extended gesture holds and retractions retain ownership until their final neutral samples", ExtendedClipDrain),
+                ("Cancellation beyond the legacy two-second cutoff still drains every new tail frame", CancelExtendedTail),
                 ("A pre-cancelled request starts no clip and cannot reward", CancelBeforeStart),
                 ("Cancellation mid-animation waits through the final frame", CancelDuringClip),
                 ("Pause waits for immediate throw, forfeits reward and resumes safely", PauseResume),
@@ -193,6 +195,94 @@ internal static class Program
         finally { await Close(pet); }
     }
 
+    private static async Task ExtendedClipDrain()
+    {
+        var (pet, _, _) = NewPet();
+        try
+        {
+            await pet.OpenGameAsync();
+            var hands = new[] { ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors };
+            var reactions = new[] { ClipKind.RpsLose, ClipKind.RpsWin, ClipKind.Shy };
+            for (int index = 0; index < hands.Length; index++)
+            {
+                Guid round = await Prepare(pet);
+                await Drain(hands[index], pet.Perform(new(round, RpsCue.Throw, (RpsChoice)index)), round);
+                await Drain(reactions[index], pet.Perform(new(round, RpsCue.React, (RpsChoice)index, (RpsOutcome)index)), round);
+            }
+            async Task Drain(ClipKind kind, Task performance, Guid round)
+            {
+                var definition = ClipCatalog.GetDefinition(kind);
+                Check(pet.Behavior.CurrentSample is { Progress: 0 } && !performance.IsCompleted, "Clip did not begin at its authored neutral boundary.");
+                for (int frame = 1; frame < definition.FrameCount; frame++)
+                {
+                    var sample = pet.Behavior.Advance(1.0 / 60);
+                    Check(sample.Kind == kind && Math.Abs(sample.FrameCoordinate - frame) < 1e-8,
+                        $"{kind} skipped frame {frame} before its actual completion.");
+                    if (frame is 56 or 108 or 120 || frame == definition.FrameCount - 1)
+                    {
+                        await Task.Delay(25);
+                        Check(!performance.IsCompleted && pet.OwnsAnimation &&
+                              !pet.Reward(new(round, RockPaperScissorsGame.MoodReward, DateTimeOffset.UtcNow)),
+                            $"{kind} released or rewarded during the gesture hold/retraction/terminal sample.");
+                    }
+                }
+                Check(pet.Behavior.CurrentSample.Phase == ClipPlaybackPhase.Terminal, "Final neutral was not presented as terminal.");
+                pet.Behavior.Advance(1.0 / 60);
+                await Until(pet, () => performance.IsCompleted, advance: false);
+                await performance;
+                Check(pet.Behavior.CurrentSample.Kind == ClipKind.Idle && pet.OwnsAnimation,
+                    "The complete clip did not retain between-clip game ownership.");
+            }
+        }
+        finally { await Close(pet); }
+    }
+
+    private static async Task CancelExtendedTail()
+    {
+        var (pet, _, _) = NewPet();
+        try
+        {
+            await pet.OpenGameAsync();
+            foreach (var kind in new[] { ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose })
+            {
+                Guid round = await Prepare(pet);
+                using var cancellation = new CancellationTokenSource();
+                Task performance;
+                if (kind is ClipKind.RpsWin or ClipKind.RpsLose)
+                {
+                    await Drive(pet, pet.Perform(new(round, RpsCue.Throw, RpsChoice.Rock)));
+                    performance = pet.Perform(new(round, RpsCue.React, RpsChoice.Rock,
+                        kind == ClipKind.RpsWin ? RpsOutcome.PetWin : RpsOutcome.PlayerWin), cancellation.Token);
+                }
+                else
+                {
+                    var choice = kind == ClipKind.RpsRock ? RpsChoice.Rock : kind == ClipKind.RpsPaper ? RpsChoice.Paper : RpsChoice.Scissors;
+                    performance = pet.Perform(new(round, RpsCue.Throw, choice), cancellation.Token);
+                }
+                for (int frame = 0; frame < 132; frame++) pet.Behavior.Advance(1.0 / 60);
+                await Task.Delay(25);
+                Check(!performance.IsCompleted && pet.Behavior.CurrentSample.Kind == kind &&
+                      pet.Behavior.CurrentSample.ElapsedSeconds > 2, "The old two-second cutoff truncated an extended clip.");
+                cancellation.Cancel();
+                await ExpectFailure(performance);
+                var cleanup = pet.Perform(new(round, RpsCue.ReturnToIdle));
+                Check(!cleanup.IsCompleted && pet.OwnsAnimation, "Cancellation reset or released an unfinished extended tail.");
+                for (int remaining = 0; remaining < ClipCatalog.GetDefinition(kind).FrameCount &&
+                     pet.Behavior.CurrentSample.Phase != ClipPlaybackPhase.Terminal; remaining++)
+                    Check(pet.Behavior.Advance(1.0 / 60).Kind == kind, "Cancellation replaced the extended tail before its terminal frame.");
+                Check(pet.Behavior.CurrentSample.Phase == ClipPlaybackPhase.Terminal, "Cancelled clip never reached its authored terminal frame.");
+                await Task.Delay(25);
+                Check(!cleanup.IsCompleted, "Cancellation skipped the final neutral sample.");
+                pet.Behavior.Advance(1.0 / 60);
+                await Until(pet, () => cleanup.IsCompleted, advance: false); await cleanup;
+                Check(pet.Behavior.CurrentSample.Kind == ClipKind.Idle && pet.OwnsAnimation &&
+                      !pet.Reward(new(round, RockPaperScissorsGame.MoodReward, DateTimeOffset.UtcNow)),
+                    "Cancelled extended performance failed to drain, leaked ownership, or rewarded.");
+            }
+        }
+        finally { await Close(pet); }
+    }
+
     private static async Task CancelBeforeStart()
     {
         var (pet, time, _) = NewPet();
@@ -297,11 +387,11 @@ internal static class Program
             await BeginUiThrow(pet, time);
             var window = pet.GameWindow!;
             Check(((TextBlock)window.FindName("StageText")).Text == "出拳！", "Result revealed before throw.");
-            time.Advance(2); window.Refresh();
+            time.Advance(RockPaperScissorsGame.ThrowSeconds); window.Refresh();
             Check(((TextBlock)window.FindName("StageText")).Text == "出拳！", "Time alone bypassed animation acknowledgement.");
             await Drive(pet, window.PendingOperation); window.Refresh();
             await Drive(pet, window.PendingOperation);
-            time.Advance(2); window.Refresh();
+            time.Advance(RockPaperScissorsGame.ReactionSeconds); window.Refresh();
             Check(pet.CareState.LastGameRewardUtc == time.GetUtcNow() && pet.CareState.Mood > initialMood + 1.9, "Complete game did not save mood reward.");
             var saved = new PetStore(directory).Load();
             Check(saved is not null && saved.LastGameRewardUtc == pet.CareState.LastGameRewardUtc && saved.Mood == pet.CareState.Mood, "Mood/cursor were not saved together.");

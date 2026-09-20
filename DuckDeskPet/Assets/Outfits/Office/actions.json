@@ -139,8 +139,8 @@
       "group": "Interaction",
       "phase": "once",
       "directory": "Assets/Outfits/Office/Animations/RpsRock",
-      "frameCount": 121,
-      "durationSeconds": 2
+      "frameCount": 169,
+      "durationSeconds": 2.8
     },
     {
       "id": "rps-paper",
@@ -149,8 +149,8 @@
       "group": "Interaction",
       "phase": "once",
       "directory": "Assets/Outfits/Office/Animations/RpsPaper",
-      "frameCount": 121,
-      "durationSeconds": 2
+      "frameCount": 169,
+      "durationSeconds": 2.8
     },
     {
       "id": "rps-scissors",
@@ -159,8 +159,8 @@
       "group": "Interaction",
       "phase": "once",
       "directory": "Assets/Outfits/Office/Animations/RpsScissors",
-      "frameCount": 121,
-      "durationSeconds": 2
+      "frameCount": 169,
+      "durationSeconds": 2.8
     },
     {
       "id": "rps-win",
@@ -169,8 +169,8 @@
       "group": "Interaction",
       "phase": "once",
       "directory": "Assets/Outfits/Office/Animations/RpsWin",
-      "frameCount": 121,
-      "durationSeconds": 2
+      "frameCount": 145,
+      "durationSeconds": 2.4
     },
     {
       "id": "rps-lose",
@@ -179,8 +179,8 @@
       "group": "Interaction",
       "phase": "once",
       "directory": "Assets/Outfits/Office/Animations/RpsLose",
-      "frameCount": 121,
-      "durationSeconds": 2
+      "frameCount": 145,
+      "durationSeconds": 2.4
     },
     {
       "id": "annoyed",

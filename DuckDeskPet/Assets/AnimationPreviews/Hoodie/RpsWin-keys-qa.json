@@ -1,8 +1,8 @@
 {
   "passed": true,
   "errors": [],
-  "frame_count": 5,
-  "expected_frame_count": 5,
+  "frame_count": 16,
+  "expected_frame_count": 16,
   "canvas": [
     384,
     346
@@ -15,7 +15,7 @@
     "measurement_source": "composited frame",
     "maximum_torso_x_error": 0.5,
     "maximum_foot_contact_y_error": 0.0,
-    "maximum_adjacent_torso_x_step": 0.5,
+    "maximum_adjacent_torso_x_step": 1.0,
     "maximum_adjacent_foot_y_step": 0.0,
     "torso_x_tolerance": 4.0,
     "foot_y_tolerance": 1.5
@@ -23,10 +23,10 @@
   "boundary": {
     "minimum_clear_border_fraction": 1.0,
     "minimum_margins_left_top_right_bottom": [
-      92,
-      83,
-      90,
-      9
+      109,
+      84,
+      105,
+      8
     ],
     "detached_edge_contact_allowed": false,
     "detached_edge_contact_after_frame": null,
@@ -34,10 +34,10 @@
     "content_margin_violations": [],
     "main_character_minimum_clear_border_fraction": 1.0,
     "main_character_minimum_margins_left_top_right_bottom": [
-      92,
-      83,
-      90,
-      9
+      109,
+      84,
+      105,
+      8
     ],
     "main_character_margin_violations": [],
     "edge_contact_classification": [],
@@ -135,7 +135,7 @@
     "passed": true,
     "errors": [],
     "minimum_required_margin_pixels": 8,
-    "minimum_margin": 9,
+    "minimum_margin": 8,
     "margins": [
       {
         "key": 0,
@@ -156,10 +156,10 @@
       {
         "key": 1,
         "margins_left_top_right_bottom": [
-          92,
-          90,
-          90,
-          9
+          110,
+          85,
+          109,
+          8
         ],
         "required_margins_left_top_right_bottom": [
           8,
@@ -167,14 +167,14 @@
           8,
           8
         ],
-        "minimum_margin": 9
+        "minimum_margin": 8
       },
       {
         "key": 2,
         "margins_left_top_right_bottom": [
-          99,
-          84,
-          95,
+          111,
+          85,
+          109,
           9
         ],
         "required_margins_left_top_right_bottom": [
@@ -188,9 +188,9 @@
       {
         "key": 3,
         "margins_left_top_right_bottom": [
-          102,
-          83,
-          99,
+          113,
+          85,
+          113,
           9
         ],
         "required_margins_left_top_right_bottom": [
@@ -203,6 +203,182 @@
       },
       {
         "key": 4,
+        "margins_left_top_right_bottom": [
+          112,
+          88,
+          111,
+          9
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 5,
+        "margins_left_top_right_bottom": [
+          111,
+          87,
+          108,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 6,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          107,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 7,
+        "margins_left_top_right_bottom": [
+          109,
+          88,
+          107,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 8,
+        "margins_left_top_right_bottom": [
+          110,
+          89,
+          107,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 9,
+        "margins_left_top_right_bottom": [
+          111,
+          87,
+          105,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 10,
+        "margins_left_top_right_bottom": [
+          110,
+          87,
+          108,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 11,
+        "margins_left_top_right_bottom": [
+          112,
+          88,
+          112,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 12,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          109,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 13,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          109,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 14,
+        "margins_left_top_right_bottom": [
+          111,
+          88,
+          109,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 15,
         "margins_left_top_right_bottom": [
           111,
           84,
@@ -232,19 +408,19 @@
       {
         "key": 1,
         "margins_left_top_right_bottom": [
-          92,
-          90,
-          90,
-          9
+          110,
+          85,
+          109,
+          8
         ],
-        "minimum_margin": 9
+        "minimum_margin": 8
       },
       {
         "key": 2,
         "margins_left_top_right_bottom": [
-          99,
-          84,
-          95,
+          111,
+          85,
+          109,
           9
         ],
         "minimum_margin": 9
@@ -252,15 +428,125 @@
       {
         "key": 3,
         "margins_left_top_right_bottom": [
-          102,
-          83,
-          99,
+          113,
+          85,
+          113,
           9
         ],
         "minimum_margin": 9
       },
       {
         "key": 4,
+        "margins_left_top_right_bottom": [
+          112,
+          88,
+          111,
+          9
+        ],
+        "minimum_margin": 9
+      },
+      {
+        "key": 5,
+        "margins_left_top_right_bottom": [
+          111,
+          87,
+          108,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 6,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          107,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 7,
+        "margins_left_top_right_bottom": [
+          109,
+          88,
+          107,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 8,
+        "margins_left_top_right_bottom": [
+          110,
+          89,
+          107,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 9,
+        "margins_left_top_right_bottom": [
+          111,
+          87,
+          105,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 10,
+        "margins_left_top_right_bottom": [
+          110,
+          87,
+          108,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 11,
+        "margins_left_top_right_bottom": [
+          112,
+          88,
+          112,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 12,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          109,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 13,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          109,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 14,
+        "margins_left_top_right_bottom": [
+          111,
+          88,
+          109,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 15,
         "margins_left_top_right_bottom": [
           111,
           84,
@@ -270,15 +556,15 @@
         "minimum_margin": 9
       }
     ],
-    "minimum_character_margin": 9,
+    "minimum_character_margin": 8,
     "bomb_release_margin_policy": null,
     "bomb_action_keys": [
       {
         "key": 4,
         "margins_left_top_right_bottom": [
-          111,
-          84,
           112,
+          88,
+          111,
           9
         ],
         "required_margins_left_top_right_bottom": [
@@ -288,6 +574,134 @@
           8
         ],
         "minimum_margin": 9
+      },
+      {
+        "key": 5,
+        "margins_left_top_right_bottom": [
+          111,
+          87,
+          108,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 6,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          107,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 7,
+        "margins_left_top_right_bottom": [
+          109,
+          88,
+          107,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 8,
+        "margins_left_top_right_bottom": [
+          110,
+          89,
+          107,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 9,
+        "margins_left_top_right_bottom": [
+          111,
+          87,
+          105,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 10,
+        "margins_left_top_right_bottom": [
+          110,
+          87,
+          108,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 11,
+        "margins_left_top_right_bottom": [
+          112,
+          88,
+          112,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
+      },
+      {
+        "key": 12,
+        "margins_left_top_right_bottom": [
+          110,
+          88,
+          109,
+          8
+        ],
+        "required_margins_left_top_right_bottom": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "minimum_margin": 8
       }
     ],
     "component_policy": {
@@ -301,12 +715,111 @@
     "detached_bomb_centroid_check": null,
     "smoke_classification": null
   },
-  "source_sha256": "6ad21f802ca13c29401827dde4bb52539b1b0278210a77316077ac4d40608938",
+  "outfit": "outfit.hoodie",
+  "clip": "RpsWin",
+  "source_sha256": "8c40cda77bb0a44405705300989a590bbca23cc47acea30f4472a810cde0e255",
+  "neutral_sha256": "fa26126513bbcaa16397767ef888b217a7920968ef4f4d081773a5641b6a2c2d",
   "authored_frame_indices": [
     0,
+    16,
     24,
-    58,
-    93,
-    120
-  ]
+    32,
+    40,
+    48,
+    56,
+    64,
+    72,
+    80,
+    90,
+    100,
+    108,
+    116,
+    124,
+    144
+  ],
+  "provenance": {
+    "generator": "built-in imagegen",
+    "source": "AnimationSources/RpsV2/hoodie-win-v2.png",
+    "source_sha256": "8c40cda77bb0a44405705300989a590bbca23cc47acea30f4472a810cde0e255",
+    "source_layout": {
+      "columns": 4,
+      "rows": 4,
+      "cells": 16
+    },
+    "source_order": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "reused_source_cells": [],
+    "omitted_source_cells": [],
+    "source_order_metadata": null,
+    "source_order_metadata_sha256": null,
+    "neutral": "Outfits/Hoodie/neutral.png",
+    "neutral_sha256": "fa26126513bbcaa16397767ef888b217a7920968ef4f4d081773a5641b6a2c2d",
+    "canonical_endpoint_key_positions": [
+      0,
+      15
+    ],
+    "canonical_endpoint_policy": "First and last cells are replaced by the existing outfit neutral, pixel-exact.",
+    "fps": 60,
+    "duration_seconds": 2.4,
+    "authored_frame_indices": [
+      0,
+      16,
+      24,
+      32,
+      40,
+      48,
+      56,
+      64,
+      72,
+      80,
+      90,
+      100,
+      108,
+      116,
+      124,
+      144
+    ],
+    "authored_time_seconds": [
+      0.0,
+      0.266667,
+      0.4,
+      0.533333,
+      0.666667,
+      0.8,
+      0.933333,
+      1.066667,
+      1.2,
+      1.333333,
+      1.5,
+      1.666667,
+      1.8,
+      1.933333,
+      2.066667,
+      2.4
+    ],
+    "expected_frame_count": 145,
+    "authored_keys_locked": true,
+    "segmentwise_interpolation": true,
+    "authored_root_calibration": true,
+    "method": "native-alpha extraction, one sheet-wide helmet registration, established alpha cleanup, paired RIFE RGB/alpha, planted-foot stabilization",
+    "qa_thresholds_relaxed": false,
+    "build_started_utc": "2026-09-20T09:29:18+00:00",
+    "report_written_utc": "2026-09-20T09:29:30+00:00"
+  }
 }

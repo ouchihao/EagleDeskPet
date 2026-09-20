@@ -23,7 +23,8 @@ internal static class Program
             ("Pet choice is committed once before player input and not disclosed early", Precommit),
             ("Duplicate clicks, starts and presentation completions cannot change a round", DuplicateInput),
             ("Invalid randomness and enum input fail without starting a round", InvalidInput),
-            ("Responsive 4.6-second minimum keeps complete throw and reaction gates", FullPacing),
+            ("Authored 5.8-second win/loss and 5.4-second draw preserve full presentation gates", FullPacing),
+            ("Every extended game clip visits every authored 60 Hz sample and terminal frame", AuthoredSamples),
             ("Exclusive game starts immediately without bypassing ordinary or scene ownership", ExclusiveStarts),
             ("Clock alone cannot reveal a result before the throw completes", PresentationGate),
             ("Stale round and phase callbacks are ignored", StaleCallbacks),
@@ -38,6 +39,7 @@ internal static class Program
             ("Backward UTC blocks rewards without altering monotonic animation pacing", ClockBackwards),
             ("Failed host commits are not retried by a round", FailedCommit),
             ("WPF buttons lock immediately and result follows performance", UiRound),
+            ("WPF draw completes the original two-second shy reaction without added idle padding", UiDrawPacing),
             ("WPF cancellation waits for return-to-idle and does not reward", UiPause),
             ("WPF presentation failure safely ends a round", UiFailure),
             ("WPF close before player input invokes no reward", UiClose),
@@ -103,17 +105,59 @@ internal static class Program
     }
     private static void FullPacing()
     {
-        var clock = new FakeTime(); var game = NewGame(clock); game.Choose(RpsChoice.Paper);
-        game.CompletePresentation(game.RoundId, RpsCue.Prepare);
-        clock.Advance(.59); game.Advance(); Check(game.Phase == RpsPhase.Preparing, "Preparation ended too early.");
-        clock.Advance(.01); game.Advance(); Check(game.Phase == RpsPhase.Throwing, "Throw did not follow preparation.");
-        Check(game.Snapshot.Outcome is null && game.Snapshot.PetChoice == RpsChoice.Rock, "Throw result was exposed early.");
-        Step(game, clock, RpsCue.Throw, 2);
-        Check(game.Phase == RpsPhase.Reacting && game.Snapshot.Outcome == RpsOutcome.PlayerWin, "Wrong reveal.");
-        game.CompletePresentation(game.RoundId, RpsCue.React); clock.Advance(1.99); game.Advance();
-        Check(game.Phase == RpsPhase.Reacting, "Reaction/hold ended too early.");
-        clock.Advance(.01); game.Advance();
-        Check(game.Phase == RpsPhase.Completed && Math.Abs(game.Snapshot.RoundElapsedSeconds - 4.6) < 1e-8, "Minimum round was not 4.6 seconds.");
+        foreach (var choice in Enum.GetValues<RpsChoice>())
+        {
+            var clock = new FakeTime(); var game = NewGame(clock); game.Choose(choice);
+            var outcome = RockPaperScissorsGame.Resolve(choice, RpsChoice.Rock);
+            game.CompletePresentation(game.RoundId, RpsCue.Prepare);
+            clock.Advance(.59); game.Advance(); Check(game.Phase == RpsPhase.Preparing, "Preparation ended too early.");
+            clock.Advance(.01); game.Advance(); Check(game.Phase == RpsPhase.Throwing, "Throw did not follow preparation.");
+            Check(game.Snapshot.Outcome is null && game.Snapshot.PetChoice == RpsChoice.Rock, "Throw result was exposed early.");
+            game.CompletePresentation(game.RoundId, RpsCue.Throw);
+            clock.Advance(2.79); game.Advance();
+            Check(game.Phase == RpsPhase.Throwing && game.Snapshot.Outcome is null, "Gesture display/retraction was cut short.");
+            clock.Advance(.01); game.Advance();
+            Check(game.Phase == RpsPhase.Reacting && game.Snapshot.Outcome == outcome, "Wrong reveal.");
+            double reactionSeconds = RockPaperScissorsGame.GetReactionSeconds(outcome);
+            game.CompletePresentation(game.RoundId, RpsCue.React); clock.Advance(reactionSeconds - .01); game.Advance();
+            Check(game.Phase == RpsPhase.Reacting && !game.TryTakeReward(null, out _), "Reaction ended or rewarded too early.");
+            clock.Advance(.01); game.Advance();
+            double expected = outcome == RpsOutcome.Draw ? 5.4 : 5.8;
+            Check(game.Phase == RpsPhase.Completed && Math.Abs(game.Snapshot.RoundElapsedSeconds - expected) < 1e-8,
+                $"{outcome} did not finish at its complete {expected}-second presentation boundary.");
+        }
+        bool rejected = false;
+        try { RockPaperScissorsGame.GetReactionSeconds((RpsOutcome)99); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "Unknown reaction silently selected an animation duration.");
+    }
+    private static void AuthoredSamples()
+    {
+        foreach (var kind in new[] { ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose, ClipKind.Shy })
+        {
+            var definition = ClipCatalog.GetDefinition(kind);
+            double seconds = kind switch
+            {
+                ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors => RockPaperScissorsGame.ThrowSeconds,
+                ClipKind.Shy => RockPaperScissorsGame.DrawReactionSeconds,
+                _ => RockPaperScissorsGame.ReactionSeconds,
+            };
+            Check(definition.DurationSeconds == seconds && definition.FrameCount == (int)Math.Round(seconds * 60) + 1,
+                $"{kind} disagrees with its endpoint-inclusive 60 Hz game contract.");
+            var behavior = new PetBehaviorController(); behavior.SuspendAutomatic(true);
+            Check(behavior.TryStartExclusiveGameAction(kind), "Exclusive game clip did not start.");
+            long sequence = behavior.CurrentSample.Sequence;
+            for (int frame = 0; frame < definition.FrameCount; frame++)
+            {
+                var sample = behavior.CurrentSample;
+                Check(sample.Kind == kind && sample.Sequence == sequence && Math.Abs(sample.FrameCoordinate - frame) < 1e-8,
+                    $"{kind} skipped authored sample {frame}.");
+                Check(sample.Phase == (frame == definition.FrameCount - 1 ? ClipPlaybackPhase.Terminal : ClipPlaybackPhase.Playing),
+                    $"{kind} completed before its final neutral frame.");
+                behavior.Advance(1.0 / 60);
+            }
+            Check(behavior.CurrentSample.Kind == ClipKind.Idle && behavior.CurrentSample.Sequence == sequence,
+                $"{kind} did not return safely after its terminal frame.");
+        }
     }
     private static void ExclusiveStarts()
     {
@@ -173,9 +217,9 @@ internal static class Program
         {
             var clock = new FakeTime(); var game = NewGame(clock);
             if (stage >= 1) game.Choose(RpsChoice.Rock);
-            if (stage >= 2) Step(game, clock, RpsCue.Prepare, 3);
-            if (stage >= 3) Step(game, clock, RpsCue.Throw, 2);
-            if (stage >= 4) Step(game, clock, RpsCue.React, 5);
+            if (stage >= 2) Step(game, clock, RpsCue.Prepare, RockPaperScissorsGame.PreparationSeconds);
+            if (stage >= 3) Step(game, clock, RpsCue.Throw, RockPaperScissorsGame.ThrowSeconds);
+            if (stage >= 4) Step(game, clock, RpsCue.React, RockPaperScissorsGame.DrawReactionSeconds);
             game.Cancel(RpsCancelReason.UserExit); clock.Advance(400); game.Advance();
             Check(!game.TryTakeReward(null, out _) && game.Phase == RpsPhase.Cancelled, "Cancelled phase issued a late reward.");
         }
@@ -244,9 +288,9 @@ internal static class Program
             clock.Advance(.6); window.Refresh();
             Check(Find<TextBlock>(window, "StageText").Text == "出拳！" && game.Snapshot.Outcome is null && awards == 0, "UI revealed or settled too soon.");
             Check(Find<TextBlock>(window, "PetHandLabel").Text == "已选好", "Panel spoiled the hand before its animation ended.");
-            clock.Advance(2); window.Refresh(); Check(Find<TextBlock>(window, "StageText").Text == "你赢了！", "UI disagrees with result.");
+            clock.Advance(RockPaperScissorsGame.ThrowSeconds); window.Refresh(); Check(Find<TextBlock>(window, "StageText").Text == "你赢了！", "UI disagrees with result.");
             Check(awards == 0, "Reaction began by awarding instead of finishing the round.");
-            clock.Advance(2); window.Refresh(); window.Refresh();
+            clock.Advance(RockPaperScissorsGame.ReactionSeconds); window.Refresh(); window.Refresh();
             Check(awards == 1 && Find<Button>(window, "ReplayButton").IsEnabled, "Completed round did not settle once and unlock replay.");
             Check(cues.Select(x => x.Cue).SequenceEqual(new[] { RpsCue.Prepare, RpsCue.Throw, RpsCue.React, RpsCue.ReturnToIdle }), "Incomplete or duplicate performance cues.");
             Check(cues[0].PetChoice is null && cues[0].Outcome is null && cues[1].Outcome is null, "Early request leaked a result.");
@@ -254,6 +298,28 @@ internal static class Program
         }
         finally { window.Close(); }
     }
+    private static void UiDrawPacing()
+    {
+        var clock = new FakeTime(); var game = new RockPaperScissorsGame(() => 0, clock);
+        int awards = 0;
+        var window = new RpsWindow((_, _) => Task.CompletedTask, () => null, _ => { awards++; return true; }, game);
+        try
+        {
+            Load(window); Click(window, "RockButton");
+            clock.Advance(RockPaperScissorsGame.PreparationSeconds); window.Refresh();
+            clock.Advance(RockPaperScissorsGame.ThrowSeconds); window.Refresh();
+            Check(game.Phase == RpsPhase.Reacting && game.Snapshot.Outcome == RpsOutcome.Draw,
+                "Draw did not follow the complete extended throw.");
+            clock.Advance(1.99); window.Refresh();
+            Check(awards == 0 && !Find<Button>(window, "ReplayButton").IsEnabled, "Draw completed before its authored ending.");
+            clock.Advance(.01); window.Refresh(); window.Refresh();
+            Check(game.Phase == RpsPhase.Completed && awards == 1 && Find<Button>(window, "ReplayButton").IsEnabled &&
+                  Math.Abs(game.Snapshot.RoundElapsedSeconds - 5.4) < 1e-8,
+                "Draw inherited the longer win/loss hold instead of finishing its complete two-second shy clip.");
+        }
+        finally { window.Close(); }
+    }
+
     private static void UiPause()
     {
         var clock = new FakeTime(); int awards = 0; var cues = new List<RpsCue>();

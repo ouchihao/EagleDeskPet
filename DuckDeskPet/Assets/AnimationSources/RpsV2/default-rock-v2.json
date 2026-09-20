@@ -1,0 +1,4 @@
+{
+  "source_order": [0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 10, 11, 12, 13, 14, 15],
+  "reason": "Generated cell 9 incorrectly lowered the arm during the readable fist hold. Revisit the already drawn holding pose in cell 7 after cell 8, retaining breathing motion instead of inserting a neutral pose. Endpoints are canonical neutral."
+}

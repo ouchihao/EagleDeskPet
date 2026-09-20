@@ -168,8 +168,16 @@ internal static class Program
         Equal(50, (int)ClipKind.Tea); Equal(56, (int)ClipKind.Annoyed);
         foreach (var kind in Enum.GetValues<ClipKind>().Where(x => ClipCatalog.IsHungryScene(x) || x >= ClipKind.Tea))
         {
-            var d = ClipCatalog.GetDefinition(kind); double seconds = kind is ClipKind.HungryEnter or ClipKind.HungryExit ? 1.5 : 2;
-            Equal(seconds, d.DurationSeconds); Equal((int)(seconds * 60) + 1, d.FrameCount); Equal(PetActionGroup.Interaction, ClipCatalog.GetGroup(kind));
+            var d = ClipCatalog.GetDefinition(kind);
+            var (seconds, frames) = kind switch
+            {
+                ClipKind.HungryEnter or ClipKind.HungryExit => (1.5, 91),
+                ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors => (2.8, 169),
+                ClipKind.RpsWin or ClipKind.RpsLose => (2.4, 145),
+                ClipKind.HungryLoop or ClipKind.Tea or ClipKind.Annoyed => (2.0, 121),
+                _ => throw new InvalidOperationException("Missing an independent frame/timing contract for " + kind),
+            };
+            Equal(seconds, d.DurationSeconds); Equal(frames, d.FrameCount); Equal(PetActionGroup.Interaction, ClipCatalog.GetGroup(kind));
         }
         Check(!ClipCatalog.IsKnown((ClipKind)43) && !ClipCatalog.IsKnown((ClipKind)49));
     }

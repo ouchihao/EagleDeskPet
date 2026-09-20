@@ -26,6 +26,11 @@ internal static class Program
         ClipKind.Shimmy,
         ClipKind.Stretch,
         ClipKind.Eat,
+        ClipKind.RpsRock,
+        ClipKind.RpsPaper,
+        ClipKind.RpsScissors,
+        ClipKind.RpsWin,
+        ClipKind.RpsLose,
     };
 
     private static int Main()
