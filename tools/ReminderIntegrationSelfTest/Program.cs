@@ -85,6 +85,13 @@ internal static class Program
             Check(editor.ToggleReminder(id) is null && editor.ReminderItems[0].IsPaused, "UI pause persists frozen state");
             Check(editor.DeleteReminder(id) is null && editor.ReminderItems.Count == 0, "UI deletion persists");
 
+            ReminderNotificationServices.Current = new RejectedNativeChannel();
+            string beforeEnable = File.ReadAllText(Path.Combine(AppPaths.DataDirectory, "reminders.json"));
+            Check(editor.SetReminderChannels(true, false) is not null && !editor.NativeReminderEnabled && editor.ReminderBubbleEnabled,
+                "native readiness failure does not save enabled state or alter bubble choice");
+            Check(File.ReadAllText(Path.Combine(AppPaths.DataDirectory, "reminders.json")) == beforeEnable,
+                "failed prepare leaves reminder file byte-identical");
+
             if (args.Length == 1)
             {
                 string output = Path.GetFullPath(args[0]);
@@ -132,5 +139,12 @@ internal static class Program
         image.Render(element);
         var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
         using var stream = File.Create(path); encoder.Save(stream);
+    }
+
+    private sealed class RejectedNativeChannel : IReminderNativeChannel
+    {
+        public ReminderNativeResult Prepare() => new(false, "injected native registration failure");
+        public ReminderNativeResult Send(IReadOnlyList<LocalReminder> batch) => throw new InvalidOperationException("must not send");
+        public ReminderNativeResult SendTest() => new(false, "injected test failure");
     }
 }

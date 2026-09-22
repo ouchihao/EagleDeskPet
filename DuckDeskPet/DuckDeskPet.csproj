@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -11,11 +12,12 @@
     <AssemblyTitle>小鹰桌宠</AssemblyTitle>
     <Product>小鹰桌宠</Product>
     <Description>一只会逐帧表演搞怪动作的 60 FPS Windows 小鹰桌宠</Description>
-    <Version>1.11.0</Version>
-    <FileVersion>1.11.0.0</FileVersion>
-    <InformationalVersion>1.11.0</InformationalVersion>
+    <Version>1.12.0-preview.1</Version>
+    <FileVersion>1.12.0.0</FileVersion>
+    <InformationalVersion>1.12.0-preview.1</InformationalVersion>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\eagle-app.ico</ApplicationIcon>
     <DebugType>None</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
@@ -23,6 +25,8 @@
   <ItemGroup>
     <ProjectReference Include="..\DuckDeskPet.Core\DuckDeskPet.Core.csproj" />
     <PackageReference Include="Tomlyn" Version="0.19.0" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.31" />
   </ItemGroup>
 
   <ItemGroup>

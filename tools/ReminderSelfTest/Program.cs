@@ -68,7 +68,7 @@ Check(bounded.Items.Count == 8, "snapshot list cannot mutate live schedule");
 
 var valid = new ReminderScheduler(); valid.Add("可持久化", 30, false, now);
 var entry = valid.Items[0];
-Reject(() => new ReminderScheduler(new() { Version = 2 }), "unknown state version rejected");
+Reject(() => new ReminderScheduler(new() { Version = 99 }), "unknown state version rejected");
 Reject(() => new ReminderScheduler(new() { Items = new() { entry, entry } }), "duplicate ID rejected");
 Reject(() => new ReminderScheduler(new() { Items = new() { entry with { DueAtUtc = null } } }), "active reminder without deadline rejected");
 Reject(() => new ReminderScheduler(new() { Items = new() { entry with { IsPaused = true, DueAtUtc = null, PausedRemainingTicks = -1 } } }), "negative paused time rejected");

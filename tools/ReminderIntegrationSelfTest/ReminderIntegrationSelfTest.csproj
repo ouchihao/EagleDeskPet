@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="..\..\DuckDeskPet.Core\ReminderScheduler.cs" Link="Core\ReminderScheduler.cs"/>
     <Compile Include="..\..\DuckDeskPet\ReminderStore.cs" Link="ReminderStore.cs"/>
+    <Compile Include="..\..\DuckDeskPet\ReminderNativeChannel.cs" Link="ReminderNativeChannel.cs"/>
     <Compile Include="..\..\DuckDeskPet\PetWindow.Reminders.cs" Link="PetWindow.Reminders.cs"/>
     <Compile Include="..\..\DuckDeskPet\ReminderWindow.xaml.cs" Link="ReminderWindow.xaml.cs"/>
     <Page Include="..\..\DuckDeskPet\ReminderWindow.xaml" Link="ReminderWindow.xaml"/>

@@ -2,6 +2,8 @@ using System.IO;
 
 namespace DuckDeskPet.Core;
 
+public enum NativeReminderDelivery { None, Pending, Reserved, Accepted, Failed, Unknown }
+
 /// <summary>Local wall-clock reminders. No networking, animation or pet-economy state.</summary>
 public sealed record LocalReminder
 {
@@ -15,6 +17,10 @@ public sealed record LocalReminder
     public DateTimeOffset? DueAtUtc { get; init; }
     public long PausedRemainingTicks { get; init; }
     public DateTimeOffset? LastNotifiedUtc { get; init; }
+    public string CycleId { get; init; } = "";
+    public DateTimeOffset? CycleDueUtc { get; init; }
+    public NativeReminderDelivery NativeDelivery { get; init; }
+    public string? NativeDetail { get; init; }
 
     public TimeSpan Remaining(DateTimeOffset now) => IsCompleted ? TimeSpan.Zero : IsPaused
         ? TimeSpan.FromTicks(PausedRemainingTicks)
@@ -23,8 +29,10 @@ public sealed record LocalReminder
 
 public sealed record ReminderSnapshot
 {
-    public int Version { get; init; } = 1;
+    public int Version { get; init; } = 2;
     public List<LocalReminder> Items { get; init; } = new();
+    public bool NativeNotificationsEnabled { get; init; }
+    public bool BubbleNotificationsEnabled { get; init; } = true;
 }
 
 public sealed class ReminderScheduler
@@ -35,15 +43,81 @@ public sealed class ReminderScheduler
     private readonly List<LocalReminder> _items;
     public IReadOnlyList<LocalReminder> Items => _items.ToArray();
     public bool HasPending => _items.Any(item => item.IsPending);
+    public bool NativeNotificationsEnabled { get; private set; }
+    public bool BubbleNotificationsEnabled { get; private set; }
+    public bool HasPendingNative => NativeNotificationsEnabled && _items.Any(item => item.NativeDelivery == NativeReminderDelivery.Pending);
 
     public ReminderScheduler(ReminderSnapshot? snapshot = null)
     {
         snapshot ??= new();
         Validate(snapshot);
         _items = snapshot.Items.ToList();
+        NativeNotificationsEnabled = snapshot.NativeNotificationsEnabled;
+        BubbleNotificationsEnabled = snapshot.BubbleNotificationsEnabled;
     }
 
-    public ReminderSnapshot Snapshot() => new() { Items = _items.ToList() };
+    public ReminderSnapshot Snapshot() => new() { Items = _items.ToList(), NativeNotificationsEnabled = NativeNotificationsEnabled,
+        BubbleNotificationsEnabled = BubbleNotificationsEnabled };
+
+    public void SetChannels(bool native, bool bubble)
+    {
+        NativeNotificationsEnabled = native;
+        BubbleNotificationsEnabled = bubble;
+        for (int i = 0; i < _items.Count; i++)
+            _items[i] = _items[i] with { IsPending = bubble && _items[i].IsPending,
+                NativeDelivery = !native && _items[i].NativeDelivery == NativeReminderDelivery.Pending ? NativeReminderDelivery.None : _items[i].NativeDelivery };
+        // Enabling a channel does not replay cycles that occurred while it was off
+    }
+
+    public bool RecoverInterruptedDeliveries()
+    {
+        bool changed = false;
+        for (int i = 0; i < _items.Count; i++)
+            if (_items[i].NativeDelivery == NativeReminderDelivery.Reserved)
+            {
+                _items[i] = _items[i] with { NativeDelivery = NativeReminderDelivery.Unknown,
+                    NativeDetail = "上次发送中程序退出，结果待确认；为避免重复，本轮不自动重发。" };
+                changed = true;
+            }
+        return changed;
+    }
+
+    /// <summary>Persist this reservation together with the deadlines BEFORE any OS call
+    /// A crash after reservation is deliberately not replayed: at-most-once attempt, not guaranteed delivery</summary>
+    public IReadOnlyList<LocalReminder> ReserveNativeBatch()
+    {
+        var pending = NativeNotificationsEnabled ? _items.Where(item => item.NativeDelivery == NativeReminderDelivery.Pending && !item.IsPaused).ToArray() : [];
+        for (int i = 0; i < _items.Count; i++)
+            if (pending.Any(item => item.Id == _items[i].Id))
+                _items[i] = _items[i] with { NativeDelivery = NativeReminderDelivery.Reserved, NativeDetail = null };
+        return pending;
+    }
+
+    public void CompleteNativeBatch(IReadOnlyList<LocalReminder> batch, bool accepted, string detail, bool uncertain = false)
+    {
+        for (int i = 0; i < _items.Count; i++)
+            if (batch.Any(item => item.Id == _items[i].Id && item.CycleId == _items[i].CycleId) &&
+                _items[i].NativeDelivery == NativeReminderDelivery.Reserved)
+                _items[i] = _items[i] with { NativeDelivery = accepted ? NativeReminderDelivery.Accepted : uncertain ? NativeReminderDelivery.Unknown : NativeReminderDelivery.Failed,
+                    NativeDetail = detail.Length > 240 ? detail[..240] : detail };
+    }
+
+    public bool RecordNativeFailure(IReadOnlyList<LocalReminder> batch, string detail)
+    {
+        bool changed = false;
+        for (int i = 0; i < _items.Count; i++)
+            if (batch.Any(item => item.Id == _items[i].Id && item.CycleId == _items[i].CycleId) &&
+                _items[i].NativeDelivery is NativeReminderDelivery.Accepted or NativeReminderDelivery.Reserved)
+            {
+                _items[i] = _items[i] with { NativeDelivery = NativeReminderDelivery.Failed, NativeDetail = detail[..Math.Min(detail.Length, 240)] };
+                changed = true;
+            }
+        return changed;
+    }
+
+    public bool IsCurrentActivation(string id, string cycle) => _items.Any(item => item.Id == id &&
+        item.CycleId == cycle && cycle.Length == 32 && !item.IsPaused &&
+        item.NativeDelivery is NativeReminderDelivery.Accepted or NativeReminderDelivery.Reserved or NativeReminderDelivery.Unknown);
 
     public LocalReminder Add(string message, int minutes, bool repeat, DateTimeOffset now)
     {
@@ -66,12 +140,14 @@ public sealed class ReminderScheduler
         var item = _items[index];
         if (item.IsCompleted)
             _items[index] = item with { IsCompleted = false, IsPending = false, IsPaused = false,
-                DueAtUtc = NextDue(now, item.Minutes), PausedRemainingTicks = 0 };
+                DueAtUtc = NextDue(now, item.Minutes), PausedRemainingTicks = 0, CycleId = "", CycleDueUtc = null,
+                NativeDelivery = NativeReminderDelivery.None, NativeDetail = null };
         else if (item.IsPaused)
             _items[index] = item with { IsPaused = false, DueAtUtc = now.ToUniversalTime().AddTicks(item.PausedRemainingTicks), PausedRemainingTicks = 0 };
         else
             _items[index] = item with { IsPaused = true, IsPending = false, DueAtUtc = null,
-                PausedRemainingTicks = Math.Clamp(item.Remaining(now).Ticks, 0, TimeSpan.FromMinutes(item.Minutes).Ticks) };
+                PausedRemainingTicks = Math.Clamp(item.Remaining(now).Ticks, 0, TimeSpan.FromMinutes(item.Minutes).Ticks),
+                CycleId = "", CycleDueUtc = null, NativeDelivery = NativeReminderDelivery.None, NativeDetail = null };
         return true;
     }
 
@@ -84,8 +160,11 @@ public sealed class ReminderScheduler
         {
             var item = _items[i];
             if (item.IsPaused || item.IsCompleted || item.DueAtUtc > now) continue;
-            _items[i] = item with { IsPending = true, IsCompleted = !item.Repeat,
-                DueAtUtc = item.Repeat ? NextDue(now, item.Minutes) : null };
+            _items[i] = item with { IsPending = BubbleNotificationsEnabled, IsCompleted = !item.Repeat,
+                DueAtUtc = item.Repeat ? NextDue(now, item.Minutes) : null,
+                CycleId = Guid.NewGuid().ToString("N"), CycleDueUtc = item.DueAtUtc,
+                NativeDelivery = NativeNotificationsEnabled ? NativeReminderDelivery.Pending : NativeReminderDelivery.None,
+                NativeDetail = null };
             changed = true;
         }
         return changed;
@@ -112,7 +191,7 @@ public sealed class ReminderScheduler
 
     public static void Validate(ReminderSnapshot snapshot)
     {
-        if (snapshot.Version != 1 || snapshot.Items is null || snapshot.Items.Count > MaximumReminders)
+        if (snapshot.Version is not (1 or 2) || snapshot.Items is null || snapshot.Items.Count > MaximumReminders)
             throw new InvalidDataException("Unsupported or oversized reminder state.");
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in snapshot.Items)
@@ -125,7 +204,12 @@ public sealed class ReminderScheduler
                 ((item.IsCompleted || item.IsPaused) != (item.DueAtUtc is null)) ||
                 (item.IsPaused && item.IsPending) || (!item.IsPaused && item.PausedRemainingTicks != 0) ||
                 (item.DueAtUtc is { } due && due.Offset != TimeSpan.Zero) ||
-                (item.LastNotifiedUtc is { } last && last.Offset != TimeSpan.Zero))
+                (item.LastNotifiedUtc is { } last && last.Offset != TimeSpan.Zero) ||
+                !Enum.IsDefined(item.NativeDelivery) || item.CycleId is null ||
+                (item.CycleId.Length != 0 && !Guid.TryParseExact(item.CycleId, "N", out _)) ||
+                (item.NativeDelivery != NativeReminderDelivery.None && (item.CycleId.Length == 0 || item.CycleDueUtc is null)) ||
+                (item.CycleDueUtc is { } cycleDue && cycleDue.Offset != TimeSpan.Zero) ||
+                (item.NativeDetail is { } detail && (detail.Length > 240 || detail.Any(char.IsControl))))
                 throw new InvalidDataException("Invalid local reminder state.");
         }
     }
