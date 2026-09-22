@@ -12,7 +12,20 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本版为 `dist/v1.9.0/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.9.0-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.1/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.1-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+
+## v1.12 便签、原生提醒和角色包测试
+
+```powershell
+dotnet run --project .\tools\NotebookSelfTest -c Release -- .codex-build/notebook-audit
+dotnet run --project .\tools\NativeReminderSelfTest -c Release
+dotnet run --project .\tools\ReminderSelfTest -c Release
+dotnet run --project .\tools\ReminderIntegrationSelfTest -c Release -- .codex-build/reminder-ui
+dotnet run --project .\tools\CharacterPackSelfTest -c Release
+.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.1\EagleDeskPet.exe
+```
+
+这些测试创建隔离数据；主 EXE 联调的系统通知通道使用替身，不注册生产身份。真实 Windows 原生 API 的专用独立应用测试见 [NativeReminderSelfTest](../tools/NativeReminderSelfTest/README.md)，需显式操作并清理专用测试身份，不得改系统勿扰或生产资料来强求通过。角色包校验不等于通过真实 Cubism 模型加载；透明 WebGL 探针单独运行，详见 [Live2D P0](LIVE2D-P0-RESULTS.md)。本版证据与未测边界见[验证记录](VALIDATION-v1.12-preview.md)。
 
 ## 逻辑与文件测试
 
@@ -44,7 +57,7 @@ dotnet run --project .\tools\ShopSelfTest\ShopSelfTest.csproj -c Release
 dotnet run --project .\tools\TaskNotificationSelfTest\TaskNotificationSelfTest.csproj -c Release -- --mcp .\EagleDeskPet.Mcp\bin\Release\net8.0-windows\EagleDeskPet.Mcp.dll --dotnet dotnet
 ```
 
-任务测试前先构建 MCP。`OutfitSelfTest --resources-root` 除隔离用例外会完整解码默认、办公服、卫衣三套各 2299 帧及站姿，但不代替场景遮挡和美术复查。`PlayIntegrationSelfTest` 链接生产 Play partial、真实游戏窗口、时间线和存档，只有宿主外壳 / 位图解码器是测试替身。`FeedingIntegrationSelfTest` 链接生产 Feeding partial、Core 和 PetStore，使用可控时钟 / 渲染外壳，验证队列准入、连续喂食、完整新序列、关闭和保存失败；实际主窗口的工作 / 暂停交接仍由下方 smoke 验证。
+任务测试前先构建 MCP。当前 `OutfitSelfTest --resources-root` 检查全部六套形象、19 个动作的 2491 帧及站姿；分层服装另验证 2492 张绑定映射及衣片，但不代替场景遮挡和美术复查。`PlayIntegrationSelfTest` 链接生产 Play partial、真实游戏窗口、时间线和存档，只有宿主外壳 / 位图解码器是测试替身。`FeedingIntegrationSelfTest` 链接生产 Feeding partial、Core 和 PetStore，使用可控时钟 / 渲染外壳，验证队列准入、连续喂食、完整新序列、关闭和保存失败；实际主窗口的工作 / 暂停交接仍由下方 smoke 验证。
 
 ## 动画与 GUI 测试
 

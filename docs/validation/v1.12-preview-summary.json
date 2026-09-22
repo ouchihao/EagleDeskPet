@@ -1,0 +1,61 @@
+{
+  "date": "2026-09-22",
+  "version": "1.12.0-preview.1",
+  "artifact": "EagleDeskPet.exe",
+  "deployment": "win-x64 self-contained single-file",
+  "sha256": "d9daa8b9b243a9ec6a2eb8e9ca26d68e119c7d8616dede5f34f38b900c02caf7",
+  "package": {
+    "file": "EagleDeskPet-v1.12.0-preview.1-win-x64.zip",
+    "sha256": "64136c1bedbd1f80370e41dc31443d62d23e42ded4abfe25a01917d45496a126",
+    "allowlistedEntriesVerified": 5
+  },
+  "expansionSmoke": {
+    "passed": true,
+    "completed": true,
+    "casesPassed": 13,
+    "elapsedSeconds": 134,
+    "dataScope": "fresh isolated fixture; no real user profile or accounts",
+    "nativeTransport": "injected fake only",
+    "renderCadence": {
+      "scenario": "warm hoodie + arcade desk + arcade computer WorkLoop",
+      "callbacks": 180,
+      "meanCallbackHz": 59.68,
+      "p95IntervalMs": 16.67,
+      "maxIntervalMs": 33.33,
+      "physicalDisplayCertified": false
+    },
+    "rpsClickToThrowMilliseconds": [635.2, 638.17]
+  },
+  "guiMcpSmoke": {
+    "passed": true,
+    "startupAndFeedReadySeconds": 18.84,
+    "previous12SecondStartupBudgetTimedOut": true,
+    "startupBudgetSeconds": 45,
+    "totalBudgetSeconds": 75,
+    "realBridgeUsed": true,
+    "dataScope": "fresh isolated fixture; exact process and data directory verified"
+  },
+  "tests": {
+    "notebook": 85,
+    "characterPack": 55,
+    "existingCoreAndGameplay": 266,
+    "reminderLegacy": 51,
+    "nativeReminderStateAndRegistration": 40,
+    "reminderIntegrationIncludingRenderedUi": 25
+  },
+  "dedicatedWindowsNotificationSmoke": {
+    "submissionAccepted": true,
+    "nativeHistoryReturnedToastXml": true,
+    "isolatedRegistrationCleaned": true,
+    "bannerVisuallyVerified": false,
+    "actualClickVerified": false,
+    "actualColdActivationVerified": false
+  },
+  "live2d": {
+    "transparentGeometryHostProbePassed": true,
+    "characterPackContractToolsImplemented": true,
+    "actualEagleCubismModelAvailable": false,
+    "productionBackendMigrated": false,
+    "allRequirementsComplete": false
+  }
+}

@@ -4,13 +4,15 @@
 
 一只陪你上班、摸头会害羞、饿了要干饭，还能替 AI 和 GitHub 传话的桌面小鹰。
 
-**Windows x64 · C# / WPF · v1.11.0 Demo · 最高 60 Hz 动画时间轴**
+**Windows x64 · C# / WPF · v1.12.0-preview.1 · 最高 60 Hz 动画时间轴**
+
+v1.12 预览版加入**图钉便签墙**和可选的 **Windows 原生提醒**：便签完成后归档、可恢复，提醒可进入系统通知中心。Live2D 已完成透明宿主可行性验证和角色包接口规范，但**还没有可用的大头鹰 Cubism 模型，也未替换现有逐帧动画**。功能、测试与未完成项见[本版验证记录](docs/VALIDATION-v1.12-preview.md)。
 
 v1.11 加入装备属性、分币工资、递增成长和本地定时提醒；目录扩为 7 张桌子、7 种电脑、6 套形象及喝茶动作（含免费默认项）。旧存档保留余额、收藏、已得徽章和等级进度。价格与养成节奏见[经济规则](docs/ECONOMY-v1.11.md)。界面动效不替代宠物逐帧表演，也不承诺每台电脑的物理 60 FPS。
 
 沿用 v1.10 的俱乐部界面和 v1.10.1 重绘的猜拳动作：出拳保持约 0.87 秒，补齐抬手、展开手势和收手；新分层服装跟随角色动作。历史验证见[界面升级](docs/VALIDATION-v1.10.md) / [猜拳修订](docs/RPS-ANIMATION-v1.10.1.md)。
 
-[快速上手](docs/QUICK-START.md) · [AI 一键接入](docs/AI-AUTO-SETUP.md) · [GitHub 通知](docs/GITHUB-NOTIFICATIONS.md) · [MCP 文档](docs/MCP.md) · [需求与路线图](docs/REQUIREMENTS.md)
+[快速上手](docs/QUICK-START.md) · [便签墙](docs/NOTEBOOK.md) · [原生提醒](docs/NATIVE-REMINDERS.md) · [AI 一键接入](docs/AI-AUTO-SETUP.md) · [GitHub 通知](docs/GITHUB-NOTIFICATIONS.md) · [需求与路线图](docs/REQUIREMENTS.md)
 
 <img src="docs/images/work-preview.gif" width="360" alt="大头鹰从工位入场、办公、进入忙碌到收工的动画预览">
 
@@ -45,16 +47,26 @@ v1.11 加入装备属性、分币工资、递增成长和本地定时提醒；�
 | AI 传话 | 可选 MCP 通知桥；一键配置本机 Codex、Claude Code、CodeBuddy Code 的结束提醒 |
 | GitHub 消息 | 可选连接通知收件箱，提醒提及、请求评审、指派等动态，点击返回 PR / Issue |
 | 任务小信使 | 按来源和任务更新、去重、未读和静音；只有来源明确报告才显示成功或失败 |
-| 定时提醒 | 本地设置喝水、小事提醒；1–10080 分钟、一次或重复，最多保存 8 条 |
+| 定时提醒 | 1–10080 分钟、一次或重复，最多 8 条；可独立开启 Windows 原生通知和宠物气泡 |
+| 大头鹰记事本 | 图钉便签墙；新增、修改、完成归档、恢复，独立本地保存，不发送给 AI |
 
 不接 AI、不连接 GitHub，也可以独立养宠物。普通养成和碎碎念不需要账号、API Key 或联网。
+
+<details>
+<summary>用图钉钉住今天的小事</summary>
+
+<img src="docs/images/notebook-wall.png" width="760" alt="大头鹰记事本：软木墙、彩色便签和图钉，完成后收入归档">
+
+支持 Ctrl+N 新建、Ctrl+Enter 保存和窄窗布局。活动便签与归档合计最多 256 条，每条最多 1000 个 UTF-16 字符单位；超过限制会提示，不会静默截断。详情见[记事本说明](docs/NOTEBOOK.md)。
+
+</details>
 
 <details>
 <summary>到点提醒：喝水、起身，或记一件小事</summary>
 
 <img src="docs/images/v1.11-reminder.png" width="480" alt="v1.11 本地定时提醒，可设置内容、间隔、重复、暂停与继续">
 
-提醒只在桌宠运行时展示；重启后合并逾期消息，不后台唤醒设备，也不发送给 AI。
+上图是 v1.11 的旧版界面。v1.12 增加独立通知开关、测试通知和系统设置入口。原生提醒默认关闭；首次启用会注册当前程序的系统通知身份，不需要账号。提醒只在桌宠运行时提交；重启后合并逾期消息，不后台唤醒设备，也不发送给 AI。勿扰、锁屏和系统权限可能隐藏横幅，提交成功不代表已显示或已读。
 
 </details>
 
@@ -95,6 +107,7 @@ v1.11 加入装备属性、分币工资、递增成长和本地定时提醒；�
 | 右键“石头剪刀布” | 在小窗选拳，演出约 6 秒；先收工再玩，不含预载与前一动作收尾时间 |
 | 右键“自主情绪小剧场” | 开关自动情绪；“预览空碗小剧场…”为独立只读预览 |
 | 右键“定时提醒 · 喝水与小事” | 设置内容、分钟数和重复方式，查看倒计时、暂停或删除 |
+| 右键“大头鹰记事本 · 图钉便签墙” | 写便签、编辑、完成归档和恢复；不影响工作和养成 |
 | 双击 | 有可返回的 AI 通知时打开配置的应用，否则打开养成面板 |
 | 右键菜单 | 调整大小、置顶、暂停、显示帧率、开关碎碎念、查看荣誉与消息 |
 
@@ -110,7 +123,7 @@ v1.11 加入装备属性、分币工资、递增成长和本地定时提醒；�
 
 进度自动保存在本机，离线或长时间挂起最多补算 2 小时，在饥饿耗尽处截断。升级到版本 3 存档时，旧等级与级内进度映射到新经验曲线，不掉级、不追发历史工资，也不撤回已得徽章。“本次启动已赚”包括本次启动补算的工资，不因购物减少，不是钱包余额。关闭程序不等于取消工作，想结束这轮工作请先点“取消工作”。详细规则见[快速上手](docs/QUICK-START.md)。
 
-定时提醒仅在桌宠运行时弹出，不是 Windows 后台计划任务；退出不会后台唤醒。重启时逾期提醒合并通知，不补播每一次错过的循环；AI / GitHub 气泡优先，提醒不会打断工作或改动养成数值。
+定时提醒仅在桌宠运行时提交，不是 Windows 后台计划任务；退出不会后台唤醒。重启时逾期提醒合并通知，不补播每一次错过的循环。AI / GitHub 气泡优先，但不阻塞 Windows 原生通知；提醒不打断工作或改动养成数值。通知默认静音，不是持续响铃的闹钟。建议将 EXE 放在固定路径、以普通用户运行；移动路径会改变通知身份。详细边界见[原生提醒指南](docs/NATIVE-REMINDERS.md)。
 
 ## 从源码构建
 
@@ -125,20 +138,20 @@ cd EagleDeskPet
 如果系统对本地脚本有执行限制，请按你的设备或组织策略允许运行该脚本。也可以不运行脚本，直接执行：
 
 ```powershell
-dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.11.0
-dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.11.0
-Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.11.0\THIRD-PARTY-NOTICES.md
+dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.12.0-preview.1
+dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.12.0-preview.1
+Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.12.0-preview.1\THIRD-PARTY-NOTICES.md
 ```
 
 需要发给同事时，可将刚发布的目录打成带校验和的程序包（目标 ZIP 必须不存在）：
 
 ```powershell
-.\tools\package_release.ps1 -ReleaseDirectory .\dist\v1.11.0 -ArchivePath .\dist\EagleDeskPet-v1.11.0-win-x64.zip
+.\tools\package_release.ps1 -ReleaseDirectory .\dist\v1.12.0-preview.1 -ArchivePath .\dist\EagleDeskPet-v1.12.0-preview.1-win-x64.zip
 ```
 
-打包工具只收录两个 EXE、使用说明、第三方声明与校验和，逐文件复核 ZIP，不包含本机存档或账号配置。当前版的功能与验证边界见 [发布说明](docs/RELEASE-NOTES-v1.11.md) / [验证记录](docs/VALIDATION-v1.11.md)。
+打包工具只收录两个 EXE、使用说明、第三方声明与校验和，逐文件复核 ZIP，不包含本机存档或账号配置。本预览版的功能与验证边界见[验证记录](docs/VALIDATION-v1.12-preview.md)；v1.11 的[发布说明](docs/RELEASE-NOTES-v1.11.md)保留为历史基线。
 
-脚本从主工程版本读取默认输出目录，本版为 `dist/v1.11.0/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
+脚本从主工程版本读取默认输出目录，本版为 `dist/v1.12.0-preview.1/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
 
 ## 让它替 AI 和 GitHub 传话
 
@@ -163,6 +176,8 @@ Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.11.0
 Token 仅在应用中填写，**不要放进代码、Issue 或聊天记录**。设置、通知筛选和权限边界见 [GitHub 通知指南](docs/GITHUB-NOTIFICATIONS.md)。
 
 ## 动画是怎么做的
+
+当前运行的仍是下述逐帧后端。Live2D 开发成果是独立的[透明宿主探针](docs/LIVE2D-P0-RESULTS.md)和[角色包契约、校验工具及模板](docs/CHARACTER-PACKS.md)，不是完成绑定的模型；模板不会被当成可售卖形象，也不能直接在主程序里换肤。完整迁移仍见[重构计划](docs/LIVE2D-REFACTOR-PLAN.md)。
 
 角色不是把半身表情包直接贴到桌面，也不是用整图翻转或交叉淡化来换动作：
 
@@ -209,7 +224,8 @@ dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 ## 数据与隐私
 
 - 养成和设置存于 `%LOCALAPPDATA%\EagleDeskPet`，没有账号体系或云端养成存档。
-- 自建提醒的内容和截止时间也保存在本机明文，不发送到 AI 或 GitHub；不要在提醒里保存密码或令牌。
+- 便签存于独立的 `notebook.json`，提醒存于 `reminders.json`，都是本机明文，不发送到 AI 或 GitHub；不要保存密码或令牌。启用系统通知后，提醒正文也会进入 Windows 通知中心，锁屏可见性由系统设置控制。
+- v1.12 提醒格式升级为版本 2；升级前退出程序并备份数据目录。不要让旧版读写已升级的提醒文件；回退时应恢复升级前备份。便签与养成存档相互独立。
 - GitHub Token 使用当前 Windows 用户的 DPAPI 加密保存；通知标题、仓库名则保存在本地明文缓存中，最多 200 条，断开时可清除。
 - MCP 使用当前 Windows 用户的本地命名管道，不开放网络端口、不读取聊天记录。任务正文和任务状态仅保留本次进程内存，不写入存档或 `pet_get_state`；自动 Hook 另保存用于去重的哈希文件名和随机轮次标识。
 - AI 配置备份可能包含原配置里的密钥，不要分享备份、整个用户数据目录或客户端配置。
@@ -217,7 +233,7 @@ dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 
 ## 素材与贡献
 
-新想法、优先顺序和验收标准持续记录在[需求与路线图](docs/REQUIREMENTS.md)。REQ-001～008 的 Demo 功能已实现，验收框按实际证据更新，跨 DPI、人工拖动和长期性能仍单列未测；后续 IDEA 保留备选或远期状态，不随这次代码更新自动变成已实现。
+新想法、优先顺序和验收标准持续记录在[需求与路线图](docs/REQUIREMENTS.md)。REQ-001～008 的 Demo 功能与 REQ-010 便签墙已实现；REQ-011 原生提醒已接通，但真实通知点击和部分系统场景仍待人工验收。REQ-009 Live2D 尚未完成，不把契约或测试几何当成角色模型。跨 DPI、人工拖动和长期性能仍单列未测；后续 IDEA 保留备选或远期状态。
 
 欢迎通过 [Issues](https://github.com/ouchihao/EagleDeskPet/issues/new/choose) 反馈问题或提出动作创意；新手可直接填写“功能建议”或“缺陷报告”表单。如何补需求、拆任务和提交改动见[参与指南](CONTRIBUTING.md)。报告动画问题时，附动作名称、版本、截图或短录屏会更容易定位；请先隐藏通知里的私人内容。
 
