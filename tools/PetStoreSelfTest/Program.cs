@@ -34,8 +34,14 @@ internal static class Program
         Directory.CreateDirectory(_runDirectory);
 
         string? previousDirectory = Environment.GetEnvironmentVariable("EAGLE_PET_DATA_DIR");
-        string normalDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EagleDeskPet");
-        var normalBefore = SnapshotNormalData(normalDirectory);
+        string sentinelDirectory = Path.Combine(_runDirectory, "isolated-control");
+        Directory.CreateDirectory(sentinelDirectory);
+        foreach (string name in new[] { "pet-state.json", "settings.json", "companion.json" })
+        {
+            foreach (string suffix in new[] { "", ".bak", ".tmp" })
+                File.WriteAllText(Path.Combine(sentinelDirectory, name + suffix), "{\"fixture\":\"isolated-control-only\"}");
+        }
+        var sentinelBefore = SnapshotData(sentinelDirectory);
         var results = new List<object>();
         int failures = 0;
         try
@@ -54,11 +60,11 @@ internal static class Program
                 RejectedSavePreservesBytes(bytes);
             });
 
-            var normalAfter = SnapshotNormalData(normalDirectory);
-            bool unchanged = normalBefore.OrderBy(pair => pair.Key).SequenceEqual(normalAfter.OrderBy(pair => pair.Key));
+            var sentinelAfter = SnapshotData(sentinelDirectory);
+            bool unchanged = sentinelBefore.OrderBy(pair => pair.Key).SequenceEqual(sentinelAfter.OrderBy(pair => pair.Key));
             if (!unchanged) failures++;
-            results.Add(new { name = "normal-appdata-unchanged", passed = unchanged });
-            Console.WriteLine((unchanged ? "PASS " : "FAIL ") + "normal-appdata-unchanged");
+            results.Add(new { name = "isolated-control-unchanged", passed = unchanged });
+            Console.WriteLine((unchanged ? "PASS " : "FAIL ") + "isolated-control-unchanged");
         }
         finally
         {
@@ -71,10 +77,11 @@ internal static class Program
             testCount = results.Count,
             failures,
             isolatedDirectory = _runDirectory,
-            normalDataDirectory = normalDirectory,
+            isolatedControlDirectory = sentinelDirectory,
             results,
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"{results.Count - failures}/{results.Count} persistence regression checks passed.");
+        Console.WriteLine("Only isolated fake files were read; normal user data was not accessed.");
         Console.WriteLine("Fixtures retained for inspection; no files were removed.");
         return failures == 0 ? 0 : 1;
 
@@ -142,7 +149,7 @@ internal static class Program
 
     private static string StatePath => Path.Combine(AppPaths.DataDirectory, "pet-state.json");
 
-    private static Dictionary<string, string> SnapshotNormalData(string directory)
+    private static Dictionary<string, string> SnapshotData(string directory)
     {
         var snapshot = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
