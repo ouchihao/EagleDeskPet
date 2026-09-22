@@ -1,0 +1,662 @@
+{
+  "version": 1,
+  "kind": "authorTemplate",
+  "characterId": "character.tall-fixture",
+  "displayName": "Tall contract fixture — no model",
+  "packVersion": "0.1.0",
+  "rigId": "rig.tall-v1",
+  "backend": "live2D",
+  "capabilities": {
+    "eyeBlink": true,
+    "gaze": true,
+    "breath": true,
+    "sceneLayers": true,
+    "outfits": true,
+    "hitTesting": true
+  },
+  "models": {
+    "secondary": {
+      "entry": "puppet/export/character.model3.json",
+      "rigId": "rig.tall-v1",
+      "sdkCompatibility": "TO_BE_VERIFIED_WITH_SELECTED_CUBISM_SDK"
+    }
+  },
+  "actions": {
+    "Idle": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": null,
+      "durationSeconds": 0,
+      "phase": "idle",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": []
+    },
+    "Yawn": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/yawn.motion3.json",
+      "durationSeconds": 2,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "Shy": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/shy.motion3.json",
+      "durationSeconds": 2,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "Eat": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/eat.motion3.json",
+      "durationSeconds": 2,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "WorkEnter": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/workenter.motion3.json",
+      "durationSeconds": 3.5,
+      "phase": "enter",
+      "entryPose": "standing",
+      "exitPose": "working",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "WorkLoop": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/workloop.motion3.json",
+      "durationSeconds": 2,
+      "phase": "loop",
+      "entryPose": "working",
+      "exitPose": "working",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "WorkToBusy": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/worktobusy.motion3.json",
+      "durationSeconds": 1.5,
+      "phase": "transition",
+      "entryPose": "working",
+      "exitPose": "busy",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "BusyLoop": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/busyloop.motion3.json",
+      "durationSeconds": 2,
+      "phase": "loop",
+      "entryPose": "busy",
+      "exitPose": "busy",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "WorkExit": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/workexit.motion3.json",
+      "durationSeconds": 2,
+      "phase": "exit",
+      "entryPose": "working",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "BusyExit": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/busyexit.motion3.json",
+      "durationSeconds": 2,
+      "phase": "exit",
+      "entryPose": "busy",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "HungryEnter": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/hungryenter.motion3.json",
+      "durationSeconds": 1.5,
+      "phase": "enter",
+      "entryPose": "standing",
+      "exitPose": "hungry",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "HungryLoop": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/hungryloop.motion3.json",
+      "durationSeconds": 2,
+      "phase": "loop",
+      "entryPose": "hungry",
+      "exitPose": "hungry",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "HungryExit": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/hungryexit.motion3.json",
+      "durationSeconds": 1.5,
+      "phase": "exit",
+      "entryPose": "hungry",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "Tea": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/tea.motion3.json",
+      "durationSeconds": 2,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "RpsRock": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/rpsrock.motion3.json",
+      "durationSeconds": 2.8,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "holdStartSeconds": 1,
+      "holdEndSeconds": 1.87,
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "RpsPaper": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/rpspaper.motion3.json",
+      "durationSeconds": 2.8,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "holdStartSeconds": 1,
+      "holdEndSeconds": 1.87,
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "RpsScissors": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/rpsscissors.motion3.json",
+      "durationSeconds": 2.8,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "holdStartSeconds": 1,
+      "holdEndSeconds": 1.87,
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "RpsWin": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/rpswin.motion3.json",
+      "durationSeconds": 2.4,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "RpsLose": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/rpslose.motion3.json",
+      "durationSeconds": 2.4,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    },
+    "Annoyed": {
+      "support": "complete",
+      "model": "secondary",
+      "resource": "puppet/export/motions/annoyed.motion3.json",
+      "durationSeconds": 2,
+      "phase": "once",
+      "entryPose": "standing",
+      "exitPose": "standing",
+      "controlledParameters": [
+        "headAngle",
+        "bodyAngle",
+        "mouthOpen"
+      ]
+    }
+  },
+  "parameters": {
+    "headAngle": {
+      "target": "UnitheadAngle",
+      "minimum": -30,
+      "maximum": 30,
+      "default": 0,
+      "owner": "motion"
+    },
+    "bodyAngle": {
+      "target": "UnitbodyAngle",
+      "minimum": -15,
+      "maximum": 15,
+      "default": 0,
+      "owner": "motion"
+    },
+    "mouthOpen": {
+      "target": "UnitmouthOpen",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0,
+      "owner": "motion"
+    },
+    "eyeLeftOpen": {
+      "target": "UniteyeLeftOpen",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 1,
+      "owner": "blink"
+    },
+    "eyeRightOpen": {
+      "target": "UniteyeRightOpen",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 1,
+      "owner": "blink"
+    },
+    "gazeX": {
+      "target": "UnitgazeX",
+      "minimum": -1,
+      "maximum": 1,
+      "default": 0,
+      "owner": "gaze"
+    },
+    "gazeY": {
+      "target": "UnitgazeY",
+      "minimum": -1,
+      "maximum": 1,
+      "default": 0,
+      "owner": "gaze"
+    },
+    "breath": {
+      "target": "Unitbreath",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0,
+      "owner": "breath"
+    }
+  },
+  "anchors": {
+    "foot": {
+      "x": 0.45,
+      "y": 0.8445
+    },
+    "head": {
+      "x": 0.45,
+      "y": 0.207,
+      "target": "MeshHead"
+    },
+    "body": {
+      "x": 0.45,
+      "y": 0.615
+    },
+    "bubble": {
+      "x": 0.61,
+      "y": 0.122
+    },
+    "mouth": {
+      "x": 0.45,
+      "y": 0.36000000000000004
+    },
+    "leftHand": {
+      "x": 0.274,
+      "y": 0.5640000000000001
+    },
+    "rightHand": {
+      "x": 0.626,
+      "y": 0.5640000000000001
+    },
+    "bowl": {
+      "x": 0.45,
+      "y": 0.6405
+    },
+    "keyboard": {
+      "x": 0.45,
+      "y": 0.683
+    },
+    "deskSurface": {
+      "x": 0.45,
+      "y": 0.7000000000000001
+    }
+  },
+  "hitAreas": {
+    "head": {
+      "x": 0.15,
+      "y": 0.05,
+      "width": 0.7,
+      "height": 0.55
+    },
+    "body": {
+      "x": 0.2,
+      "y": 0.6,
+      "width": 0.6,
+      "height": 0.35
+    }
+  },
+  "scene": {
+    "coordinateSystem": "normalized-top-left",
+    "strategy": "split-pass",
+    "updateOncePerFrame": true,
+    "layerOrder": [
+      "fire",
+      "character-body",
+      "desk-back",
+      "character-foreground",
+      "desk-front",
+      "computer"
+    ],
+    "bodyDrawables": [
+      "MeshHead",
+      "MeshBody",
+      "MeshBack"
+    ],
+    "foregroundDrawables": [
+      "MeshHandL",
+      "MeshHandR",
+      "MeshBowl"
+    ]
+  },
+  "outfits": {
+    "outfit.default": {
+      "model": "secondary",
+      "thumbnail": "previews/neutral.png",
+      "rasterFallback": "Assets/actions.json",
+      "partOpacity": {
+        "Wardrobedefault": 1,
+        "Wardrobeoffice": 0,
+        "Wardrobehoodie": 0,
+        "Wardrobeox": 0,
+        "Wardrobehero": 0,
+        "Wardrobeastronaut": 0
+      },
+      "parameterValues": {},
+      "actionOverrides": {}
+    },
+    "outfit.office": {
+      "model": "secondary",
+      "thumbnail": "previews/neutral.png",
+      "rasterFallback": "Assets/Outfits/Office/actions.json",
+      "partOpacity": {
+        "Wardrobedefault": 0,
+        "Wardrobeoffice": 1,
+        "Wardrobehoodie": 0,
+        "Wardrobeox": 0,
+        "Wardrobehero": 0,
+        "Wardrobeastronaut": 0
+      },
+      "parameterValues": {},
+      "actionOverrides": {}
+    },
+    "outfit.hoodie": {
+      "model": "secondary",
+      "thumbnail": "previews/neutral.png",
+      "rasterFallback": "Assets/Outfits/Hoodie/actions.json",
+      "partOpacity": {
+        "Wardrobedefault": 0,
+        "Wardrobeoffice": 0,
+        "Wardrobehoodie": 1,
+        "Wardrobeox": 0,
+        "Wardrobehero": 0,
+        "Wardrobeastronaut": 0
+      },
+      "parameterValues": {},
+      "actionOverrides": {}
+    },
+    "outfit.ox": {
+      "model": "secondary",
+      "thumbnail": "previews/neutral.png",
+      "rasterFallback": "Assets/Outfits/Ox/actions.json",
+      "partOpacity": {
+        "Wardrobedefault": 0,
+        "Wardrobeoffice": 0,
+        "Wardrobehoodie": 0,
+        "Wardrobeox": 1,
+        "Wardrobehero": 0,
+        "Wardrobeastronaut": 0
+      },
+      "parameterValues": {},
+      "actionOverrides": {}
+    },
+    "outfit.hero": {
+      "model": "secondary",
+      "thumbnail": "previews/neutral.png",
+      "rasterFallback": "Assets/Outfits/Hero/actions.json",
+      "partOpacity": {
+        "Wardrobedefault": 0,
+        "Wardrobeoffice": 0,
+        "Wardrobehoodie": 0,
+        "Wardrobeox": 0,
+        "Wardrobehero": 1,
+        "Wardrobeastronaut": 0
+      },
+      "parameterValues": {},
+      "actionOverrides": {}
+    },
+    "outfit.astronaut": {
+      "model": "secondary",
+      "thumbnail": "previews/neutral.png",
+      "rasterFallback": "Assets/Outfits/Astronaut/actions.json",
+      "partOpacity": {
+        "Wardrobedefault": 0,
+        "Wardrobeoffice": 0,
+        "Wardrobehoodie": 0,
+        "Wardrobeox": 0,
+        "Wardrobehero": 0,
+        "Wardrobeastronaut": 1
+      },
+      "parameterValues": {},
+      "actionOverrides": {}
+    }
+  },
+  "resources": {
+    "puppet/export/character.model3.json": {
+      "role": "model",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/character.moc3": {
+      "role": "moc",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/textures/atlas.png": {
+      "role": "texture",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "previews/neutral.png": {
+      "role": "preview",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/yawn.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/shy.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/eat.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/workenter.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/workloop.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/worktobusy.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/busyloop.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/workexit.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/busyexit.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/hungryenter.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/hungryloop.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/hungryexit.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/tea.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/rpsrock.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/rpspaper.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/rpsscissors.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/rpswin.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/rpslose.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    },
+    "puppet/export/motions/annoyed.motion3.json": {
+      "role": "motion",
+      "byteLength": 0,
+      "sha256": null
+    }
+  },
+  "sources": {
+    "artwork": "source/character.psd",
+    "modelProject": "source/character.cmo3",
+    "animationProject": "source/motions.can3",
+    "attribution": "AUTHOR TODO: original artist and model creator; fixture contains no actual artwork.",
+    "license": "UNVERIFIED: record rights before distributing real artwork/models. Contract validation grants no license."
+  }
+}
