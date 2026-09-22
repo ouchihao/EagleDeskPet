@@ -65,6 +65,7 @@
                     <MenuItem x:Name="GitHubMenuItem" Header="GitHub 消息…" Click="GitHubMenu_OnClick" />
                     <MenuItem x:Name="TaskInboxMenuItem" Header="AI 任务消息…" Click="TaskInboxMenu_OnClick" />
                     <MenuItem x:Name="ReminderMenuItem" Header="定时提醒 · 喝水与小事…" Click="ReminderMenu_OnClick" />
+                    <MenuItem Header="大头鹰记事本 · 图钉便签墙…" Click="NotebookMenu_OnClick" />
                     <MenuItem x:Name="ClientSetupMenuItem" Header="AI 自动传话 · 一键接入…" Click="ClientSetupMenu_OnClick" />
                     <Separator />
                     <MenuItem x:Name="TouchMenuItem" Header="摸摸头 · 害羞" Click="PetMenu_OnClick" />

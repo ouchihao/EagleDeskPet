@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>EagleNotebookSelfTest</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../DuckDeskPet.Core/NotebookBoard.cs" Link="Core/NotebookBoard.cs" />
+    <Compile Include="../../DuckDeskPet/NotebookStore.cs" Link="NotebookStore.cs" />
+    <Compile Include="../../DuckDeskPet/NotebookController.cs" Link="NotebookController.cs" />
+    <Compile Include="../../DuckDeskPet/NotebookWindow.xaml.cs" Link="NotebookWindow.xaml.cs" />
+    <Compile Include="../../DuckDeskPet/PetUiMotion.cs" Link="PetUiMotion.cs" />
+    <Page Include="../../DuckDeskPet/NotebookWindow.xaml" Link="NotebookWindow.xaml" />
+    <Page Include="../../DuckDeskPet/Themes/PetTheme.xaml" Link="Themes/PetTheme.xaml" />
+    <Resource Include="../../DuckDeskPet/Assets/mascot-animated-neutral.png" Link="Assets/mascot-animated-neutral.png" />
+  </ItemGroup>
+</Project>

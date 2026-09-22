@@ -19,6 +19,7 @@ __pycache__/
 *.dpapi
 pet-state.json*
 reminders.json*
+notebook.json*
 settings.json.bak
 companion.json
 github-inbox.json*

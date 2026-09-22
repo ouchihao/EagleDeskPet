@@ -124,6 +124,7 @@ public partial class PetWindow : Window
         _isClosing = true;
         UnsubscribeRendering();
         StopReminders();
+        StopNotebook();
         StopCare();
         _framePlayer.Dispose();
         _windowSource?.RemoveHook(WindowMessageHook);
