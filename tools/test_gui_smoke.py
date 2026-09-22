@@ -161,8 +161,11 @@ def main():
         tool_names = {tool["name"] for tool in rpc.send("tools/list")["tools"]}
         assert {"pet_get_state", "pet_notify"}.issubset(tool_names), tool_names
         state_before = None
-        # Read-only probing is the only operation permitted until the smoke marker is verified.
-        while time.monotonic() - started < 12:
+        # Startup validates every wardrobe before entering the GUI smoke routine
+        # Keep a bounded startup budget separate from its 14-second animation check
+        startup_budget = 45
+        next_progress = 0
+        while time.monotonic() - started < startup_budget:
             assert gui.poll() is None, "Our GUI exited before its bridge became ready."
             reply = rpc.tool("pet_get_state")
             if reply.get("status") == "unavailable":
@@ -171,9 +174,17 @@ def main():
             state_before = verify_own_smoke_state(reply, gui, data)
             if state_before.get("food") == 4:
                 break
+            elapsed = time.monotonic() - started
+            if elapsed >= next_progress:
+                print(f"Waiting for isolated startup: {elapsed:.1f}s, "
+                      f"food={state_before.get('food')}, action={state_before.get('currentAction')}", flush=True)
+                next_progress = elapsed + 5
             time.sleep(.2)
         assert state_before is not None and state_before.get("food") == 4, \
-            "The isolated GUI did not finish its own feed operation in time."
+            (f"The isolated GUI did not finish startup/feed within {startup_budget}s; "
+             f"elapsed={time.monotonic() - started:.1f}s, state={state_before}, "
+             f"GUI errors={' | '.join(gui_errors)}, MCP errors={' | '.join(rpc.errors)}")
+        print(f"PASS: isolated startup/feed ready after {time.monotonic() - started:.2f}s", flush=True)
         assert gui.poll() is None, "Our GUI ended before notification; refusing delivery."
         delivered = rpc.tool("pet_notify", {"eventId": "gui-smoke:" + uuid.uuid4().hex,
                                             "sessionId": output.name, "eventType": "reply_ready",
@@ -183,7 +194,7 @@ def main():
         assert isinstance(state_after.get("pendingNotifications"), int), state_after
         assert state_after["pendingNotifications"] >= 0, state_after
         print("PASS: actual GUI identified, real MCP notification accepted, pending queue queried", flush=True)
-        remaining = 45 - (time.monotonic() - started)
+        remaining = startup_budget + 30 - (time.monotonic() - started)
         assert remaining > 0, "GUI smoke test exceeded its total deadline."
         gui.wait(timeout=remaining)
         assert gui.returncode == 0, f"GUI exited with {gui.returncode}: {' | '.join(gui_errors)}"
