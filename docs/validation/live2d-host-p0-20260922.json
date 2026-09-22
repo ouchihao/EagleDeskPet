@@ -1,0 +1,54 @@
+{
+  "kind": "webgl-composition-host-only-not-live2d",
+  "runtime": "153.0.4234.48",
+  "sdk": "1.0.4191.47",
+  "readySeconds": 1.9498641,
+  "stage": {
+    "protocol": 1,
+    "type": "stage-probe-ready",
+    "passed": true,
+    "tests": {
+      "clear": true,
+      "bodyBehindDesk": true,
+      "handAboveDesk": true,
+      "apronAboveBody": true,
+      "computerAboveDesk": true
+    }
+  },
+  "scheduler": {
+    "callbackCount": 599,
+    "callbackHz": 59.950958314567394,
+    "meaning": "requestAnimationFrame scheduling only; not physical presentation FPS",
+    "over100ms": 0,
+    "p95CallbackIntervalMs": 16.800000000000182
+  },
+  "composition": {
+    "dark": {
+      "Passed": true,
+      "WpfOverlay": true,
+      "TransparentBackground": true,
+      "WebContentCaptured": true
+    },
+    "light": {
+      "Passed": true,
+      "WpfOverlay": true,
+      "TransparentBackground": true,
+      "WebContentCaptured": true
+    },
+    "clear": {
+      "Passed": true,
+      "WpfOverlay": true,
+      "TransparentBackground": true,
+      "WebContentCaptured": true
+    }
+  },
+  "rejectedMessages": 0,
+  "unverified": [
+    "Cubism model and masks",
+    "physical Present FPS",
+    "native pointer drag/drop",
+    "multi-monitor DPI",
+    "sleep and context loss",
+    "2h working stability"
+  ]
+}
