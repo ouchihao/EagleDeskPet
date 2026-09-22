@@ -20,7 +20,7 @@ public partial class PetWindow
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(280));
         var elapsed = Stopwatch.StartNew();
         bool isolated = false;
-        const int expectedCases = 12;
+        const int expectedCases = 13;
         string? fatal = null;
         object? renderCadence = null;
         string reportPath = Path.Combine(output, "expansion-smoke.json");
@@ -41,6 +41,7 @@ public partial class PetWindow
                 "No real GitHub/AI accounts, client configuration, task producer delivery, mouse dragging or physical 60 Hz certification.",
                 "A skipped outfit case is not outfit acceptance. Screenshots alone do not certify animation aesthetics.",
                 "The outfit case validates installed completeness and plays its Yawn; it does not visually inspect every outfit action.",
+                "Productivity checks use real notebook UI and reminder host wiring with an injected fake OS channel; Windows banner/COM activation has a separate isolated harness.",
             }
         }, new JsonSerializerOptions { WriteIndented = true }));
         async Task Case(string name, Func<Task> action)
@@ -328,6 +329,7 @@ public partial class PetWindow
             await Case("club UI navigation, paged galleries and reduced motion are read-only", () => RunClubUiSmokeAsync(output, timeout.Token));
             await Case("equipment v2 real layered wardrobes, props and active bonuses", () => RunEquipmentSmokeAsync(output, timeout.Token));
             await Case("real reminder menu, persistence, delivery and inbox priority", () => RunReminderSmokeAsync(output, timeout.Token));
+            await Case("real notebook wall during work and reminder native-channel wiring (fake transport)", () => RunProductivitySmokeAsync(output, timeout.Token));
         }
         catch (Exception ex) { fatal = ex.ToString(); }
         finally
