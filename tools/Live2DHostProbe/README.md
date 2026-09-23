@@ -5,7 +5,8 @@ This is an isolated **host feasibility test**, not a Live2D renderer or a charac
 Requirements: .NET 8 SDK, Windows 10 19041+ for this probe build, an existing WebView2 Runtime, and an interactive Windows session. The WPF composition control needs the Windows SDK .NET projection; targeting plain `net8.0-windows` can compile but fail at runtime.
 
 ```powershell
-dotnet build tools/Live2DHostProbe/Live2DHostProbe.csproj -c Release --locked-mode
+dotnet restore tools/Live2DHostProbe/Live2DHostProbe.csproj --locked-mode
+dotnet build tools/Live2DHostProbe/Live2DHostProbe.csproj -c Release --no-restore
 dotnet tools/Live2DHostProbe/bin/Release/net8.0-windows10.0.19041.0/Live2DHostProbe.dll D:\Temp\EagleHostProbe-new-run
 ```
 

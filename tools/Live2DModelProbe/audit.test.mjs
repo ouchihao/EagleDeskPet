@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+await import("./Stage/audit.js");
+const {bounds,eagle}=globalThis.ProbeAudit;
+const ids=["ArtMeshFootwearL","ArtMeshFootwearR","ArtMeshEyelashL","ArtMeshEyelashR"];
+const deltas=()=>ids.map(id=>({id,maximumVertexDelta:id.includes("Eyelash")?.02:0,maximumOpacityDelta:0,heightRatio:id.includes("Eyelash")?.1:1}));
+const valid=()=>["ParamEyeLOpen","ParamEyeROpen","ParamBreath","ParamAngleX"].map(id=>({id,states:[{value:0,drawableDeltas:deltas()},{value:1,drawableDeltas:deltas()}]}));
+test("bounds preserves coordinate frame",()=>assert.deepEqual(bounds([-1,2,3,-4,2,0]),{minX:-1,minY:-4,maxX:3,maxY:2,width:4,height:6}));
+test("correct named eyes and rooted feet pass",()=>assert.equal(eagle(valid(),ids).passed,true));
+test("missing foot cannot pass vacuously",()=>assert.equal(eagle(valid(),ids.slice(1)).passed,false));
+test("missing eye parameter fails",()=>assert.equal(eagle(valid().slice(1),ids).passed,false));
+test("any tiny foot drift fails exact root contract",()=>{const s=valid();s[2].states[1].drawableDeltas[0].maximumVertexDelta=1e-10;assert.equal(eagle(s,ids).passed,false);});
+test("unclosed eye is not accepted just because geometry changed",()=>{const s=valid();s[0].states[0].drawableDeltas[2].heightRatio=.9;assert.equal(eagle(s,ids).passed,false);});
+test("inert own eye fails even if another drawable changed",()=>{const s=valid();s[0].states[0].drawableDeltas[2].maximumVertexDelta=0;assert.equal(eagle(s,ids).passed,false);});
+test("NaN eye geometry fails",()=>{const s=valid();s[0].states[0].drawableDeltas[2].heightRatio=NaN;assert.equal(eagle(s,ids).passed,false);});
+test("empty parameter sweep fails",()=>assert.equal(eagle([],ids).passed,false));

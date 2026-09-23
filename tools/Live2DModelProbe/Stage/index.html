@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'">
+<title>Official Core model probe</title><link rel="stylesheet" href="probe.css"></head><body>
+<header><small>OFFICIAL CUBISM CORE R5 / LOCAL MODEL PROBE</small><h1>真实模型 · 参数验证</h1><p id="status">加载 SDK…</p></header>
+<main><canvas id="stage" width="640" height="640"></canvas><aside><div id="controls"><button id="play">暂停</button><button id="reset">归位</button><button id="background">深 / 浅底</button></div><div id="parameters"></div></aside></main>
+<footer id="summary">只验证加载与基础驱动，不代表全动作 / 物理帧率验收</footer>
+<script src="sdk/core.js"></script><script src="sdk/framework.js"></script><script src="audit.js"></script><script src="probe.js"></script></body></html>
