@@ -6,7 +6,7 @@
 
 **Windows x64 · C# / WPF · v1.12.0-preview.1 · 最高 60 Hz 动画时间轴**
 
-v1.12 预览版加入**图钉便签墙**和可选的 **Windows 原生提醒**：便签完成后归档、可恢复，提醒可进入系统通知中心。Live2D 已完成透明宿主可行性验证和角色包接口规范，但**还没有可用的大头鹰 Cubism 模型，也未替换现有逐帧动画**。功能、测试与未完成项见[本版验证记录](docs/VALIDATION-v1.12-preview.md)。
+v1.12 预览版加入**图钉便签墙**和可选的 **Windows 原生提醒**：便签完成后归档、可恢复，提醒可进入系统通知中心。Live2D 持续开发中：已产出分层大头鹰模型小样及官方 SDK 验证工具，**尚未替换现有逐帧动画，也未完成动作 / 服装迁移**。见[模型小样进展](docs/LIVE2D-MODEL-SAMPLE.md)与[预览版验证记录](docs/VALIDATION-v1.12-preview.md)。
 
 v1.11 加入装备属性、分币工资、递增成长和本地定时提醒；目录扩为 7 张桌子、7 种电脑、6 套形象及喝茶动作（含免费默认项）。旧存档保留余额、收藏、已得徽章和等级进度。价格与养成节奏见[经济规则](docs/ECONOMY-v1.11.md)。界面动效不替代宠物逐帧表演，也不承诺每台电脑的物理 60 FPS。
 
@@ -177,7 +177,7 @@ Token 仅在应用中填写，**不要放进代码、Issue 或聊天记录**。�
 
 ## 动画是怎么做的
 
-当前运行的仍是下述逐帧后端。Live2D 开发成果是独立的[透明宿主探针](docs/LIVE2D-P0-RESULTS.md)和[角色包契约、校验工具及模板](docs/CHARACTER-PACKS.md)，不是完成绑定的模型；模板不会被当成可售卖形象，也不能直接在主程序里换肤。完整迁移仍见[重构计划](docs/LIVE2D-REFACTOR-PLAN.md)。
+当前运行的仍是下述逐帧后端。Live2D 开发成果包括[透明宿主探针](docs/LIVE2D-P0-RESULTS.md)、[角色包契约与模板](docs/CHARACTER-PACKS.md)，以及新的[大头鹰 PSD / CMO3 / MOC3 小样与官方 Core 验证](docs/LIVE2D-MODEL-SAMPLE.md)。小样仅用于基础绑定验证，不作为可售卖形象，也不能直接在主程序里换肤；完整迁移见[重构计划](docs/LIVE2D-REFACTOR-PLAN.md)。
 
 角色不是把半身表情包直接贴到桌面，也不是用整图翻转或交叉淡化来换动作：
 
@@ -238,3 +238,5 @@ dotnet run --project .\tools\HonorSelfTest\HonorSelfTest.csproj -c Release
 欢迎通过 [Issues](https://github.com/ouchihao/EagleDeskPet/issues/new/choose) 反馈问题或提出动作创意；新手可直接填写“功能建议”或“缺陷报告”表单。如何补需求、拆任务和提交改动见[参与指南](CONTRIBUTING.md)。报告动画问题时，附动作名称、版本、截图或短录屏会更容易定位；请先隐藏通知里的私人内容。
 
 代码、AI 生成资源和原始表情包参考不是同一种授权对象。原始角色与表情包版权归相应权利人；原始 GIF 及其拼图仅在本机保留，不随 Git 仓库分发。公开代码和生成资源不代表授予原角色素材的商用许可，本仓库暂未指定统一的开源许可证。第三方库说明见 [THIRD-PARTY-NOTICES](docs/THIRD-PARTY-NOTICES.md)，参考素材见 [References](References/README.md)。
+
+Live2D 离线 Java 作者适配器及其自测单独采用 [GPL-3.0-or-later](tools/Live2DArt/LICENSE-EXPORTER.txt)，不进入 WPF 运行时，也不改变其余项目的许可状态。官方 Cubism Core / Editor 未随仓库分发，来源和后续发布边界见[工具链说明](docs/LIVE2D-TOOLCHAIN.md)。

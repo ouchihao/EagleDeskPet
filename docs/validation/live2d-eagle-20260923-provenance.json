@@ -1,0 +1,33 @@
+{
+  "sdkRelease": "Cubism SDK for Web 5-r.5",
+  "core": {
+    "name": "live2dcubismcore.js",
+    "bytes": 246861,
+    "sha256": "3ba426cc788d74f276598e98fe97983214f2a95758b48dafb1e606d041db1ba7"
+  },
+  "framework": {
+    "name": "framework-r5.js",
+    "bytes": 317682,
+    "sha256": "29c9383ae52e50123277154629157b912d32adcdbbf740d24fdb54ef5ac42701"
+  },
+  "manifest": {
+    "name": "eagle.model3.json",
+    "bytes": 681,
+    "sha256": "fb633db302445c73236b140e53c2ddce8af46430a0718e11c1deeda9285eee30"
+  },
+  "moc": {
+    "name": "eagle.moc3",
+    "bytes": 72896,
+    "sha256": "4d4c5e75dcb4f51f42f85edd2470701ba9c22594be7c381bb2fa5e20268ddd5a"
+  },
+  "textures": [
+    {
+      "name": "texture_00.png",
+      "bytes": 239107,
+      "sha256": "d1d3f6741d03778adb0190b1b8d6bbfe8d8989ad5a8e016536c0304d153a1241"
+    }
+  ],
+  "sdkInfo": "id: 10\nversion: 5-r.5\ncreated: 20260401T182224\u002B0900\nhash:\n  core: d96fa37f45ab8448936200c16a090ca9c2dc2945\n  framework: a49bc546222194ac28326d20a46aa35ee4d1ce8e\n  samples: d7d41dfa407deb8f57ffdaac3c2a74e23aada68e\n",
+  "createdUtc": "2026-09-23T01:44:24.2832122+00:00",
+  "inputPolicy": "User-provided local SDK; no official Core copied, patched, downloaded by this tool, or embedded in repository"
+}

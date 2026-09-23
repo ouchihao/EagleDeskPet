@@ -50,7 +50,16 @@ SOFTWARE.
 
 ## 开发诊断工具（不随宠物发布包分发）
 
-`tools/Live2DHostProbe` 使用 Microsoft.Web.WebView2 `1.0.4191.47`，受其 NuGet 包内 `LICENSE.txt` 的 Microsoft 软件许可条款约束。它不是 Cubism SDK，既有 WebView2 Runtime 没有被复制进仓库或桌宠发布包。诊断工具的版本与使用说明见其 README；本轮未引入或再分发专有 Cubism Core 或第三方 Live2D 模型。
+`tools/Live2DHostProbe` 与 `tools/Live2DModelProbe` 使用 Microsoft.Web.WebView2 `1.0.4191.47`，受其 NuGet 包内 `LICENSE.txt` 的 Microsoft 软件许可条款约束。它不是 Cubism SDK，既有 WebView2 Runtime 没有被复制进仓库或桌宠发布包。
+
+### Live2D 制作与模型探针（2026-09-23）
+
+- `tools/Live2DArt` 固定使用 ag-psd 31.0.2（MIT）、sharp 0.35.4（Apache-2.0），`tools/Live2DModelProbe` 的本地 Framework 构建使用 esbuild 0.25.10（MIT）；锁文件记录实际解析的依赖，node_modules 不提交
+- PSD2Live 1.1.1 是单独下载运行的 GPL-3.0 作者工具，不嵌入 WPF。直接链接其 API 的 `ExportPsdModel.java` 和 `ExportPsdModelSelfTest.java` 单独使用 GPL-3.0-or-later，完整条款见 [LICENSE-EXPORTER.txt](../tools/Live2DArt/LICENSE-EXPORTER.txt)；其余代码不因此改用统一许可
+- 官方 Cubism SDK Web 5-r.5、Editor 5.3.04 仅保留本地开发副本。模型探针读取用户本地 Core / Framework，仓库和生产发布包不包含专有 Core、官方 SDK 源码、Editor 或第三方角色样例
+- 鹰模型来自本项目参考形象生成的拆层图，原画、工具、模型输出与 SDK 授权分别记录；不宣称自动获得原角色商用权或可扩展应用发行许可
+
+固定上游链接、版本、哈希和许可边界见 [Live2D 工具链](LIVE2D-TOOLCHAIN.md)。本轮没有购买或激活 PRO、没有采用限期 Alpha 工具。
 
 ## v1.8 · TOML 配置
 

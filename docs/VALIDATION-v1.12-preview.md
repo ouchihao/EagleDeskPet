@@ -38,6 +38,8 @@ GUI/MCP 旧测试首跑在「启动后 12 秒内扣粮」超时；资源初始�
 
 ## Live2D 的真实边界
 
+此节记录 2026-09-22 已打包预览版的边界，不是后续源码开发的冻结状态。2026-09-23 已继续标准 Live2D、生成首个鹰模型并使用官方 SDK 验证，见 [模型小样记录](LIVE2D-MODEL-SAMPLE.md)；该增量未重新打包进本页的 v1.12 生产 EXE，也未改变下述历史测试结果。
+
 透明宿主探针通过透明/明暗背景合成与 5 项 WebGL 层次取样；采样 10 秒得到 599 次回调、约 59.95 Hz、P95 16.8 ms。数据见[原始报告](validation/live2d-host-p0-20260922.json)和 [P0 结论](LIVE2D-P0-RESULTS.md)。这是简单几何与 `requestAnimationFrame` 数据，**不是 Cubism 性能、物理屏幕 Present FPS 或 2 小时稳定性证明**。
 
 角色包区分 ContractValid、FilesVerified、RuntimeReady。缺少受信任的实际 SDK 加载探针时不能报告 RuntimeReady，模板也不进入商店。两个不同比例、参数名与路径的合同夹具只能证明映射不依赖角色名称，不能证明两个真实模型可替换。
