@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "model": "eagle",
+  "generator": "PSD2Live 1.1.1",
+  "runtimeTarget": "Cubism50",
+  "mocVersion": 5,
+  "cmo3TargetVersionNo": 5000000,
+  "cmo3FileFormatVersion": "500000000",
+  "canvas": {"width":512,"height":512},
+  "config": {"atlasSize":2048,"meshSpacing":32,"headTurnStrength":0.65,"bodyStrength":0.65,"meshOnly":false,"generateDeformers":true,"exportMotions":true},
+  "faceRig": {"algorithm":"perspective-parallelogram-nine-pose-v2","angleX":[-45,0,45],"angleY":[-30,0,30],"initialAngleZ":0.0,"centerX":256.0,"centerY":177.29,"radiusX":142.56,"radiusY":154.32999},
+  "deformerHierarchy": {"head":"DeformHeadContainer","face":"DeformFaceNinePose","frontHair":["DeformHairFrontFollow","DeformHairFrontPhysics"],"backHair":["DeformHairBackFollow","DeformHairBackPhysics"]},
+  "physics": {"enabled":false,"frontHair":false,"backHair":false,"eyeJelly":false,"preset":"hair-and-eye-pendulum"},
+  "summary": {"layers":15,"drawables":15,"deformers":17,"parameters":18,"atlasPages":1},
+  "layers": [
+    {"source":"footwear-r","type":"preset","tag":"footwear","side":"RIGHT","parameter":"","switchId":0,"drawable":"ArtMeshFootwearR"},
+  {"source":"footwear-l","type":"preset","tag":"footwear","side":"LEFT","parameter":"","switchId":0,"drawable":"ArtMeshFootwearL"},
+  {"source":"topwear","type":"preset","tag":"topwear","side":"NONE","parameter":"","switchId":0,"drawable":"ArtMeshTopwear"},
+  {"source":"handwear-r","type":"preset","tag":"handwear","side":"RIGHT","parameter":"","switchId":0,"drawable":"ArtMeshHandwearR"},
+  {"source":"handwear-l","type":"preset","tag":"handwear","side":"LEFT","parameter":"","switchId":0,"drawable":"ArtMeshHandwearL"},
+  {"source":"face","type":"preset","tag":"face","side":"NONE","parameter":"","switchId":0,"drawable":"ArtMeshFace"},
+  {"source":"facedetail-r","type":"preset","tag":"facedetail","side":"RIGHT","parameter":"","switchId":0,"drawable":"ArtMeshFaceDetailR"},
+  {"source":"facedetail-l","type":"preset","tag":"facedetail","side":"LEFT","parameter":"","switchId":0,"drawable":"ArtMeshFaceDetailL"},
+  {"source":"eyebrow-r","type":"preset","tag":"eyebrow","side":"RIGHT","parameter":"","switchId":0,"drawable":"ArtMeshEyebrowR"},
+  {"source":"eyebrow-l","type":"preset","tag":"eyebrow","side":"LEFT","parameter":"","switchId":0,"drawable":"ArtMeshEyebrowL"},
+  {"source":"irides-r","type":"preset","tag":"eyelash","side":"RIGHT","parameter":"","switchId":0,"drawable":"ArtMeshEyelashR"},
+  {"source":"irides-l","type":"preset","tag":"eyelash","side":"LEFT","parameter":"","switchId":0,"drawable":"ArtMeshEyelashL"},
+  {"source":"mouth","type":"preset","tag":"mouth","side":"NONE","parameter":"","switchId":0,"drawable":"ArtMeshMouth2"},
+  {"source":"mouth lower","type":"preset","tag":"mouth","side":"NONE","parameter":"","switchId":0,"drawable":"ArtMeshMouth"},
+  {"source":"mouth close","type":"preset","tag":"mouth_close","side":"NONE","parameter":"","switchId":0,"drawable":"ArtMeshMouthClose"}
+  ],
+  "warnings": ["Duplicate layer names detected: footwear, handwear, facedetail, eyebrow, irides; stable layer IDs were used to distinguish them."]
+}

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "authoringAssertionsPassed": true,
+  "officialRuntimeValidation": "pending",
+  "editorRoundTripValidation": "pending",
+  "inputSha256": "ec70eb236b23117ef0f9633eb4a5497e46cd2454e02657a55015b24cc86d7fdb",
+  "profileSha256": "f6431ee6e470898a6d8ff852daf15cd23110373301bfccf4ee36d04fe12c4939",
+  "authoringJarSha256": "9f22cea3fb5d4877fc852ad850563bf89efc7a9d6e1195d704ec4da036df4826",
+  "rootPinnedMeshes": 2,
+  "movingEyeBindings": 2,
+  "drawables": 15,
+  "parameters": 18,
+  "files": [
+    {"path": "eagle.moc3", "bytes": 72896, "sha256": "4d4c5e75dcb4f51f42f85edd2470701ba9c22594be7c381bb2fa5e20268ddd5a"},
+    {"path": "eagle.cdi3.json", "bytes": 3652, "sha256": "f906c1f2f33ec6f0ea923ca15085c80c7545578517cf573c0b7b88da3b8fe775"},
+    {"path": "eagle.2048/texture_00.png", "bytes": 239107, "sha256": "d1d3f6741d03778adb0190b1b8d6bbfe8d8989ad5a8e016536c0304d153a1241"},
+    {"path": "eagle.idle.motion3.json", "bytes": 2282, "sha256": "5f709b9834310a670e1b55b448421568377031f26ad79040925db29da8943990"},
+    {"path": "eagle.blink.motion3.json", "bytes": 1155, "sha256": "399f91b7bfac0666f589ab7c6daace5e33e5c6d6e7c6e7ca4024b6db48a65110"},
+    {"path": "eagle.nod.motion3.json", "bytes": 1751, "sha256": "bfd9a247d5ec8479145c2dddfd5fdbf03e1c46df8d7460f07badd146c1e19418"},
+    {"path": "eagle.shake.motion3.json", "bytes": 1571, "sha256": "9714b72b47dba8e33b6b08d0f9e84c77309a6ce6c98d2a3815c3a59d69163b01"},
+    {"path": "eagle.model3.json", "bytes": 681, "sha256": "fb633db302445c73236b140e53c2ddce8af46430a0718e11c1deeda9285eee30"},
+    {"path": "eagle.cmo3", "bytes": 646231, "sha256": "e3c43673d0c4b71470d67be3199a589a9b078a6cad03b9e9227ced938ce8ff37"},
+    {"path": "eagle.psd2live.json", "bytes": 3120, "sha256": "8a2d9c54018fc5741cc66c0b56666c41e1312aed5066af0a5a035292c5befa3b"}
+  ],
+  "warnings": ["Duplicate layer names detected: footwear, handwear, facedetail, eyebrow, irides; stable layer IDs were used to distinguish them."]
+}

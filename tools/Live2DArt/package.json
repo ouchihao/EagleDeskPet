@@ -1,0 +1,11 @@
+{
+  "name": "eagle-live2d-art-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible packing of AI-created eagle parts into a layered author PSD",
+  "dependencies": {
+    "ag-psd": "31.0.2",
+    "sharp": "0.35.4"
+  }
+}

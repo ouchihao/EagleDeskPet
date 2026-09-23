@@ -5,6 +5,7 @@ dist/
 .codex-build/
 .tool-cache/
 __pycache__/
+**/node_modules/
 *.pyc
 *.user
 *.suo

@@ -1,0 +1,49 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "eagle.moc3",
+		"Textures": [
+			"eagle.2048/texture_00.png"
+		],
+		"DisplayInfo": "eagle.cdi3.json",
+		"Motions": {
+			"Idle": [
+				{
+					"File": "eagle.idle.motion3.json"
+				}
+			],
+			"Blink": [
+				{
+					"File": "eagle.blink.motion3.json"
+				}
+			],
+			"Nod": [
+				{
+					"File": "eagle.nod.motion3.json"
+				}
+			],
+			"Shake": [
+				{
+					"File": "eagle.shake.motion3.json"
+				}
+			]
+		}
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": [
+				"ParamEyeLOpen",
+				"ParamEyeROpen"
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": [
+				"ParamMouthOpenY"
+			]
+		}
+	]
+}

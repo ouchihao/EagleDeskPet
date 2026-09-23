@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "psd2liveVersion": "1.1.1",
+  "expectedSourceLayers": 15,
+  "config": {
+    "atlasSize": 2048,
+    "meshSpacing": 32,
+    "headTurnStrength": 0.65,
+    "bodyStrength": 0.65,
+    "mouthOutlineEnabled": false,
+    "generatePhysics": false
+  },
+  "layers": [
+    {
+      "name": "irides-l",
+      "semanticTag": "EYELASH",
+      "side": "LEFT",
+      "requiredGeometryParameter": "ParamEyeLOpen",
+      "closedEye": { "heightPx": 1.25, "curveDepthPx": 1.5 }
+    },
+    {
+      "name": "irides-r",
+      "semanticTag": "EYELASH",
+      "side": "RIGHT",
+      "requiredGeometryParameter": "ParamEyeROpen",
+      "closedEye": { "heightPx": 1.25, "curveDepthPx": 1.5 }
+    },
+    { "name": "footwear-l", "parent": null },
+    { "name": "footwear-r", "parent": null }
+  ],
+  "requiredParameters": [
+    "ParamAngleX", "ParamAngleY", "ParamAngleZ",
+    "ParamEyeLOpen", "ParamEyeROpen", "ParamBreath"
+  ]
+}

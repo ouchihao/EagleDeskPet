@@ -10,3 +10,9 @@
 *.jpg binary
 *.jpeg binary
 *.gif binary
+*.psd binary
+*.cmo3 binary
+*.moc3 binary
+*.webm binary
+*.mjs text eol=lf
+*.java text eol=lf
