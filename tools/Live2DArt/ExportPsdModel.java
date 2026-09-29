@@ -3,7 +3,9 @@ import io.github.psd2live.core.*;
 import kotlinx.serialization.json.*;
 import org.umamo.format.art.SourceLayer;
 import org.umamo.runtime.model.Drawable;
+import org.umamo.runtime.model.Deformer;
 import org.umamo.runtime.model.KeyformAxis;
+import org.umamo.runtime.model.KeyformGrid;
 import org.umamo.runtime.model.Parameter;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -32,7 +34,7 @@ public final class ExportPsdModel {
         System.out.println("Profile: " + profilePath);
 
         JsonObject profile = object(Json.Default.parseToJsonElement(Files.readString(profilePath)), "profile");
-        keys(profile, Set.of("schemaVersion", "psd2liveVersion", "expectedSourceLayers", "config", "layers", "requiredParameters"));
+        keys(profile, Set.of("schemaVersion", "psd2liveVersion", "expectedSourceLayers", "config", "layers", "requiredParameters", "headConnection"));
         if (integer(profile.get("schemaVersion"), "schemaVersion") != 1 || !string(profile.get("psd2liveVersion"), "psd2liveVersion").equals("1.1.1"))
             throw new IllegalArgumentException("This adapter requires schemaVersion 1 and PSD2Live 1.1.1");
         var pipeline = new PSD2LivePipeline();
@@ -79,8 +81,8 @@ public final class ExportPsdModel {
 
         PipelineConfig config = configure(base, object(profile.get("config"), "config"), overrides, parents);
         var preview = pipeline.buildPreview(input, config);
+        RigEditOverlay edits = new RigEditOverlay();
         if (!eyeClosures.isEmpty()) {
-            RigEditOverlay edits = new RigEditOverlay();
             for (Drawable drawable : preview.getRig().getPuppet().getDrawables()) {
                 String drawableId = mangledString(drawable, Drawable.class, "getId-");
                 String sourceId = preview.getRig().getLayerIdByDrawableId().get(drawableId);
@@ -120,9 +122,14 @@ public final class ExportPsdModel {
                 }
                 System.out.println("Authored eye closure: " + drawableId + " -> " + parameter + " @ 0 / 0.5 / 1, no opacity fade");
             }
-            config = withEdits(config, edits);
-            preview = pipeline.updateRigEdits(preview, config, "authoring-validation-preview");
         }
+        if (profile.containsKey("headConnection"))
+            edits = authorHeadConnection(edits, preview.getRig().getPuppet().getDeformers(),
+                preview.getAnalysis().getAnchors().getCharacter(),
+                object(profile.get("headConnection"), "headConnection"),
+                analysis.getSource().getWidthPx(), analysis.getSource().getHeightPx());
+        config = withEdits(config, edits);
+        preview = pipeline.updateRigEdits(preview, config, "authoring-validation-preview");
         var rig = preview.getRig();
         var parameters = new HashSet<String>();
         for (Parameter parameter : rig.getPuppet().getParameters()) parameters.add(mangledString(parameter, Parameter.class, "getId-"));
@@ -175,6 +182,10 @@ public final class ExportPsdModel {
             .append("\n  \"authoringJarSha256\": ").append(quote(sha256(authoringJar))).append(',')
             .append("\n  \"rootPinnedMeshes\": ").append(checkedFeet.size()).append(',')
             .append("\n  \"movingEyeBindings\": ").append(checkedEyes.size()).append(',')
+            .append("\n  \"chestAnchoredHead\": ").append(profile.containsKey("headConnection")).append(',')
+            .append("\n  \"featherSurfaceAnchored\": ").append(profile.containsKey("headConnection") &&
+                object(profile.get("headConnection"), "headConnection").containsKey("pinFaceFeathers") &&
+                bool(object(profile.get("headConnection"), "headConnection").get("pinFaceFeathers"), "pinFaceFeathers")).append(',')
             .append("\n  \"drawables\": ").append(rig.getPuppet().getDrawables().size()).append(',')
             .append("\n  \"parameters\": ").append(parameters.size()).append(',')
             .append("\n  \"files\": [");
@@ -199,7 +210,7 @@ public final class ExportPsdModel {
 
     private static PipelineConfig configure(PipelineConfig base, JsonObject settings,
             Map<String, LayerClassificationOverride> layers, Map<String, String> parents) throws Exception {
-        Set<String> supported = Set.of("atlasSize", "meshSpacing", "headTurnStrength", "bodyStrength", "mouthOutlineEnabled", "generatePhysics");
+        Set<String> supported = Set.of("atlasSize", "meshSpacing", "headTurnStrength", "bodyStrength", "featureDisplacementEnabled", "mouthOutlineEnabled", "generatePhysics");
         keys(settings, supported);
         Method copy = Arrays.stream(PipelineConfig.class.getMethods()).filter(method -> method.getName().equals("copy")).findFirst().orElseThrow();
         if (copy.getParameterCount() != CONFIG_COMPONENTS) throw new IllegalStateException("Unsupported PSD2Live PipelineConfig ABI");
@@ -217,11 +228,179 @@ public final class ExportPsdModel {
         }
         if (settings.containsKey("headTurnStrength")) values[10] = strength(settings.get("headTurnStrength"), "headTurnStrength");
         if (settings.containsKey("bodyStrength")) values[11] = strength(settings.get("bodyStrength"), "bodyStrength");
+        if (settings.containsKey("featureDisplacementEnabled")) values[14] = bool(settings.get("featureDisplacementEnabled"), "featureDisplacementEnabled");
         if (settings.containsKey("mouthOutlineEnabled")) values[15] = bool(settings.get("mouthOutlineEnabled"), "mouthOutlineEnabled");
         if (settings.containsKey("generatePhysics")) values[25] = bool(settings.get("generatePhysics"), "generatePhysics");
         values[40] = layers;
         values[43] = parents;
         return (PipelineConfig) copy.invoke(base, values);
+    }
+
+    // The lower head blends into the chest instead of rotating as a detached plate around its beak
+    private static RigEditOverlay authorHeadConnection(RigEditOverlay edits, List<Deformer> deformers,
+            Bounds character, JsonObject settings, int canvasWidth, int canvasHeight) throws Exception {
+        keys(settings, Set.of("pivotX", "pivotY", "softAnchorStartY", "softAnchorEndY", "maxTiltDegrees", "pinFaceFeathers"));
+        float pivotX = boundedNumber(settings.get("pivotX"), "pivotX", 0, canvasWidth);
+        float pivotY = boundedNumber(settings.get("pivotY"), "pivotY", 0, canvasHeight);
+        float startY = boundedNumber(settings.get("softAnchorStartY"), "softAnchorStartY", 0, canvasHeight);
+        float endY = boundedNumber(settings.get("softAnchorEndY"), "softAnchorEndY", 0, canvasHeight);
+        float maxTilt = boundedNumber(settings.get("maxTiltDegrees"), "maxTiltDegrees", 1, 20);
+        boolean pinFace = settings.containsKey("pinFaceFeathers") && bool(settings.get("pinFaceFeathers"), "pinFaceFeathers");
+        if (endY <= startY || pivotY < startY || pivotY > endY)
+            throw new IllegalArgumentException("Head pivot must lie within an increasing soft-anchor band");
+        Deformer.Rotation rotation = null;
+        Deformer.Warp container = null;
+        for (Deformer deformer : deformers) {
+            String id = mangledString(deformer, Deformer.class, "getId-");
+            if (id.equals("DeformHeadRotation") && deformer instanceof Deformer.Rotation value) rotation = value;
+            if (id.equals("DeformHeadContainer") && deformer instanceof Deformer.Warp value) container = value;
+        }
+        if (rotation == null || container == null || rotation.getGeometryGrid() == null || container.getGeometryGrid() == null)
+            throw new IllegalStateException("Expected PSD2Live head rotation and container geometry");
+        if (!"DeformHeadRotation".equals(mangledString(container, Deformer.class, "getParent-")))
+            throw new IllegalStateException("Head container must be the rotation's pixel-space child");
+        var rotationGrid = rotation.getGeometryGrid();
+        var headGrid = container.getGeometryGrid();
+        requireAxes(rotationGrid, Set.of("ParamAngleZ"));
+        requireAxes(headGrid, Set.of("ParamAngleX", "ParamAngleY"));
+        var restRotation = rotationGrid.getCells().stream().filter(cell -> neutral(rotationGrid, cell.getCoordinate())).findFirst().orElseThrow().getForm();
+        var restHead = headGrid.getCells().stream().filter(cell -> neutral(headGrid, cell.getCoordinate())).findFirst().orElseThrow().getForm().getControlPoints();
+        float oldX = character.getLeft() + restRotation.getOriginX() * character.getWidth();
+        float oldY = character.getTop() + restRotation.getOriginY() * character.getHeight();
+        double baseAngle = Math.toRadians(rotation.getBaseAngle());
+        float cosine = (float) Math.cos(baseAngle), sine = (float) Math.sin(baseAngle);
+        float offsetX = cosine * (oldX - pivotX) + sine * (oldY - pivotY);
+        float offsetY = -sine * (oldX - pivotX) + cosine * (oldY - pivotY);
+        float localPivotX = (pivotX - character.getLeft()) / character.getWidth();
+        float localPivotY = (pivotY - character.getTop()) / character.getHeight();
+        var rotationTarget = new RigTargetRef(RigTargetKind.ROTATION_DEFORMER, "DeformHeadRotation", null);
+        var headTarget = new RigTargetRef(RigTargetKind.WARP_DEFORMER, "DeformHeadContainer", null);
+        float neutralError = 0, bottomMotion = 0, topMotion = 0;
+        int anchoredControls = 0;
+        for (int i = 0; i < restHead.length; i += 2)
+            if (oldY + sine * restHead[i] + cosine * restHead[i + 1] >= endY) anchoredControls++;
+        if (anchoredControls == 0)
+            throw new IllegalArgumentException("Soft-anchor band must include at least one fully anchored head control point");
+        int forms = 0;
+        for (float z : new float[] {-30f, -15f, 0f, 15f, 30f}) {
+            float angle = z / 30f * maxTilt;
+            edits = edits.setKeyform(new RigKeyformSetEdit(rotationTarget, Map.of("ParamAngleZ", z),
+                new RigKeyformGeometryEdit(null, localPivotX, localPivotY, angle, 1f, null), null));
+            for (var cell : headGrid.getCells()) {
+                var pose = coordinate(headGrid, cell.getCoordinate());
+                pose.put("ParamAngleZ", z);
+                float[] generated = cell.getForm().getControlPoints();
+                var points = new ArrayList<Float>(generated.length);
+                for (int i = 0; i < generated.length; i += 2) {
+                    float restX = restHead[i] + offsetX, restY = restHead[i + 1] + offsetY;
+                    float canvasY = oldY + sine * restHead[i] + cosine * restHead[i + 1];
+                    float weight = smoothStep((canvasY - startY) / (endY - startY));
+                    float x = restX + (generated[i] - restHead[i]) * (1f - weight);
+                    float y = restY + (generated[i + 1] - restHead[i + 1]) * (1f - weight);
+                    double counterAngle = Math.toRadians(-angle * weight);
+                    float authoredX = (float) (x * Math.cos(counterAngle) - y * Math.sin(counterAngle));
+                    float authoredY = (float) (x * Math.sin(counterAngle) + y * Math.cos(counterAngle));
+                    points.add(authoredX); points.add(authoredY);
+                    double theta = Math.toRadians(angle);
+                    float rotatedX = (float) (authoredX * Math.cos(theta) - authoredY * Math.sin(theta));
+                    float rotatedY = (float) (authoredX * Math.sin(theta) + authoredY * Math.cos(theta));
+                    float motion = (float) Math.hypot(rotatedX - restX, rotatedY - restY);
+                    if (weight == 1f) bottomMotion = Math.max(bottomMotion, motion);
+                    if (weight == 0f) topMotion = Math.max(topMotion, motion);
+                    if (z == 0f && neutral(headGrid, cell.getCoordinate())) {
+                        float reconstructedX = pivotX + cosine * authoredX - sine * authoredY;
+                        float reconstructedY = pivotY + sine * authoredX + cosine * authoredY;
+                        neutralError = Math.max(neutralError, (float) Math.hypot(
+                            reconstructedX - (oldX + cosine * restHead[i] - sine * restHead[i + 1]),
+                            reconstructedY - canvasY));
+                    }
+                }
+                edits = edits.setKeyform(new RigKeyformSetEdit(headTarget, pose,
+                    new RigKeyformGeometryEdit(points, null, null, null, null, null), null));
+                forms++;
+            }
+        }
+        if (neutralError > 0.001f || bottomMotion > 0.001f || topMotion < 1f)
+            throw new IllegalStateException("Chest rig must preserve neutral, anchor lower edge, and retain visible head movement");
+        System.out.printf(Locale.ROOT,
+            "Authored chest head rig: pivot=(%.2f,%.2f), soft-band=%.2f..%.2f, tilt=+/-%.2f, keyforms=%d, anchored-controls=%d, neutral-error=%.6f px, pinned-control-motion=%.6f px, upper-motion=%.3f px%n",
+            pivotX, pivotY, startY, endY, maxTilt, forms, anchoredControls, neutralError, bottomMotion, topMotion);
+        if (pinFace) edits = anchorFeatherSurface(edits, deformers, restHead, oldY, cosine, sine, startY, endY);
+        return edits;
+    }
+
+    // The facial surface is a child warp and must not slide its feather edge across the anchored chest
+    private static RigEditOverlay anchorFeatherSurface(RigEditOverlay edits, List<Deformer> deformers,
+            float[] headRest, float oldPivotY, float cosine, float sine, float startY, float endY) throws Exception {
+        Deformer.Warp face = null;
+        for (Deformer deformer : deformers)
+            if (deformer instanceof Deformer.Warp warp && "DeformFaceNinePose".equals(mangledString(deformer, Deformer.class, "getId-"))) face = warp;
+        if (face == null || face.getGeometryGrid() == null ||
+            !"DeformHeadContainer".equals(mangledString(face, Deformer.class, "getParent-")))
+            throw new IllegalStateException("Expected facial surface directly below the head container");
+        var grid = face.getGeometryGrid();
+        requireAxes(grid, Set.of("ParamAngleX", "ParamAngleY"));
+        float[] rest = grid.getCells().stream().filter(cell -> neutral(grid, cell.getCoordinate())).findFirst().orElseThrow().getForm().getControlPoints();
+        float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY;
+        float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
+        for (int i = 0; i < headRest.length; i += 2) {
+            minX = Math.min(minX, headRest[i]); maxX = Math.max(maxX, headRest[i]);
+            minY = Math.min(minY, headRest[i + 1]); maxY = Math.max(maxY, headRest[i + 1]);
+        }
+        int pinned = 0, preserved = 0;
+        float[] weights = new float[rest.length / 2];
+        for (int i = 0; i < rest.length; i += 2) {
+            float canvasY = oldPivotY + sine * (minX + rest[i] * (maxX - minX)) +
+                cosine * (minY + rest[i + 1] * (maxY - minY));
+            weights[i / 2] = smoothStep((canvasY - startY) / (endY - startY));
+            if (weights[i / 2] == 1f) pinned++;
+            if (weights[i / 2] == 0f) preserved++;
+        }
+        if (pinned == 0 || preserved == 0) throw new IllegalArgumentException("Feather surface band must anchor lower rows and preserve upper rows");
+        var target = new RigTargetRef(RigTargetKind.WARP_DEFORMER, "DeformFaceNinePose", null);
+        for (var cell : grid.getCells()) {
+            float[] generated = cell.getForm().getControlPoints();
+            var points = new ArrayList<Float>(generated.length);
+            for (int i = 0; i < generated.length; i++) {
+                float weight = weights[i / 2];
+                float value = weight == 0f ? generated[i] : weight == 1f ? rest[i] : rest[i] + (generated[i] - rest[i]) * (1f - weight);
+                if (neutral(grid, cell.getCoordinate()) && value != rest[i]) throw new IllegalStateException("Feather anchor changed neutral geometry");
+                points.add(value);
+            }
+            edits = edits.setKeyform(new RigKeyformSetEdit(target, coordinate(grid, cell.getCoordinate()),
+                new RigKeyformGeometryEdit(points, null, null, null, null, null), null));
+        }
+        System.out.printf(Locale.ROOT, "Authored feather surface anchor: keyforms=%d, fixed-controls=%d, unchanged-upper-controls=%d, neutral preserved exactly%n",
+            grid.getCells().size(), pinned, preserved);
+        return edits;
+    }
+
+    private static void requireAxes(KeyformGrid<?> grid, Set<String> expected) throws Exception {
+        var actual = new HashSet<String>();
+        for (KeyformAxis axis : grid.getAxes()) actual.add(mangledString(axis, KeyformAxis.class, "getParameterId-"));
+        if (!actual.equals(expected)) throw new IllegalStateException("Unexpected head geometry axes: " + actual);
+    }
+    private static boolean neutral(KeyformGrid<?> grid, int[] coordinate) {
+        for (int i = 0; i < coordinate.length; i++) if (grid.getAxes().get(i).getKeys()[coordinate[i]] != 0f) return false;
+        return true;
+    }
+    private static Map<String, Float> coordinate(KeyformGrid<?> grid, int[] coordinate) throws Exception {
+        var result = new LinkedHashMap<String, Float>();
+        for (int i = 0; i < coordinate.length; i++) {
+            var axis = grid.getAxes().get(i);
+            result.put(mangledString(axis, KeyformAxis.class, "getParameterId-"), axis.getKeys()[coordinate[i]]);
+        }
+        return result;
+    }
+    private static float smoothStep(float value) {
+        float t = Math.max(0f, Math.min(1f, value));
+        return t * t * (3f - 2f * t);
+    }
+    private static float boundedNumber(JsonElement value, String name, float min, float max) {
+        if (!(value instanceof JsonPrimitive primitive) || primitive.isString()) throw new IllegalArgumentException(name + " must be a number");
+        float result = Float.parseFloat(primitive.getContent());
+        if (!Float.isFinite(result) || result < min || result > max) throw new IllegalArgumentException(name + " must be in " + min + ".." + max);
+        return result;
     }
 
     private static String mangledString(Object value, Class<?> type, String prefix) throws Exception {

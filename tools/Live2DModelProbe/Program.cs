@@ -34,17 +34,18 @@ internal static class Program
     }
 }
 
-internal sealed record ProbeOptions(string Sdk, string Model, string Output, string Framework, int Seconds, bool Preview, bool EagleContract)
+internal sealed record ProbeOptions(string Sdk, string Model, string Output, string Framework, int Seconds, bool Preview, bool EagleContract, bool StressPoses)
 {
-    internal const string Usage = "Live2DModelProbe --sdk <absolute official Web R5 SDK root> --framework <absolute local Framework.js> --model <absolute model3.json> --output <new absolute directory> [--seconds 10] [--preview] [--eagle-contract]";
+    internal const string Usage = "Live2DModelProbe --sdk <absolute official Web R5 SDK root> --framework <absolute local Framework.js> --model <absolute model3.json> --output <new absolute directory> [--seconds 10] [--preview] [--eagle-contract] [--stress-poses]";
     internal static ProbeOptions Parse(string[] args)
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
-        bool preview = false, eagleContract = false;
+        bool preview = false, eagleContract = false, stressPoses = false;
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--preview") { preview = true; continue; }
             if (args[i] == "--eagle-contract") { eagleContract = true; continue; }
+            if (args[i] == "--stress-poses") { stressPoses = true; continue; }
             if (args[i] is not ("--sdk" or "--model" or "--output" or "--framework" or "--seconds") || ++i >= args.Length || !values.TryAdd(args[i - 1], args[i]))
                 throw new ArgumentException("Unknown, duplicated or incomplete argument");
         }
@@ -69,7 +70,8 @@ internal sealed record ProbeOptions(string Sdk, string Model, string Output, str
         int seconds = 10;
         if (values.TryGetValue("--seconds", out string? text) && !int.TryParse(text, out seconds)) throw new ArgumentException("Sampling seconds must be an integer");
         if (seconds is < 2 or > 60) throw new ArgumentException("Sampling seconds must be 2–60");
-        return new(sdk, model, output, framework, seconds, preview, eagleContract);
+        if (stressPoses && !eagleContract) throw new ArgumentException("Stress poses require the explicit eagle contract");
+        return new(sdk, model, output, framework, seconds, preview, eagleContract, stressPoses);
     }
 
     internal static void VerifyFramework(string sdk, string framework)
@@ -206,7 +208,8 @@ internal sealed class ProbeWindow : Window
             JsonElement initial = await _ready.Task.WaitAsync(TimeSpan.FromSeconds(40));
             File.WriteAllText(Path.Combine(_options.Output, "initial.json"), await core.ExecuteScriptAsync("window.probe.report()"));
             if (!initial.GetProperty("loaded").GetBoolean()) throw new InvalidDataException(initial.GetProperty("error").GetString());
-            foreach (string pose in new[] { "neutral", "eyes-closed", "eyes-half", "breath-high", "head-left", "head-right", "mouth-open" })
+            foreach (string pose in new[] { "neutral", "eyes-closed", "eyes-quarter", "eyes-half", "eyes-three-quarter", "breath-high",
+                "head-left", "head-right", "head-up", "head-down", "head-tilt-left", "head-tilt-right", "head-up-left", "head-down-right", "mouth-open" })
             {
                 await core.ExecuteScriptAsync("window.probe.pose(" + JsonSerializer.Serialize(pose) + ")");
                 await Task.Delay(150);
@@ -215,21 +218,25 @@ internal sealed class ProbeWindow : Window
             }
             await core.ExecuteScriptAsync("window.probe.resetMetrics(); window.probe.play(true); window.probe.beginRecording()");
             await Task.Delay(TimeSpan.FromSeconds(_options.Seconds));
-            await core.ExecuteScriptAsync("window.probe.videoResult=null; window.probe.finishRecording().then(data=>{window.probe.videoResult={data}}).catch(error=>{window.probe.videoResult={error:String(error)}})");
-            bool videoSaved = false;
-            for (int attempt = 0; attempt < 50; attempt++)
+            async Task SaveRecording(string filename)
             {
-                await Task.Delay(100);
-                using var video = JsonDocument.Parse(await core.ExecuteScriptAsync("window.probe.videoResult"));
-                if (video.RootElement.ValueKind == JsonValueKind.Null) continue;
-                if (video.RootElement.TryGetProperty("error", out var error)) throw new InvalidDataException(error.GetString());
-                string data = video.RootElement.GetProperty("data").GetString()!;
-                if (data.Length > 24 * 1024 * 1024) throw new InvalidDataException("Video output exceeds bound");
-                File.WriteAllBytes(Path.Combine(_options.Output, "animation-30fps.webm"), Convert.FromBase64String(data));
-                videoSaved = true;
-                break;
+                await core.ExecuteScriptAsync("window.probe.videoResult=null; window.probe.finishRecording().then(data=>{window.probe.videoResult={data}}).catch(error=>{window.probe.videoResult={error:String(error)}})");
+                bool videoSaved = false;
+                for (int attempt = 0; attempt < 50; attempt++)
+                {
+                    await Task.Delay(100);
+                    using var video = JsonDocument.Parse(await core.ExecuteScriptAsync("window.probe.videoResult"));
+                    if (video.RootElement.ValueKind == JsonValueKind.Null) continue;
+                    if (video.RootElement.TryGetProperty("error", out var error)) throw new InvalidDataException(error.GetString());
+                    string data = video.RootElement.GetProperty("data").GetString()!;
+                    if (data.Length > 24 * 1024 * 1024) throw new InvalidDataException("Video output exceeds bound");
+                    File.WriteAllBytes(Path.Combine(_options.Output, filename), Convert.FromBase64String(data));
+                    videoSaved = true;
+                    break;
+                }
+                if (!videoSaved) throw new TimeoutException("Video encoding timed out");
             }
-            if (!videoSaved) throw new TimeoutException("Video encoding timed out");
+            await SaveRecording("animation-30fps.webm");
             string reportText = await core.ExecuteScriptAsync("window.probe.report()");
             using var report = JsonDocument.Parse(reportText);
             var result = new { browserRuntime = environment.BrowserVersionString, webViewSdk = "1.0.4191.47", blockedRequests = _blocked,
@@ -237,6 +244,16 @@ internal sealed class ProbeWindow : Window
                 limitations = new[] { "Official Framework WebGL renderer with original local SDK shaders", "No physics/motion3 playback or 19-action/full-outfit acceptance", "Frame callbacks are not physical Present FPS", "No pet state, network or default browser profile used" } };
             File.WriteAllText(Path.Combine(_options.Output, "report.json"), JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
             Environment.ExitCode = report.RootElement.GetProperty("passed").GetBoolean() ? 0 : 1;
+            if (_options.StressPoses)
+            {
+                await core.ExecuteScriptAsync("window.probe.beginRecording(60); window.probe.beginStress()");
+                await Task.Delay(2300);
+                await SaveRecording("stress-60fps.webm");
+                string stressText = await core.ExecuteScriptAsync("window.probe.stressReport()");
+                using var stress = JsonDocument.Parse(stressText);
+                File.WriteAllText(Path.Combine(_options.Output, "stress-report.json"), stressText);
+                if (!stress.RootElement.GetProperty("passed").GetBoolean()) Environment.ExitCode = 1;
+            }
         }
         catch (Exception ex)
         {

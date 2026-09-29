@@ -38,12 +38,14 @@ dotnet run -c Release --no-build -- --sdk $sdkRoot --framework $frameworkBundle 
 2. 真正调用 `Moc.fromArrayBuffer`、`Model.fromMoc`；记录官方 Core 版本、MOC 版本、参数/网格/顶点和文件 hash
 3. 扫描每个参数的 min/default/max，记录每个 drawable 的顶点/透明度变化及非有限值；眼睛/呼吸/头摆必须有真实作用
 4. 使用同版官方 Framework renderer 和 SDK shader 渲染，包含 clipping masks；固定 neutral 取景矩阵，不逐帧自动缩放掩盖漂移
-5. 截图 neutral、闭眼、半闭、呼吸、左右摆头、张嘴；记录 WebGL 错误与实际非空像素
+5. 截图 neutral、闭眼、1/4 / 1/2 / 3/4 睁眼、呼吸、左右 / 上下摆头、左右歪头、两组 XYZ 组合极值与张嘴；记录 WebGL 错误与实际非空像素。共 15 个姿态固定使用中性取景，组合极值用于暴露头颈拉长或遮挡问题，不代表已批准作为待机动作幅度
 6. 连续驱动与错误监视；必须实际产生帧并完成至少请求时长 90% 的动画/墙钟采样才可能通过，运行时 error/rejection 导致不通过
 
 `provenance.json` 为输入来源，`initial.json` 为加载/静态扫描结果（此时动画尚未验完，`passed` 为 false 正常），`report.json` 为最终结果。失败写 `failure.txt`，不会伪装成功。正常 exit 0 表示本工具限定检查通过，exit 1 表示运行/模型未通过，exit 2 表示参数/输入错误。
 
 `animation-30fps.webm` 是 **canvas 的 30 fps 编码预览**，只含模型本身，不抓桌面、其它窗口或用户数据。报告中的 `requestAnimationFrame` 是回调间隔，不是物理显示帧率测量，不证明生产 EXE 60 FPS。WebView 运行配置单独放证据目录。
+
+修复肩部裂口等联动缺陷时，可同时传 `--eagle-contract --stress-poses`，在常规采样后增加独立的 2 秒八个 XYZ 角点往返压力测试，身体角度反向、呼吸高低联动。每段 250 ms 先保持精确角点 40 ms，再用 210 ms 平滑过渡；`exactCorners` 从实际绘制样本中的精确 ±1 三元组计数，不能以经过八段或接近 0.99 冒充八角点到达。生成 `stress-60fps.webm` 与逐帧几何记录 `stress-report.json`，仍使用同一中性取景；该刻意极端的快速轨迹不是生产动作。帧数、八角点实际覆盖、非有限值、错误与固定脚必须检查通过，最后仍需逐帧目视羽缘、底色与遮挡。编码请求 60 fps 不能证明物理屏幕 60 FPS。
 
 ## 测试与边界
 

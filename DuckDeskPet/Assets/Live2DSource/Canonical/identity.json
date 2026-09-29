@@ -1,0 +1,127 @@
+{
+  "source": "DuckDeskPet/Assets/mascot-animated-neutral.png",
+  "sourceRgbaSha256": "bfb4b0cba193d0a296070e9ec731f1629a10a261adb275b3a8d40d6506186e79",
+  "canvas": [
+    384,
+    346
+  ],
+  "hiddenPartsSource": "DuckDeskPet/Assets/Live2DSource/eagle-parts-v2.png",
+  "hiddenPartsRgbaSha256": "1aaa0012bef0cfe7a9281cf426d07de44ad568f7c04acb2513d149157b5643cf",
+  "hiddenPartsCanvas": [
+    1254,
+    1254
+  ],
+  "alphaDifferences": 0,
+  "visibleDifferences": 0,
+  "opaqueDifferences": 0,
+  "maximumPremultipliedDelta": 0,
+  "sourceVisiblePixelsReused": true,
+  "generatedArt": "Hidden backing only; no generated visible silhouette or facial features",
+  "layers": [
+    {
+      "name": "footwear-r",
+      "left": 138,
+      "top": 305,
+      "width": 55,
+      "height": 32
+    },
+    {
+      "name": "footwear-l",
+      "left": 193,
+      "top": 305,
+      "width": 52,
+      "height": 32
+    },
+    {
+      "name": "topwear",
+      "left": 112,
+      "top": 197,
+      "width": 160,
+      "height": 112
+    },
+    {
+      "name": "handwear-r",
+      "left": 111,
+      "top": 197,
+      "width": 49,
+      "height": 98
+    },
+    {
+      "name": "handwear-l",
+      "left": 224,
+      "top": 197,
+      "width": 49,
+      "height": 97
+    },
+    {
+      "name": "face",
+      "left": 118,
+      "top": 84,
+      "width": 149,
+      "height": 158
+    },
+    {
+      "name": "facedetail-r",
+      "left": 139,
+      "top": 162,
+      "width": 23,
+      "height": 12
+    },
+    {
+      "name": "facedetail-l",
+      "left": 235,
+      "top": 162,
+      "width": 23,
+      "height": 12
+    },
+    {
+      "name": "eyebrow-r",
+      "left": 152,
+      "top": 125,
+      "width": 29,
+      "height": 14
+    },
+    {
+      "name": "eyebrow-l",
+      "left": 214,
+      "top": 125,
+      "width": 31,
+      "height": 16
+    },
+    {
+      "name": "irides-r",
+      "left": 150,
+      "top": 139,
+      "width": 32,
+      "height": 25
+    },
+    {
+      "name": "irides-l",
+      "left": 215,
+      "top": 139,
+      "width": 30,
+      "height": 25
+    },
+    {
+      "name": "mouth",
+      "left": 187,
+      "top": 172,
+      "width": 22,
+      "height": 13
+    },
+    {
+      "name": "mouth lower",
+      "left": 184,
+      "top": 177,
+      "width": 29,
+      "height": 13
+    },
+    {
+      "name": "mouth close",
+      "left": 165,
+      "top": 148,
+      "width": 68,
+      "height": 50
+    }
+  ]
+}

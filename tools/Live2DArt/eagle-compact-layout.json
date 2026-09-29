@@ -1,0 +1,21 @@
+{
+  "reference": "Assets/mascot-animated-neutral.png; high-resolution details: Assets/mascot.png",
+  "note": "Rounded parts v2; flatter crown via independent face-layer placement, collar bottom remains at304, facial features and body are not squashed; torso underlap stays hidden beneath the head",
+  "layout": [
+    ["footwear-r", [700, 819, 216, 130], [163, 428, 86, 51]],
+    ["footwear-l", [998, 819, 215, 130], [266, 428, 87, 51]],
+    ["topwear", [371, 114, 350, 285], [150, 234, 212, 210]],
+    ["handwear-r", [752, 124, 184, 251], [115, 263, 85, 134]],
+    ["handwear-l", [1030, 124, 183, 251], [317, 261, 79, 135]],
+    ["face", [9, 57, 353, 357], [124, 49, 267, 255]],
+    ["facedetail-r", [72, 1092, 184, 80], [167, 175, 37, 16]],
+    ["facedetail-l", [388, 1093, 184, 79], [334, 175, 35, 16]],
+    ["eyebrow-r", [700, 547, 208, 84], [191, 112, 46, 18]],
+    ["eyebrow-l", [1006, 548, 207, 85], [298, 112, 46, 18]],
+    ["irides-r", [125, 506, 117, 150], [205, 137, 23, 29]],
+    ["irides-l", [439, 506, 117, 149], [311, 137, 23, 30]],
+    ["mouth", [732, 1096, 134, 82], [246, 186, 44, 26]],
+    ["mouth lower", [401, 824, 225, 102], [236, 194, 64, 28]],
+    ["mouth close", [49, 761, 282, 204], [211, 148, 113, 83]]
+  ]
+}

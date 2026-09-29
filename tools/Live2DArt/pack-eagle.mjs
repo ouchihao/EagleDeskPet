@@ -6,18 +6,18 @@ import { writePsdBuffer, readPsd, initializeCanvas } from 'ag-psd';
 initializeCanvas(() => { throw new Error('This tool uses raw RGBA, not Canvas'); },
   (width, height) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }));
 
-const [sheetPath, outputDirectory] = process.argv.slice(2);
-if (!sheetPath || !outputDirectory) throw new Error('Usage: node pack-eagle.mjs <parts.png> <output-directory>');
+const [sheetPath, outputDirectory, layoutPath] = process.argv.slice(2);
+if (!sheetPath || !outputDirectory) throw new Error('Usage: node pack-eagle.mjs <parts.png> <output-directory> [layout.json]');
 const output = path.resolve(outputDirectory);
 console.log(`Output: ${output}`);
 await fs.mkdir(output, { recursive: true });
 if ((await fs.readdir(output)).length) throw new Error('Output directory must be empty');
 const sourceSize = await sharp(sheetPath).metadata();
 if (sourceSize.width !== 1254 || sourceSize.height !== 1254)
-  throw new Error('This layout is for the inspected 1254 x 1254 eagle-parts-v1.png only');
+  throw new Error('Measured eagle layouts require a 1254 x 1254 parts sheet');
 const size = 512;
 // Bottom to top, with character-left on the viewer's right
-const layout = [
+const originalLayout = [
   ['footwear-r', [681, 787, 192, 120], [167, 432, 76, 48]],
   ['footwear-l', [1007, 787, 192, 120], [269, 432, 76, 48]],
   ['topwear', [350, 107, 328, 280], [148, 262, 216, 184]],
@@ -34,10 +34,16 @@ const layout = [
   ['mouth lower', [381, 790, 207, 90], [224, 208, 64, 28]],
   ['mouth close', [43, 740, 262, 177], [208, 173, 96, 65]],
 ];
+const custom = layoutPath ? JSON.parse(await fs.readFile(layoutPath, 'utf8')) : null;
+const layout = custom?.layout ?? originalLayout;
+if (layout.length !== 15 || new Set(layout.map(item => item[0])).size !== 15)
+  throw new Error('Expected 15 uniquely named model layers');
 const children = [];
 const compositeLayers = [];
 for (const [name, crop, placement] of layout) {
   const [left, top, width, height] = placement;
+  if (![...crop, ...placement].every(Number.isInteger) || left < 0 || top < 0 || width <= 0 || height <= 0 || left + width > size || top + height > size)
+    throw new Error(`Invalid layer geometry: ${name}`);
   const image = sharp(sheetPath).extract({ left: crop[0], top: crop[1], width: crop[2], height: crop[3] })
     .resize(width, height, { fit: 'fill' }).ensureAlpha();
   const rgba = await image.clone().raw().toBuffer();

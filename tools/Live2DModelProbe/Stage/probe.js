@@ -4,6 +4,7 @@
   const canvas = document.getElementById("stage"), status = document.getElementById("status");
   const result = { loaded: false, consistency: false, coreCreated: false, nonFinite: 0, glErrors: [], runtimeErrors: [], samples: [], coreLog: [], parameterSweeps: [] };
   let model, moc, gl, renderer, neutral, reference, running = false, phase = 0, lastTime, intervals = [], frames = 0, inputs = new Map(), config, video, raf, samplingStart;
+  let stress;
   function runtimeError(error){if(result.runtimeErrors.length<20)result.runtimeErrors.push(String(error?.stack||error).slice(0,2000));running=false;}
   window.addEventListener("error",event=>runtimeError(event.error||event.message));
   window.addEventListener("unhandledrejection",event=>runtimeError(event.reason));
@@ -56,12 +57,10 @@
   }
   function pose(name) {
     running = false; reset();
-    if (name === "eyes-closed") { edge("ParamEyeLOpen", false); edge("ParamEyeROpen", false); }
-    if (name === "eyes-half") { set("ParamEyeLOpen", 0.5); set("ParamEyeROpen", 0.5); }
-    if (name === "breath-high") edge("ParamBreath", true);
-    if (name === "head-left") edge("ParamAngleX", false);
-    if (name === "head-right") edge("ParamAngleX", true);
-    if (name === "mouth-open") edge("ParamMouthOpenY", true);
+    for (const [id, value] of ProbeAudit.poseSettings(name)) {
+      if (value === "min" || value === "max") edge(id, value === "max");
+      else set(id, value);
+    }
     update(); refreshControls();
     const sample = { name, ...differences(reference), ...readPixels() };
     result.samples.push(sample); status.textContent = result.name + " / " + name;
@@ -73,7 +72,17 @@
   function loop(time) {
     if (lastTime !== undefined) intervals.push(Math.min(10000, Math.max(0, time - lastTime)));
     const delta = lastTime === undefined ? 0 : Math.max(0, Math.min(0.1, (time - lastTime) / 1000)); lastTime = time;
-    if (running) {
+    if (stress && !stress.finished) {
+      const elapsed=Math.max(0,(time-stress.startedAt)/1000),progress=Math.min(1,elapsed/2);
+      const axes=ProbeAudit.stressAxes(progress);reset();
+      function signed(id,value){const i=model.parameters.ids.indexOf(id);if(i>=0)set(id,value>=0?value*model.parameters.maximumValues[i]:-value*model.parameters.minimumValues[i]);}
+      ["X","Y","Z"].forEach((axis,i)=>{signed("ParamAngle"+axis,axes.values[i]);signed("ParamBodyAngle"+axis,-axes.values[i]);});
+      set("ParamBreath",(axes.values[1]+1)/2);update();
+      const change=differences(reference),footDeltas=change.drawableDeltas.filter(d=>d.id==="ArtMeshFootwearL"||d.id==="ArtMeshFootwearR");
+      stress.frames.push({seconds:elapsed,segment:axes.segment,axes:axes.values,maximumFootDelta:Math.max(0,...footDeltas.map(d=>d.maximumVertexDelta))});
+      if(progress===1)stress.finished=true;
+      refreshControls();
+    } else if (running) {
       phase += delta; reset();
       set("ParamBreath", (Math.sin(phase * 2) + 1) * 0.5);
       set("ParamAngleX", Math.sin(phase * 1.05) * 20); set("ParamAngleY", Math.sin(phase * 0.8) * 10); set("ParamAngleZ", Math.sin(phase * 0.7) * 8);
@@ -97,9 +106,10 @@
       animation: { samplePassed:animationSamplePassed, requestedSeconds:config.sampleSeconds,sampleElapsedSeconds,renderedFrames: frames, callbackCount: intervals.length, meanIntervalMs: intervals.reduce((a,b)=>a+b,0) / Math.max(1, intervals.length),
         p95IntervalMs: sorted[Math.floor(sorted.length * 0.95)] ?? null, elapsedAnimationSeconds: phase, note: "requestAnimationFrame sampling, NOT measured physical display FPS" } };
   }
-  function beginRecording() {
+  function beginRecording(fps=30) {
     require(typeof MediaRecorder!=="undefined"&&MediaRecorder.isTypeSupported("video/webm;codecs=vp9"),"WebM recording unsupported");
-    const stream=canvas.captureStream(30),chunks=[],recorder=new MediaRecorder(stream,{mimeType:"video/webm;codecs=vp9",videoBitsPerSecond:1200000});
+    require(fps===30||fps===60,"Unsupported QA recording rate");
+    const stream=canvas.captureStream(fps),chunks=[],recorder=new MediaRecorder(stream,{mimeType:"video/webm;codecs=vp9",videoBitsPerSecond:fps*40000});
     const done=new Promise((resolve,reject)=>{recorder.ondataavailable=e=>chunks.push(e.data);recorder.onerror=e=>reject(new Error(String(e.error)));recorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(chunks,{type:recorder.mimeType});if(blob.size>16*1024*1024){reject(new Error("Recording exceeds 16 MiB"));return;}const data=new Uint8Array(await blob.arrayBuffer());let text="";for(let i=0;i<data.length;i+=8192)text+=String.fromCharCode(...data.subarray(i,i+8192));resolve(btoa(text));};});
     recorder.start();video={recorder,done,stream};return true;
   }
@@ -160,7 +170,9 @@
     }
     document.getElementById("play").onclick=()=>{running=!running;document.getElementById("play").textContent=running?"暂停":"播放";};
     document.getElementById("reset").onclick=()=>pose("neutral");document.getElementById("background").onclick=()=>canvas.classList.toggle("dark");
-    window.probe={pose,play:value=>{running=Boolean(value);},resetMetrics:()=>{frames=0;intervals=[];phase=0;lastTime=undefined;samplingStart=performance.now();},report,beginRecording,finishRecording};
+    window.probe={pose,play:value=>{running=Boolean(value);},resetMetrics:()=>{frames=0;intervals=[];phase=0;lastTime=undefined;samplingStart=performance.now();},report,beginRecording,finishRecording,
+      beginStress:()=>{require(["ParamAngleX","ParamAngleY","ParamAngleZ","ParamBodyAngleX","ParamBodyAngleY","ParamBodyAngleZ","ParamBreath"].every(id=>model.parameters.ids.includes(id)),"Stress sweep requires all head/body axes and breath");running=false;stress={startedAt:performance.now(),frames:[],finished:false};},
+      stressReport:()=>{require(stress,"Stress sweep not started");const maximumFootDelta=Math.max(0,...stress.frames.map(f=>f.maximumFootDelta)),segments=[...new Set(stress.frames.map(f=>f.segment))],exactCorners=ProbeAudit.stressCorners(stress.frames);return {requestedSeconds:2,cornerHoldMilliseconds:40,finished:stress.finished,renderedFrames:stress.frames.length,maximumFootDelta,segments,exactCorners,frames:stress.frames,passed:stress.finished&&exactCorners.length===8&&maximumFootDelta===0&&result.nonFinite===0&&result.glErrors.length===0&&result.runtimeErrors.length===0,note:"QA-only full head XYZ cube traversal with opposite body angles and breath; exact corners are counted from actual rendered samples, not segment entry; not a production motion or physical Present measurement"};}};
     result.loaded=true;status.textContent=config.name+" / MOC一致性通过 · 官方Core已创建模型";document.getElementById("summary").textContent=model.drawables.count+" meshes / "+model.parameters.count+" parameters · 原生Core计算 + 真实WebGL绘制，非PNG逐帧播放";
     window.chrome.webview.postMessage({type:"model-probe-ready",loaded:true});running=true;raf=requestAnimationFrame(loop);
   }

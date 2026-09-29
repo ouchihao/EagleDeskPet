@@ -5,6 +5,38 @@
     for(let i=0;i<positions.length;i+=2){minX=Math.min(minX,positions[i]);maxX=Math.max(maxX,positions[i]);minY=Math.min(minY,positions[i+1]);maxY=Math.max(maxY,positions[i+1]);}
     return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
   }
+  const poses = {
+    neutral: [],
+    "eyes-closed": [["ParamEyeLOpen", "min"], ["ParamEyeROpen", "min"]],
+    "eyes-quarter": [["ParamEyeLOpen", 0.25], ["ParamEyeROpen", 0.25]],
+    "eyes-half": [["ParamEyeLOpen", 0.5], ["ParamEyeROpen", 0.5]],
+    "eyes-three-quarter": [["ParamEyeLOpen", 0.75], ["ParamEyeROpen", 0.75]],
+    "breath-high": [["ParamBreath", "max"]],
+    "head-left": [["ParamAngleX", "min"]],
+    "head-right": [["ParamAngleX", "max"]],
+    "head-up": [["ParamAngleY", "max"]],
+    "head-down": [["ParamAngleY", "min"]],
+    "head-tilt-left": [["ParamAngleZ", "max"]],
+    "head-tilt-right": [["ParamAngleZ", "min"]],
+    "head-up-left": [["ParamAngleX", "min"], ["ParamAngleY", "max"], ["ParamAngleZ", "max"]],
+    "head-down-right": [["ParamAngleX", "max"], ["ParamAngleY", "min"], ["ParamAngleZ", "min"]],
+    "mouth-open": [["ParamMouthOpenY", "max"]]
+  };
+  function poseSettings(name) {
+    if (!Object.hasOwn(poses, name)) throw new Error("Unknown QA pose: " + name);
+    return poses[name].map(([id, value]) => [id, value]);
+  }
+  function stressAxes(progress) {
+    if (!Number.isFinite(progress) || progress < 0 || progress > 1) throw new Error("Stress progress must be in 0..1");
+    const corners = [[-1,1,1],[1,-1,-1],[-1,-1,1],[1,1,-1],[-1,1,-1],[1,-1,1],[-1,-1,-1],[1,1,1],[-1,1,1]];
+    const scaled=progress*8,index=Math.min(7,Math.floor(scaled));
+    const t=Math.max(0,(scaled-index-0.16)/0.84),ease=t*t*(3-2*t);
+    return {segment:index,values:corners[index].map((value,axis)=>value+(corners[index+1][axis]-value)*ease)};
+  }
+  function stressCorners(frames) {
+    return [...new Set(frames.filter(frame=>frame.axes.every(value=>value===1||value===-1))
+      .map(frame=>frame.axes.join(",")))].sort();
+  }
   function eagle(sweeps, ids) {
     const feet=["ArtMeshFootwearL","ArtMeshFootwearR"], eyePairs=[["ParamEyeLOpen","ArtMeshEyelashL"],["ParamEyeROpen","ArtMeshEyelashR"]];
     const missing=feet.concat(eyePairs.map(p=>p[1])).filter(id=>!ids.includes(id));
@@ -17,5 +49,5 @@
     return {passed:missing.length===0&&maximumFootDelta===0&&eyes.every(e=>e.passed),missing,maximumFootDelta,feetExactForAllSweeps:maximumFootDelta===0,eyes,footStates,
       note:"Geometry contract only; eye white highlights, silhouette and smoothness still require visual review"};
   }
-  globalThis.ProbeAudit={bounds,eagle};
+  globalThis.ProbeAudit={bounds,eagle,poseSettings,stressAxes,stressCorners};
 })();

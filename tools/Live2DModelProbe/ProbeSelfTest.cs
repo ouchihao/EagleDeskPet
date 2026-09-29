@@ -41,6 +41,10 @@ internal static class ProbeSelfTest
             var valid = ProbeOptions.Parse(Arguments("--seconds", "8", "--eagle-contract"));
             if (valid.Seconds != 8 || !valid.EagleContract) throw new InvalidOperationException("Valid fixture rejected");
             count++; Console.WriteLine("PASS matching hashes and explicit contract");
+            if (!ProbeOptions.Parse(Arguments("--eagle-contract", "--stress-poses")).StressPoses)
+                throw new InvalidOperationException("Stress fixture rejected");
+            count++; Console.WriteLine("PASS explicit optional stress mode");
+            Reject("stress mode without eagle contract", () => ProbeOptions.Parse(Arguments("--stress-poses")));
             Reject("invalid integer", () => ProbeOptions.Parse(Arguments("--seconds", "oops")));
             Reject("sampling bound", () => ProbeOptions.Parse(Arguments("--seconds", "61")));
             Reject("duplicate argument", () => ProbeOptions.Parse(Arguments("--sdk", sdk)));

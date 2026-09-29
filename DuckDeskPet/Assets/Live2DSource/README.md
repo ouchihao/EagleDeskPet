@@ -2,6 +2,14 @@
 
 This is a **development sample**, not the production pet or a finished character pack. It does not replace the existing PNG animations, costumes, save files or shop catalog.
 
+## 2026-09-30: canonical identity correction
+
+The new authoring path is `tools/Live2DArt/pack-canonical-eagle.mjs` with `eagle-canonical-rig.json`. It cuts the existing runtime neutral into native-size layers, preserving its visible pixels, rather than redesigning the mascot. The runtime neutral comes from `AnimationSources/yawn-sheet-v2.png`, not a resize of the separate high-resolution `mascot.png` drawing. Mixing those references caused the earlier likeness drift.
+
+`eagle-parts-v2.png` was produced with the **built-in image-generation tool**, not the API/CLI fallback, on 2026-09-30. Its redrawn full character was rejected; only occluded shoulder/wing/torso and mouth backing is reused. It is not the new visible character design. Visible head outline, face length, features, body and feet come from the original neutral. Source-only reconstruction must report zero alpha and visible-RGB differences, followed by separate official Core animation checks for exposed seams.
+
+Full v2 prompt and input roles: [PROMPT-v2.md](PROMPT-v2.md). The verified September 30 source and model are in [Canonical](Canonical), with [official Core evidence and limitations](../../../docs/LIVE2D-CANONICAL-MODEL.md). The older root PSD / Model remain the dated September 23 experiment; do not use them for the corrected likeness. Neither sample constitutes full action migration or a production backend switch.
+
 ## Artwork provenance
 
 `eagle-parts-v1.png` was generated with the built-in image-generation tool on 2026-09-23, using this project's `Assets/mascot-animated-neutral.png` as the identity reference. It is a 1254 × 1254 RGBA parts sheet, not a sprite animation. No third-party Live2D character was reskinned.
