@@ -56,6 +56,7 @@
     bridgeRevision = -1,
     rasterFrames = new Map(),
     rasterFrame,
+    rasterSelection = null,
     rasterPreparation = 0;
   const post = (message) => {
     if (globalThis.chrome?.webview)
@@ -948,15 +949,23 @@
       message.generation === generation, "Message generation mismatch");
     if (message.type === "record-raster-frame") {
       if (!rasterFrames.size) return;
-      if (message.key === null) rasterFrame = null;
-      else {
+      if (message.key === null) {
+        rasterFrame = null;
+        rasterSelection = null;
+      } else {
         require(Number.isSafeInteger(message.index) &&
           message.index >= 0, "Invalid recorded raster frame index");
         const frames = rasterFrames.get(message.key);
         require(frames &&
           message.index < frames.length, "Unknown recorded raster frame");
         rasterFrame = frames[message.index];
+        rasterSelection = { key: message.key, index: message.index };
       }
+      if (recording && metrics.recordingProof.selectionLog.length < 1000)
+        metrics.recordingProof.selectionLog.push({
+          ...rasterSelection,
+          milliseconds: Math.round(performance.now() - recording.startedAt),
+        });
       draw(performance.now());
       return;
     }
@@ -1076,7 +1085,8 @@
     const surface = document.createElement("canvas");
     surface.width = canvas.width;
     surface.height = canvas.height;
-    const stream = surface.captureStream(fps),
+    const stream = surface.captureStream(0),
+      track = stream.getVideoTracks()[0],
       chunks = [],
       recorder = new MediaRecorder(stream, {
         mimeType: "video/webm;codecs=vp9",
@@ -1108,8 +1118,25 @@
         resolve(btoa(text));
       };
     });
+    require(typeof track.requestFrame ===
+      "function", "Manual canvas capture is unavailable");
+    metrics.recordingProof = {
+      fps,
+      sourceDraws: {},
+      captureRequests: {},
+      selectionLog: [],
+    };
     recorder.start(1000);
-    recording = { recorder, done, surface, context: surface.getContext("2d") };
+    recording = {
+      recorder,
+      done,
+      surface,
+      context: surface.getContext("2d"),
+      track,
+      fps,
+      startedAt: performance.now(),
+      lastCapture: -Infinity,
+    };
     draw(performance.now());
   }
   async function prepareRasterRecording(sources) {
@@ -1120,6 +1147,7 @@
       pixels = 0;
     rasterFrames = new Map();
     rasterFrame = null;
+    rasterSelection = null;
     for (const [key, urls] of Object.entries(sources)) {
       require(["Idle", "Yawn", "Eat"].includes(key) &&
         Array.isArray(urls), "Invalid raster recording clip");
@@ -1164,6 +1192,15 @@
       width,
       height,
     );
+    const now = performance.now(),
+      source = rasterSelection?.key ?? "Live2D",
+      proof = metrics.recordingProof;
+    proof.sourceDraws[source] = (proof.sourceDraws[source] ?? 0) + 1;
+    if (now - recording.lastCapture >= 1000 / recording.fps) {
+      recording.lastCapture = now;
+      recording.track.requestFrame();
+      proof.captureRequests[source] = (proof.captureRequests[source] ?? 0) + 1;
+    }
   }
   async function recordStop() {
     require(recording, "No recording");
@@ -1171,6 +1208,7 @@
     recording = null;
     rasterFrames = new Map();
     rasterFrame = null;
+    rasterSelection = null;
     rasterPreparation++;
     if (saved.recorder.state === "recording") saved.recorder.stop();
     return saved.done;

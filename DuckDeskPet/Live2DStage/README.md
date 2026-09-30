@@ -49,9 +49,11 @@ Add `&qa=1` only in an isolated host/browser harness to expose the action select
 
 - `capture()` redraws synchronously and returns a canvas-only PNG data URL
 - `report()` / `diagnostics()` reports frame/Core-update/pass counters, errors, non-finite vertices, model load/release counters, required parameters, current model/outfit, sequence and progress
-- `beginRecording(30)` and `finishRecording()` capture only the WebGL canvas and return WebM base64, bounded to 32 MiB; optional rate 60 is available
+- `beginRecording(30)` and `finishRecording()` capture only the selected pet surface and return WebM base64, bounded to 32 MiB; optional rate 60 is available. Canvas capture uses explicit, rate-limited frame requests after a draw, including native-frame messages while WebView is visually hidden. `recordingProof` reports source selections, draws and capture requests; those counters do not themselves prove encoded frame coverage
 - Optional `prepareRasterRecording({Yawn:[pngDataUrls],Eat:[pngDataUrls]})` decodes explicit QA snapshots before recording. Host `record-raster-frame` messages select the exact PNG frame actually displayed by the native overlay (`key`, `index`; `key:null` returns to Core). The recorder composites that selected surface with the same contain layout, rather than recording a hidden Live2D stand-in. This is recording-only, never production rendering or timeline authority; decoded images are released when capture finishes
 - `receive(state)` exercises the same host bridge; `sample(kind,progress)` is an isolated QA convenience
+
+Known recording limitation: the first native Yawn segment can still be absent from encoded WebM while the WebView is hidden, despite confirmed PNG selections, draws and manual capture requests. Manual capture and source counters improve diagnostics; they do **not** fix or validate that missing encoded interval. Use the actual native snapshots and full source-frame sequence to review that animation, and do not describe a recording with this gap as complete handoff evidence.
 
 Recordings and rAF counters do not prove physical display Present FPS. Geometry tests likewise do not replace image-by-image validation of eyes, shoulder overlaps, hands, desk occlusion and outfit accessories.
 
