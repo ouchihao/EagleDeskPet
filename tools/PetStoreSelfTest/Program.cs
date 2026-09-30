@@ -51,6 +51,8 @@ internal static class Program
             Run("v1-v2-v3-protected-backups-survive-daily-saves", LegacyMigrationBackups);
             Run("migration-competing-reader-cannot-overwrite", ConcurrentMigration);
             Run("failed-migration-backup-prevents-replacement", FailedMigrationBackup);
+            Run("loafing-survives-durable-save-without-new-migration", LoafingRoundTrip);
+            Run("invalid-loafing-state-cannot-overwrite-save", InvalidLoafingState);
             Run("malformed-preserved", () => RejectedSavePreservesBytes(Encoding.UTF8.GetBytes("{ definitely not JSON")));
             Run("null-preserved", () => RejectedSavePreservesBytes(Encoding.UTF8.GetBytes("null")));
             Run("future-version-preserved", () => RejectedSavePreservesBytes(Encoding.UTF8.GetBytes("{\"Version\":999,\"Food\":40}")));
@@ -207,6 +209,39 @@ internal static class Program
         Check(!store.Save(new PetCareService(null, TestTime).State), "Fallback save overwrote rejected input.");
         Check(File.ReadAllBytes(StatePath).SequenceEqual(original), "Rejected save bytes changed.");
         Check(!File.Exists(StatePath + ".tmp") && !File.Exists(StatePath + ".bak"), "Rejected save produced replacement files.");
+    }
+
+    private static void LoafingRoundTrip()
+    {
+        var care = new PetCareService(new PetState { LastUpdatedUtc = TestTime, WageLastUpdatedUtc = TestTime,
+            LoafingRandomState = 1, Food = 0 }, TestTime, loafingRandomStep: _ => 100UL);
+        care.StartWork(TestTime); care.Advance(TestTime.AddHours(1));
+        var store = new PetStore(); Check(store.Save(care.State), "Active break did not save");
+        var saved = new PetStore().Load()!;
+        Check(saved.Version == 4 && saved.IsLoafing && saved.LoafingRemainingSeconds == 1800m,
+            "Active break fields were not saved together");
+        var resumed = new PetCareService(saved, TestTime.AddMinutes(70), loafingRandomStep: _ => throw new Exception("Unexpected reroll"));
+        Check(!resumed.MigrationWasApplied && resumed.State.Coins == 49.5m, "v4 break caused a new economy migration");
+        Check(resumed.State.LoafingRemainingSeconds == 1200m && resumed.State.Experience == 72 && resumed.State.Food == 14,
+            "Restart reset the break or granted earnings during it");
+        Check(resumed.State.Loafing == saved.Loafing && resumed.State.LoafingRandomState == saved.LoafingRandomState,
+            "Restart selected another animation");
+        var applied = new PetState(); applied.ApplySnapshot(resumed.State.CreateSnapshot());
+        Check(applied.LoafingRemainingSeconds == 1200m && applied.LoafingRandomState == saved.LoafingRandomState,
+            "Atomic snapshot application lost scheduler state");
+    }
+
+    private static void InvalidLoafingState()
+    {
+        var care = new PetCareService(null, TestTime); var store = new PetStore();
+        Check(store.Save(care.State), "Initial save failed"); byte[] original = File.ReadAllBytes(StatePath);
+        var invalid = care.State.CreateSnapshot(); invalid.Loafing = (LoafingKind)123;
+        Check(!store.Save(invalid), "Unknown break kind was saved");
+        invalid.Loafing = LoafingKind.None; invalid.LoafingRemainingSeconds = 1m;
+        Check(!store.Save(invalid), "Orphaned break duration was saved");
+        invalid.LoafingRemainingSeconds = 0m; invalid.WorkUntilLoafingCheckSeconds = decimal.MaxValue;
+        Check(!store.Save(invalid), "Unbounded lottery countdown was saved");
+        Check(File.ReadAllBytes(StatePath).SequenceEqual(original), "Rejected scheduler fields changed the save");
     }
 
     private static string StatePath => Path.Combine(AppPaths.DataDirectory, "pet-state.json");

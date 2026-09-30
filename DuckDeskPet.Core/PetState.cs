@@ -33,6 +33,10 @@ public sealed class PetState
     public int TotalMeals { get; set; }
     public int TotalPets { get; set; }
     public bool IsWorking { get; set; }
+    public LoafingKind Loafing { get; set; }
+    public decimal LoafingRemainingSeconds { get; set; }
+    public decimal WorkUntilLoafingCheckSeconds { get; set; } = LoafingPolicy.InitialWorkSeconds;
+    public ulong LoafingRandomState { get; set; }
     public double WorkSessionSeconds { get; set; }
     public double WorkExperienceProgressSeconds { get; set; }
     public double TotalWorkSeconds { get; set; }
@@ -82,6 +86,10 @@ public sealed class PetState
         TotalMeals = committed.TotalMeals;
         TotalPets = committed.TotalPets;
         IsWorking = committed.IsWorking;
+        Loafing = committed.Loafing;
+        LoafingRemainingSeconds = committed.LoafingRemainingSeconds;
+        WorkUntilLoafingCheckSeconds = committed.WorkUntilLoafingCheckSeconds;
+        LoafingRandomState = committed.LoafingRandomState;
         WorkSessionSeconds = committed.WorkSessionSeconds;
         WorkExperienceProgressSeconds = committed.WorkExperienceProgressSeconds;
         TotalWorkSeconds = committed.TotalWorkSeconds;
@@ -115,7 +123,10 @@ public sealed class PetState
     public double LevelProgress => IsMaximumLevel ? 1 : Math.Clamp((double)ExperienceIntoLevel / NextLevelRequirement, 0, 1);
 
     [JsonIgnore]
-    public bool IsBusy => IsWorking && WorkSessionSeconds >= PetCareService.BusyAfterSeconds - 1e-7;
+    public bool IsLoafing => IsWorking && Loafing != LoafingKind.None && LoafingRemainingSeconds > 0m;
+
+    [JsonIgnore]
+    public bool IsBusy => IsWorking && !IsLoafing && WorkSessionSeconds >= PetCareService.BusyAfterSeconds - 1e-7;
 
     [JsonIgnore]
     public double FoodProgress => Math.Clamp(FoodProgressSeconds / PetCareService.FoodIntervalSeconds, 0.0, 1.0);

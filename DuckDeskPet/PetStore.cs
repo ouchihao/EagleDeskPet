@@ -81,6 +81,12 @@ internal sealed class PetStore
                     state.WorkExperienceRemainderUnits < 0 || state.WorkExperienceRemainderUnits >= 60m)
                     throw new InvalidDataException("Invalid precise economy state.");
                 ContentOwnershipService.ValidateForSave(state.Content);
+                if (!Enum.IsDefined(state.Loafing) || state.LoafingRemainingSeconds < 0m ||
+                    state.LoafingRemainingSeconds > LoafingPolicy.DurationSeconds || state.WorkUntilLoafingCheckSeconds < 0m ||
+                    state.WorkUntilLoafingCheckSeconds > LoafingPolicy.InitialWorkSeconds ||
+                    (state.Loafing != LoafingKind.None && (!state.IsWorking || state.LoafingRemainingSeconds == 0m)) ||
+                    (state.Loafing == LoafingKind.None && state.LoafingRemainingSeconds != 0m))
+                    throw new InvalidDataException("Invalid loafing state");
                 byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(state,
                     new JsonSerializerOptions { WriteIndented = true });
                 if (bytes.Length > 1_048_576) throw new InvalidDataException("Save too large.");
@@ -163,6 +169,8 @@ internal sealed class PetStore
             decimal expectedWageRemainder = candidate.WageRemainderScaledUnits;
             double expectedWageCursor = candidate.WageSettledWorkSeconds;
             DateTimeOffset expectedWageTime = candidate.WageLastUpdatedUtc;
+            var expectedLoafing = (candidate.Loafing, candidate.LoafingRemainingSeconds,
+                candidate.WorkUntilLoafingCheckSeconds, candidate.LoafingRandomState);
             var expectedLedger = new Dictionary<string, decimal>(candidate.AppliedWalletDebits, StringComparer.Ordinal);
             try
             {
@@ -170,6 +178,8 @@ internal sealed class PetStore
                     candidate.Coins != expectedCoins || candidate.AppliedWalletDebits is null ||
                     candidate.WageRemainderScaledUnits != expectedWageRemainder ||
                     candidate.WageSettledWorkSeconds != expectedWageCursor || candidate.WageLastUpdatedUtc != expectedWageTime ||
+                    (candidate.Loafing, candidate.LoafingRemainingSeconds, candidate.WorkUntilLoafingCheckSeconds,
+                        candidate.LoafingRandomState) != expectedLoafing ||
                     candidate.AppliedWalletDebits.Count != expectedLedger.Count ||
                     expectedLedger.Any(x => !candidate.AppliedWalletDebits.TryGetValue(x.Key, out decimal value) || value != x.Value))
                     return new(WalletTransactionStatus.InvalidRequest, "交易条件不满足，未扣除鹰币。");

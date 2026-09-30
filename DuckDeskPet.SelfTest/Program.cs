@@ -47,7 +47,7 @@ internal static class Program
             ("Input invariants", InputInvariants),
         };
 
-        tests = tests.Concat(CareTests.Cases).Concat(WorkTests.Cases).ToArray();
+        tests = tests.Concat(CareTests.Cases).Concat(WorkTests.Cases).Concat(LoafingTests.Cases).ToArray();
         int failures = 0;
         foreach ((string name, Action body) in tests)
         {

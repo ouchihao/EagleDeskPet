@@ -42,14 +42,19 @@ public sealed class PetCareService
         new(HonorCatalog.Definitions.Select(x => x.Id), StringComparer.Ordinal);
 
     private Dictionary<ContentSlot, string> _effectiveEquipment;
+    private readonly Func<ulong, ulong> _loafingRandomStep;
     public bool IsCatchUpPending { get; private set; }
     public bool MigrationWasApplied { get; }
+    public long LoafingScheduleRevision { get; private set; }
 
     public PetCareService(PetState? saved, DateTimeOffset now,
-        Func<ContentDefinition, bool>? isEquipmentAvailable = null, bool deferInitialAdvance = false)
+        Func<ContentDefinition, bool>? isEquipmentAvailable = null, bool deferInitialAdvance = false,
+        Func<ulong, ulong>? loafingRandomStep = null)
     {
         MigrationWasApplied = saved is not null && saved.Version < PetState.CurrentVersion;
         State = Normalize(saved, now.ToUniversalTime());
+        LoafingPolicy.Normalize(State);
+        _loafingRandomStep = loafingRandomStep ?? LoafingPolicy.NextRandomState;
         // The host probes installed resources before offline settlement. A saved
         // request whose resources fell back must not retain its better statistics.
         isEquipmentAvailable ??= _ => true;
@@ -65,9 +70,9 @@ public sealed class PetCareService
     public decimal EarnedCoinsThisRun { get; private set; }
     public EquipmentBonuses CurrentBonuses => IsCatchUpPending ? EquipmentBonuses.None
         : EquipmentPolicy.Resolve(State.Content, _effectiveEquipment);
-    public decimal MoneyPerWorkMinute => EconomyPolicy.CoinsPerWorkMinute *
+    public decimal MoneyPerWorkMinute => State.IsLoafing ? 0m : EconomyPolicy.CoinsPerWorkMinute *
         EconomyPolicy.MoodWageFactor(State.MoodUnits) * (1m + CurrentBonuses.WorkCoinBonus);
-    public decimal WorkExperiencePerMinute => 1m + CurrentBonuses.WorkExperienceBonus;
+    public decimal WorkExperiencePerMinute => State.IsLoafing ? 0m : 1m + CurrentBonuses.WorkExperienceBonus;
 
     /// <summary>
     /// Called only after the host has actually applied an owned outfit/prop (or
@@ -121,54 +126,54 @@ public sealed class PetCareService
         }
 
         DateTimeOffset previousUpdate = State.LastUpdatedUtc;
-        double seconds = Math.Min((now - previousUpdate).TotalSeconds, MaximumCatchUpSeconds);
+        double elapsedSeconds = (now - previousUpdate).TotalSeconds;
+        double seconds = Math.Min(elapsedSeconds, MaximumCatchUpSeconds);
         State.LastUpdatedUtc = now;
         var bonuses = CurrentBonuses;
-        decimal initialMoodUnits = State.MoodUnits;
-        decimal moodLoss = (State.IsWorking ? (decimal)WorkMoodLossPerHour : (decimal)IdleMoodLossPerHour) *
-            (1m - bonuses.MoodDecayReduction);
-        double workSeconds = State.IsWorking ? seconds : 0.0;
-        State.MoodUnits = Math.Max(0m, initialMoodUnits - EconomyPolicy.ExactSeconds(seconds) * moodLoss);
-        if (workSeconds > 0.0)
-        {
-            State.WorkSessionSeconds = Math.Min(1e12, State.WorkSessionSeconds + workSeconds);
-            State.TotalWorkSeconds = Math.Min(1e12, State.TotalWorkSeconds + workSeconds);
-            decimal accumulatedWork = State.WorkExperienceRemainderUnits +
-                EconomyPolicy.ExactSeconds(workSeconds) * (1m + bonuses.WorkExperienceBonus);
-            int workExperience = (int)decimal.Floor(accumulatedWork / 60m);
-            State.WorkExperienceRemainderUnits = accumulatedWork - workExperience * 60m;
-            State.WorkExperienceProgressSeconds = (double)State.WorkExperienceRemainderUnits;
-            AddExperience(workExperience);
-            // The effective work interval starts at the prior simulation timestamp.
-            // Keeping a separate wage high-water mark prevents clock rollback plus
-            // a restart from paying that same wall-clock interval again; legacy
-            // migrations start this mark at 'now', so old catch-up earns no wages
-            double unpaidPrefix = Math.Max(0, (State.WageLastUpdatedUtc - previousUpdate).TotalSeconds);
-            decimal eligibleInitialMood = Math.Max(0m, initialMoodUnits -
-                EconomyPolicy.ExactSeconds(Math.Min(workSeconds, unpaidPrefix)) * moodLoss);
-            EarnedCoinsThisRun += EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix),
-                1m + bonuses.WorkCoinBonus, eligibleInitialMood, moodLoss);
-        }
+        decimal elapsedInInterval = 0m;
+        decimal wageUnpaidPrefix = EconomyPolicy.ExactSeconds(Math.Max(0, (State.WageLastUpdatedUtc - previousUpdate).TotalSeconds));
+        LoafingPolicy.Advance(State, EconomyPolicy.ExactSeconds(seconds), _loafingRandomStep, AccountSegment, out int scheduleChanges);
+        LoafingScheduleRevision += scheduleChanges;
+        if (LoafingPolicy.ExpireUncreditedTime(State, EconomyPolicy.ExactSeconds(elapsedSeconds - seconds))) LoafingScheduleRevision++;
         if (now > State.WageLastUpdatedUtc) State.WageLastUpdatedUtc = now;
-
-        if (State.Food >= MaximumFood)
-        {
-            // A full bag cannot bank an unlimited instant refill after feeding.
-            State.FoodProgressSeconds = 0.0;
-        }
-        else
-        {
-            double accumulated = State.FoodProgressSeconds + seconds;
-            int earned = (int)Math.Floor((accumulated + 1e-7) / FoodIntervalSeconds);
-            int credited = Math.Min(earned, MaximumFood - State.Food);
-            State.Food += credited;
-            State.FoodProgressSeconds = State.Food == MaximumFood
-                ? 0.0
-                : Math.Max(0.0, accumulated - earned * FoodIntervalSeconds);
-            AddExperience(credited);
-        }
-
         return true;
+
+        void AccountSegment(decimal segmentSeconds, bool loafing)
+        {
+            if (segmentSeconds <= 0m) return;
+            bool productive = State.IsWorking && !loafing;
+            decimal initialMoodUnits = State.MoodUnits;
+            decimal moodLoss = (productive ? (decimal)WorkMoodLossPerHour : (decimal)IdleMoodLossPerHour) *
+                (1m - bonuses.MoodDecayReduction);
+            State.MoodUnits = Math.Max(0m, initialMoodUnits - segmentSeconds * moodLoss);
+            if (productive)
+            {
+                State.WorkSessionSeconds = Math.Min(1e12, State.WorkSessionSeconds + (double)segmentSeconds);
+                State.TotalWorkSeconds = Math.Min(1e12, State.TotalWorkSeconds + (double)segmentSeconds);
+                decimal accumulatedWork = State.WorkExperienceRemainderUnits + segmentSeconds * (1m + bonuses.WorkExperienceBonus);
+                int workExperience = (int)decimal.Floor(accumulatedWork / 60m);
+                State.WorkExperienceRemainderUnits = accumulatedWork - workExperience * 60m;
+                State.WorkExperienceProgressSeconds = (double)State.WorkExperienceRemainderUnits;
+                AddExperience(workExperience);
+                // Consume the actual wall-clock prefix even when intervening break
+                // segments earned no wages, so rollback cannot repay an old interval
+                decimal unpaidPrefix = Math.Clamp(wageUnpaidPrefix - elapsedInInterval, 0m, segmentSeconds);
+                decimal eligibleInitialMood = Math.Max(0m, initialMoodUnits - unpaidPrefix * moodLoss);
+                EarnedCoinsThisRun += EconomyPolicy.SettleWages(State, (double)(segmentSeconds - unpaidPrefix),
+                    1m + bonuses.WorkCoinBonus, eligibleInitialMood, moodLoss);
+            }
+            if (State.Food >= MaximumFood) State.FoodProgressSeconds = 0.0;
+            else
+            {
+                double accumulated = State.FoodProgressSeconds + (double)segmentSeconds;
+                int earned = (int)Math.Floor((accumulated + 1e-7) / FoodIntervalSeconds);
+                int credited = Math.Min(earned, MaximumFood - State.Food);
+                State.Food += credited;
+                State.FoodProgressSeconds = State.Food == MaximumFood ? 0.0 : Math.Max(0.0, accumulated - earned * FoodIntervalSeconds);
+                if (!loafing) AddExperience(credited);
+            }
+            elapsedInInterval += segmentSeconds;
+        }
     }
 
     public PetCareResult Feed(DateTimeOffset now)
@@ -242,6 +247,8 @@ public sealed class PetCareService
 
         State.IsWorking = true;
         State.WorkSessionSeconds = 0.0;
+        LoafingPolicy.Reset(State);
+        LoafingScheduleRevision++;
         return new(PetCareStatus.WorkStarted, "电脑一开，快乐拜拜。开始工作啦。");
     }
 
@@ -255,6 +262,8 @@ public sealed class PetCareService
         }
 
         State.IsWorking = false;
+        LoafingPolicy.Reset(State);
+        LoafingScheduleRevision++;
         return new(PetCareStatus.WorkStopped, "收到，下班比上班积极。");
     }
 
@@ -317,6 +326,10 @@ public sealed class PetCareService
             TotalMeals = Math.Clamp(saved.TotalMeals, 0, 1_000_000),
             TotalPets = Math.Clamp(saved.TotalPets, 0, 1_000_000),
             IsWorking = saved.IsWorking,
+            Loafing = saved.Loafing,
+            LoafingRemainingSeconds = saved.LoafingRemainingSeconds,
+            WorkUntilLoafingCheckSeconds = saved.WorkUntilLoafingCheckSeconds,
+            LoafingRandomState = saved.LoafingRandomState,
             WorkSessionSeconds = FiniteClamp(saved.WorkSessionSeconds, 0.0, 1e12, 0.0),
             WorkExperienceProgressSeconds = FiniteClamp(saved.WorkExperienceProgressSeconds,
                 0.0, WorkExperienceIntervalSeconds - 0.001, 0.0),

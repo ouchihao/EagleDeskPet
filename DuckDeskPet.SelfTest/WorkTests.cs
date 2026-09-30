@@ -189,8 +189,8 @@ internal static class WorkTests
 
     private static void WorkTickRate()
     {
-        var slow = new PetCareService(null, Start);
-        var fast = new PetCareService(null, Start);
+        var slow = new PetCareService(null, Start, loafingRandomStep: _ => 99UL);
+        var fast = new PetCareService(null, Start, loafingRandomStep: _ => 99UL);
         slow.StartWork(Start);
         fast.StartWork(Start);
         slow.Advance(Start.AddHours(1));
@@ -204,7 +204,7 @@ internal static class WorkTests
 
     private static void ZeroMoodWork()
     {
-        var care = new PetCareService(new PetState { Mood = 0.5, LastUpdatedUtc = Start }, Start);
+        var care = new PetCareService(new PetState { Mood = 0.5, LastUpdatedUtc = Start }, Start, loafingRandomStep: _ => 99UL);
         care.StartWork(Start);
         care.Advance(Start.AddHours(1));
         Check(care.State.IsWorking, "Zero mood incorrectly stopped work");
@@ -243,7 +243,7 @@ internal static class WorkTests
         care.Advance(Start.AddMinutes(10));
         var saved = JsonSerializer.Deserialize<PetState>(JsonSerializer.Serialize(care.State));
         DateTimeOffset reopenedAt = Start.AddDays(1);
-        var reopened = new PetCareService(saved, reopenedAt);
+        var reopened = new PetCareService(saved, reopenedAt, loafingRandomStep: _ => 99UL);
         Check(reopened.State.IsWorking && reopened.State.IsBusy, "Persisted work did not resume.");
         Near(7800, reopened.State.WorkSessionSeconds);
         Near(70 - 7800 * 10.0 / 3600, reopened.State.Mood);
