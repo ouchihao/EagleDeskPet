@@ -12,7 +12,7 @@ export const WIDTH = 384, HEIGHT = 346;
 const root = path.resolve(import.meta.dirname, '../..');
 const sourceRoot = 'DuckDeskPet/Assets/Live2DSource/FullActions/Source';
 const variants = ['default', 'office', 'hoodie', 'ox', 'hero', 'astronaut'];
-const reviewableVariants = ['default', 'office', 'hoodie'];
+const authorCandidateVariants = ['default', 'office', 'hoodie'];
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
 export function readZip(bytes) {
@@ -105,6 +105,65 @@ export function affinePoint(from, to, x, y) {
   const det = from[2] * from[5] - from[3] * from[4], dx = x - from[0], dy = y - from[1];
   const u = (dx * from[5] - dy * from[4]) / det, v = (dy * from[2] - dx * from[3]) / det;
   return [to[0] + u * to[2] + v * to[4], to[1] + u * to[3] + v * to[5]];
+}
+
+export async function hoodieSleeveCorrection(zip, bindings) {
+  const anchors = [
+    [45, '9965cf158c1fdd304afc3a161ae4ca2b38232f8f70a39a13c6c2b956a21ce506', '101c3e08d80c75920c35bea28eb4514227304d58f9d3937f29370177382a3f86'],
+    [52, '70abd6e9a729946a6ea6944cbd5dba7c75a73871c5e91e7e9c2292efba9a8203', 'ca996e4a95c604438fa6a2fa891b9fdb77f262e8b7003ef4b9436df751b6c725'],
+  ];
+  const fitted = [];
+  for (const [frame, expectedSource, expectedMap] of anchors) {
+    const record = bindings.frames['Yawn/' + String(frame).padStart(4, '0')], bytes = zip.get(record.map);
+    if (record.sha256.toLowerCase() !== expectedSource || sha(bytes) !== expectedMap)
+      throw new Error('Reviewed sleeve correction anchors changed; re-author the UV track');
+    fitted.push(fitUv(await sharp(bytes).ensureAlpha().raw().toBuffer(), 3));
+  }
+  const frames = new Map(), hashes = [];
+  for (let frame = 46; frame <= 51; frame++) {
+    const record = bindings.frames['Yawn/' + String(frame).padStart(4, '0')], bytes = zip.get(record.map);
+    const raw = fitUv(await sharp(bytes).ensureAlpha().raw().toBuffer(), 3), t = (frame - 45) / 7;
+    const authored = fitted[0].map((row, i) => row.map((value, j) => value + (fitted[1][i][j] - value) * t));
+    if (raw[1][0] * authored[1][0] + raw[1][1] * authored[1][1] >= 0)
+      throw new Error('Known reversed sleeve branch no longer matches; review this source instead of applying a stale correction');
+    frames.set(frame, authored);
+    hashes.push({ frame, sourceSha256: record.sha256, mapSha256: sha(bytes) });
+  }
+  return { frames, report: { outfit: 'outfit.hoodie', clip: 'Yawn', region: 3, frames: [46, 51], anchors,
+    reason: 'Automatic hand detector switched to the opposite sleeve axis despite a stationary wing; raw entry reversal 171.2197 degrees and exit -169.5614 degrees',
+    method: 'Spatial UV affine interpolation between reviewed source frames 45 and 52; no pixel recoloring, frame replacement, or opacity transition',
+    sourceHashes: hashes } };
+}
+
+export function authoredSleeveFits(name, clip, frame, correction) {
+  return name === 'hoodie' && clip === 'Yawn' && correction.frames.has(frame) ? new Map([[3, correction.frames.get(frame)]]) : undefined;
+}
+
+async function scanSleeveAxes(zip, bindings, correction) {
+  const steps = [];
+  for (const clip of ['Yawn', 'Eat']) {
+    let previous;
+    for (let frame = 0; frame <= 120; frame++) {
+      const record = bindings.frames[clip + '/' + String(frame).padStart(4, '0')];
+      const map = await sharp(zip.get(record.map)).ensureAlpha().raw().toBuffer();
+      const fits = [2, 3].map(region => fitUv(map, region));
+      const corrected = fits.map((fit, i) => authoredSleeveFits('hoodie', clip, frame, correction)?.get(i + 2) ?? fit);
+      if (previous) for (let i = 0; i < 2; i++) {
+        const angle = (a, b) => {
+          let degrees = (Math.atan2(a[1][1], a[1][0]) - Math.atan2(b[1][1], b[1][0])) * 180 / Math.PI;
+          while (degrees > 180) degrees -= 360;
+          while (degrees < -180) degrees += 360;
+          return degrees;
+        };
+        const originalDegrees = angle(fits[i], previous.raw[i]), correctedDegrees = angle(corrected[i], previous.corrected[i]);
+        if (Math.abs(originalDegrees) > 30 || Math.abs(correctedDegrees) > 30)
+          steps.push({ clip, frame, region: i + 2, originalDegrees, correctedDegrees });
+      }
+      previous = { raw: fits, corrected };
+    }
+  }
+  return { clips: ['Yawn', 'Eat'], regions: [2, 3], framesPerClip: 121, reportingThresholdDegrees: 30,
+    largeSteps: steps, boundary: 'A large detector-axis step is evidence to review against the original limb pose, not automatically a defect' };
 }
 
 function sample(data, width, height, x, y, premultiply = false) {
@@ -264,8 +323,9 @@ function continuousGarments(anatomy, map, fits, head, props) {
   return output;
 }
 
-export function composeFrame(anatomy, map, binding, neutralBinding, neutralFits, variant) {
+export function composeFrame(anatomy, map, binding, neutralBinding, neutralFits, variant, authoredFits) {
   const fits = Array.from({ length: 6 }, (_, i) => i ? fitUv(map, i) : null);
+  for (const [region, fit] of authoredFits ?? []) fits[region] = fit;
   const head = whiteHead(anatomy), props = heldProps(anatomy, map, head);
   const clothingMap = variant.recipe?.size ? continuousGarments(anatomy, map, fits, head, props) : map;
   const clothed = paintRecipe(anatomy, clothingMap, variant.recipe);
@@ -311,10 +371,10 @@ export function differences(a, b) {
 }
 
 export function selectedVariants(samplesOnly, requested) {
-  const selected = requested ?? (samplesOnly ? variants : reviewableVariants);
+  const selected = requested ?? (samplesOnly ? variants : ['default']);
   if (!selected.length || new Set(selected).size !== selected.length || selected.some(name => !variants.includes(name)))
     throw new Error('Invalid or duplicate outfit subset');
-  if (!samplesOnly && selected.some(name => !reviewableVariants.includes(name)))
+  if (!samplesOnly && selected.some(name => !authorCandidateVariants.includes(name)))
     throw new Error('Complex outfit motion artwork has not passed review; only diagnostic samples are permitted');
   return selected;
 }
@@ -330,6 +390,8 @@ export async function build(outputArgument, samplesOnly = false, requested) {
   async function read(name) { const bytes = await fs.readFile(path.join(root, name)); sources[name] = sha(bytes); return bytes; }
   const zip = readZip(await read('DuckDeskPet/Assets/OutfitBindings/Default-v1.zip'));
   const bindings = JSON.parse(zip.get('bindings.json')), neutralBinding = bindings.frames.neutral;
+  const sleeveCorrection = selected.includes('hoodie') ? await hoodieSleeveCorrection(zip, bindings) : undefined;
+  const sleeveAxisScan = selected.includes('hoodie') ? await scanSleeveAxes(zip, bindings, sleeveCorrection) : undefined;
   const neutralBytes = await read('DuckDeskPet/' + neutralBinding.source), neutral = await sharp(neutralBytes).ensureAlpha().raw().toBuffer();
   const neutralMap = await sharp(zip.get(neutralBinding.map)).ensureAlpha().raw().toBuffer();
   const neutralFits = Array.from({ length: 6 }, (_, i) => i ? fitUv(neutralMap, i) : null);
@@ -337,7 +399,14 @@ export async function build(outputArgument, samplesOnly = false, requested) {
     outfits: Object.fromEntries(variants.map(name => ['outfit.' + name, { route: selected.includes(name) ? 'native-raster' : 'live2d',
       ...(selected.includes(name) ? { directory: name } : {}) }])) };
   const validation = { samplesOnly, selectedOutfits: selected, sourceHashes: sources, evidence: {},
+    authoredUvCorrections: selected.includes('hoodie') ? [sleeveCorrection.report] : [],
+    sleeveAxisScan,
     status: 'Candidate awaiting complete sequence review',
+    productionApprovedNativeOutfits: ['default'],
+    unapprovedAuthorCandidates: {
+      office: 'Raised wrist can sample jacket blue from inconsistent torso/sleeve slots; requires anatomical slot re-authoring',
+      hoodie: 'Local Yawn 46..51 axis correction only; still requires complete outfit animation acceptance before production use',
+    },
     excludedComplexOutfits: { outfits: ['ox', 'hero', 'astronaut'],
       reason: 'Existing UV garment/hand partitions and transparent fabric cutouts fragment under raised-arm poses; neutral equality is not motion acceptance',
       followUp: 'Re-author local chest/sleeve UV and occlusion tracks for both actions; do not replace these outfits with undressed or known-bad PNGs' },
@@ -391,7 +460,8 @@ export async function build(outputArgument, samplesOnly = false, requested) {
       if (sha(bytes) !== binding.sha256.toLowerCase()) throw new Error('Stale anatomy: ' + binding.source);
       const anatomy = await sharp(bytes).ensureAlpha().raw().toBuffer(), map = await sharp(zip.get(binding.map)).ensureAlpha().raw().toBuffer();
       for (const record of records) {
-        const pixels = record.name === 'default' ? anatomy : composeFrame(anatomy, map, binding, neutralBinding, neutralFits, record.variant);
+        const pixels = record.name === 'default' ? anatomy : composeFrame(anatomy, map, binding, neutralBinding, neutralFits, record.variant,
+          authoredSleeveFits(record.name, clip, frame, sleeveCorrection));
         if ((frame === 0 || frame === 120) && (differences(pixels, record.expected).visible || differences(pixels, record.expected).alpha))
           throw new Error(record.name + ' ' + clip + ' endpoint is not the same material identity');
         const file = path.join(record.directory, clip, 'frame-' + id + '.png');

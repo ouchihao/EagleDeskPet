@@ -5,7 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import { readPsd } from 'ag-psd';
-import { WIDTH, HEIGHT, readZip, fitUv, correspondence, affinePoint, flatten, composeFrame, differences, materialRegion, selectedVariants } from './pack-hybrid-actions.mjs';
+import { WIDTH, HEIGHT, readZip, fitUv, correspondence, affinePoint, flatten, composeFrame, differences, materialRegion, selectedVariants, hoodieSleeveCorrection, authoredSleeveFits } from './pack-hybrid-actions.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const zip = readZip(await fs.readFile(path.join(root, 'DuckDeskPet/Assets/OutfitBindings/Default-v1.zip')));
@@ -36,10 +36,26 @@ test('malformed or duplicate archive entries cannot silently produce bindings', 
 });
 
 test('a complete runtime candidate cannot silently include known-failed complex outfits', () => {
-  assert.deepEqual(selectedVariants(false), ['default', 'office', 'hoodie']);
+  assert.deepEqual(selectedVariants(false), ['default']);
   assert.throws(() => selectedVariants(false, ['astronaut']), /has not passed review/);
   assert.throws(() => selectedVariants(false, ['default', 'default']), /duplicate outfit/);
   assert.deepEqual(selectedVariants(true, ['astronaut']), ['astronaut']);
+});
+
+test('the proven six-frame sleeve-axis reversal is repaired without touching other garments or tracks', async () => {
+  const correction = await hoodieSleeveCorrection(zip, bindings);
+  assert.deepEqual([...correction.frames.keys()], [46, 47, 48, 49, 50, 51]);
+  const values = [];
+  for (let frame = 45; frame <= 52; frame++) {
+    const entry = bindings.frames['Yawn/' + String(frame).padStart(4, '0')];
+    const original = fitUv(await sharp(zip.get(entry.map)).ensureAlpha().raw().toBuffer(), 3);
+    const fit = authoredSleeveFits('hoodie', 'Yawn', frame, correction)?.get(3) ?? original;
+    values.push(Math.atan2(fit[1][1], fit[1][0]));
+    assert.equal(authoredSleeveFits('office', 'Yawn', frame, correction), undefined);
+    assert.equal(authoredSleeveFits('hoodie', 'Eat', frame, correction), undefined);
+  }
+  for (let i = 1; i < values.length; i++) assert.ok(Math.abs(values[i] - values[i - 1]) < .01);
+  for (const frame of [0, 1, 44, 45, 52, 53, 119, 120]) assert.equal(authoredSleeveFits('hoodie', 'Yawn', frame, correction), undefined);
 });
 
 for (const name of ['default', 'office', 'hoodie', 'ox', 'hero', 'astronaut']) {
@@ -67,18 +83,21 @@ test('original Yawn and Eat begin and end at the exact canonical visible pose', 
   }
 });
 
-test('complete candidate has 726 real frames, original default bytes, and exact outfit seams',
+test('complete candidate has all declared native frames, original default bytes, and exact outfit seams',
   { skip: !process.env.EAGLE_HYBRID_CANDIDATE }, async () => {
     const directory = path.resolve(process.env.EAGLE_HYBRID_CANDIDATE);
     const runtimeBytes = await fs.readFile(path.join(directory, 'manifest.json'));
     assert.ok(runtimeBytes.length < 65536);
     const manifest = JSON.parse(runtimeBytes), report = JSON.parse(await fs.readFile(path.join(directory, 'authoring-validation.json')));
     assert.deepEqual(Object.keys(manifest.outfits), ['outfit.default', 'outfit.office', 'outfit.hoodie', 'outfit.ox', 'outfit.hero', 'outfit.astronaut']);
-    for (const name of ['default', 'office', 'hoodie']) assert.deepEqual(manifest.outfits['outfit.' + name], { route: 'native-raster', directory: name });
-    for (const name of ['ox', 'hero', 'astronaut']) assert.deepEqual(manifest.outfits['outfit.' + name], { route: 'live2d' });
+    const selected = Object.entries(manifest.outfits).filter(([, entry]) => entry.route === 'native-raster').map(([id]) => id.slice('outfit.'.length));
+    selectedVariants(false, selected);
+    for (const name of selected) assert.deepEqual(manifest.outfits['outfit.' + name], { route: 'native-raster', directory: name });
+    const excluded = ['default', 'office', 'hoodie', 'ox', 'hero', 'astronaut'].filter(name => !selected.includes(name));
+    for (const name of excluded) assert.deepEqual(manifest.outfits['outfit.' + name], { route: 'live2d' });
     assert.equal(report.samplesOnly, false);
     let count = 0;
-    for (const name of ['default', 'office', 'hoodie']) {
+    for (const name of selected) {
       const expected = await pixels(`DuckDeskPet/Assets/Live2DSource/FullActions/Source/${name}/neutral.png`);
       for (const clip of ['Yawn', 'Eat']) {
         assert.equal(report.evidence[name].curves[clip].length, 121);
@@ -94,7 +113,16 @@ test('complete candidate has 726 real frames, original default bytes, and exact 
         }
       }
     }
-    assert.equal(count, 726);
-    for (const excluded of ['ox', 'hero', 'astronaut'])
-      await assert.rejects(fs.access(path.join(directory, excluded)), /ENOENT/);
+    assert.equal(count, selected.length * 242);
+    for (const name of excluded) await assert.rejects(fs.access(path.join(directory, name)), /ENOENT/);
+    if (selected.includes('hoodie') && process.env.EAGLE_HYBRID_PREVIOUS_HOODIE) {
+      const changed = [];
+      for (const clip of ['Yawn', 'Eat']) for (let frame = 0; frame <= 120; frame++) {
+        const file = `${clip}/frame-${String(frame).padStart(4, '0')}.png`;
+        const current = await fs.readFile(path.join(directory, 'hoodie', file));
+        const previous = await fs.readFile(path.join(path.resolve(process.env.EAGLE_HYBRID_PREVIOUS_HOODIE), 'hoodie', file));
+        if (!current.equals(previous)) changed.push(file);
+      }
+      assert.deepEqual(changed, [46, 47, 48, 49, 50, 51].map(frame => `Yawn/frame-${String(frame).padStart(4, '0')}.png`));
+    }
   });

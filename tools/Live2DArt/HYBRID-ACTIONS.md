@@ -2,14 +2,15 @@
 
 `pack-hybrid-actions.mjs` is an offline candidate builder for **Yawn and Eat only**. It never changes the approved model, original sprites, or production resources. The default frames are copied byte-for-byte. Office/Hoodie retain those original expressions and receive the current Live2D outfit appearance through spatial material correspondence, not an opacity crossfade between whole characters.
 
-Full candidates currently permit `default`, `office`, and `hoodie` only. All 121 frames per action still require visual acceptance. Ox/Hero/Astronaut are **not visually accepted**: their inherited sleeve/torso UV partitions and transparent fabric cutouts break into patches in raised-arm poses. The tool refuses to publish complete tracks for those three outfits; `--samples-only` exists solely for further authoring diagnostics. Passing the neutral-pixel tests is not full-animation acceptance.
+**Current production scope is Default native PNG actions and five outfits retaining Live2D.** The builder defaults to `default` only. Office/Hoodie can be generated explicitly as authoring candidates, but neither is approved for production: Office still has jacket-blue contamination on a raised wrist from incorrect chest/sleeve membership; Hoodie has one localized UV correction awaiting full outfit acceptance. Ox/Hero/Astronaut also remain **unaccepted**: inherited sleeve/torso UV partitions and transparent fabric cutouts fragment in raised-arm poses. The tool refuses complete tracks for those three outfits; `--samples-only` exists solely for diagnostics. Passing neutral-pixel tests is not full-animation acceptance.
 
-These routes describe the authoring tool's current reviewable capabilities, **not a final delivery scope already selected by the user**. Production promotion requires the user's scope decision and complete playback review by the main workflow.
+Explicit Office/Hoodie candidate routes are development inputs, **not production permission or a completed delivery scope**. Complete playback review is required before promotion; the present integration must not enable those two candidate tracks. Keeping all five outfits on their existing Live2D actions preserves working behavior; it does not mean their exaggerated raster costume adaptation is finished.
 
 ```powershell
-node tools/Live2DArt/pack-hybrid-actions.mjs .codex-build/hybrid-reviewed-subset --outfits=default,office,hoodie
+node tools/Live2DArt/pack-hybrid-actions.mjs .codex-build/hybrid-default-only
+node tools/Live2DArt/pack-hybrid-actions.mjs .codex-build/hybrid-hoodie-author-candidate --outfits=hoodie
 node --test tools/Live2DArt/pack-hybrid-actions.test.mjs
-$env:EAGLE_HYBRID_CANDIDATE = 'D:\Code\github\EagleDeskPet\.codex-build\hybrid-reviewed-subset'
+$env:EAGLE_HYBRID_CANDIDATE = 'D:\Code\github\EagleDeskPet\.codex-build\hybrid-default-only'
 node --test tools/Live2DArt/pack-hybrid-actions.test.mjs
 ```
 
@@ -22,3 +23,9 @@ The compositor isolates source material slots so a raised sleeve cannot sample t
 Review frames 0, 1, 6, 15, 30, 60, 90, 114, 119, and 120, then play the whole native-sized sequence. Inspect mouth-covering fingertips, cuffs, both bowl grips, the bowl's gold cavity, glasses/helmet contact, and the floor line. The original PNG sequences themselves have nonzero frame-0-to-1 changes; a renderer handoff can preserve their timing but cannot claim to remove those source-art changes.
 
 Complex-outfit follow-up is explicit local chest/sleeve UV and occlusion re-authoring for these two actions. Do not replace a failed outfit with an undressed default animation, broaden a color mask until it covers the bowl, or label known-bad samples as complete.
+
+## Audited sleeve-axis correction
+
+The inherited Default-v1 UV detector reverses the viewer-right sleeve axis by 171.22° at Yawn frame 46 and reverses back at frame 52, although the underlying original wing scarcely moves. Hoodie therefore has one explicit local authoring correction: frames 46–51 interpolate the UV affine transform between the reviewed frames 45 and 52. The correction changes neither the source PNG nor the material colors and does not apply to Office, Eat, the other wing, or any endpoint. Source/map anchor hashes and every corrected input hash are recorded; changed anchors or a no-longer-reversed source are rejected for re-review.
+
+`authoring-validation.json` also scans both arms across all 121 frames of both actions, reporting native/corrected axis steps over 30°. The remaining larger Eat steps correspond to different original arm poses and require visual comparison, not automatic angle flattening. Optional `EAGLE_HYBRID_PREVIOUS_HOODIE` enables a regression against a previous candidate: only Yawn frames 46–51 may have changed.
