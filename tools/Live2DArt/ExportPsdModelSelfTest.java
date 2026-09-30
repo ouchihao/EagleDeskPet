@@ -75,6 +75,18 @@ public final class ExportPsdModelSelfTest {
             if (!validation.contains("\"fullBodyRig\": true") || !validation.contains("\"actionBoundMeshes\": " + actionMeshes))
                 throw new AssertionError("Missing full-body mesh authoring assertions");
             JsonObject bindings = (JsonObject) Json.Default.parseToJsonElement(Files.readString(validOutput.resolve("action-bindings.json")));
+            boolean pupilGaze = ((JsonArray) parsedProfile.get("layers")).stream().anyMatch(layer -> ((JsonObject) layer).containsKey("pupilGaze"));
+            if (pupilGaze) {
+                JsonObject gaze = (JsonObject) bindings.get("gaze");
+                if (gaze == null || !gaze.toString().equals("{\"schemaVersion\":1,\"head\":true,\"eyes\":true}") ||
+                    !validation.contains("\"localPupilGazeBindings\": 2"))
+                    throw new AssertionError("Real local pupil bindings must declare their capability explicitly");
+                mark("local pupil XY geometry, fixed ROI border, neutral and gaze-independent closed eyes verified");
+                reject(input, evidence, "pupil-zero-range", changeLayer(validProfile, "irides-l", "pupilGaze", "{\"offsetXPx\":0,\"offsetYPx\":1.25}"), "pupil offsetXPx must be in");
+                reject(input, evidence, "pupil-crosses-margin", changeLayer(validProfile, "irides-l", "pupilGaze", "{\"offsetXPx\":2.5,\"offsetYPx\":2}"), "Pupil offset exceeds");
+                reject(input, evidence, "pupil-unknown-option", changeLayer(validProfile, "irides-l", "pupilGaze", "{\"offsetXPx\":2.5,\"offsetYPx\":1.25,\"unknown\":true}"), "Unknown configuration key");
+                reject(input, evidence, "pupil-topology-change", changeLayer(validProfile, "irides-l", "mesh", "{\"maxEdgeDistance\":2,\"interiorDensity\":2}"), "pupilGaze preserves original eye topology");
+            }
             if (((JsonArray) bindings.get("foregroundDrawableIds")).size() != 2)
                 throw new AssertionError("Desk foreground must name exactly the two forearms");
             if (((JsonArray) bindings.get("parameters")).size() != 27)
@@ -156,6 +168,20 @@ public final class ExportPsdModelSelfTest {
         var changed = new LinkedHashMap<String, JsonElement>(object);
         changed.put(key, Json.Default.parseToJsonElement(value));
         return new JsonObject(changed).toString();
+    }
+    private static String changeLayer(String input, String name, String key, String value) {
+        JsonObject root = (JsonObject) Json.Default.parseToJsonElement(input);
+        var layers = new java.util.ArrayList<JsonElement>();
+        for (JsonElement element : (JsonArray) root.get("layers")) {
+            JsonObject layer = (JsonObject) element;
+            if (((JsonPrimitive) layer.get("name")).getContent().equals(name)) {
+                var changed = new LinkedHashMap<String, JsonElement>(layer);
+                changed.put(key, Json.Default.parseToJsonElement(value)); layers.add(new JsonObject(changed));
+            } else layers.add(element);
+        }
+        var changedRoot = new LinkedHashMap<String, JsonElement>(root);
+        changedRoot.put("layers", new JsonArray(layers));
+        return new JsonObject(changedRoot).toString();
     }
     private static String rename(String input, String section, String oldKey, String newKey) {
         JsonObject root = (JsonObject) Json.Default.parseToJsonElement(input);

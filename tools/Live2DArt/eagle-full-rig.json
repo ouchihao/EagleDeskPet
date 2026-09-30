@@ -25,8 +25,8 @@
     "pinFaceFeathers": true
   },
   "layers": [
-    { "name": "irides-l", "semanticTag": "EYELASH", "side": "LEFT", "requiredGeometryParameter": "ParamEyeLOpen", "closedEye": { "heightPx": 0.75, "curveDepthPx": 0.8 } },
-    { "name": "irides-r", "semanticTag": "EYELASH", "side": "RIGHT", "requiredGeometryParameter": "ParamEyeROpen", "closedEye": { "heightPx": 0.75, "curveDepthPx": 0.8 } },
+    { "name": "irides-l", "semanticTag": "EYELASH", "side": "LEFT", "requiredGeometryParameter": "ParamEyeLOpen", "closedEye": { "heightPx": 0.75, "curveDepthPx": 0.8 }, "pupilGaze": { "offsetXPx": 2.5, "offsetYPx": 1.25 } },
+    { "name": "irides-r", "semanticTag": "EYELASH", "side": "RIGHT", "requiredGeometryParameter": "ParamEyeROpen", "closedEye": { "heightPx": 0.75, "curveDepthPx": 0.8 }, "pupilGaze": { "offsetXPx": 2.5, "offsetYPx": 1.25 } },
     { "name": "footwear-l", "parent": null },
     { "name": "footwear-r", "parent": null },
     { "name": "handwear-l", "semanticTag": "HANDWEAR", "side": "LEFT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },

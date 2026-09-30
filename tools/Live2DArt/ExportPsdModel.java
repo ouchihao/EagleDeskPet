@@ -52,10 +52,11 @@ public final class ExportPsdModel {
         var rootPinned = new HashSet<String>();
         var expectedEyeBindings = new LinkedHashMap<String, String>();
         var eyeClosures = new LinkedHashMap<String, JsonObject>();
+        var pupilGazes = new LinkedHashMap<String, JsonObject>();
         var names = new HashSet<String>();
         for (JsonElement item : array(profile.get("layers"), "layers")) {
             JsonObject rule = object(item, "layer rule");
-            keys(rule, Set.of("name", "semanticTag", "side", "parent", "parentDeformer", "requiredGeometryParameter", "closedEye", "mesh"));
+            keys(rule, Set.of("name", "semanticTag", "side", "parent", "parentDeformer", "requiredGeometryParameter", "closedEye", "pupilGaze", "mesh"));
             String name = string(rule.get("name"), "layer name");
             if (!names.add(name)) throw new IllegalArgumentException("Duplicate profile layer: " + name);
             var matches = analysis.getSource().getLayers().stream().filter(layer -> layer.getName().equals(name)).toList();
@@ -95,6 +96,15 @@ public final class ExportPsdModel {
                 positivePixel(closure.get("heightPx"), "heightPx");
                 positivePixel(closure.get("curveDepthPx"), "curveDepthPx");
                 eyeClosures.put(sourceId, closure);
+            }
+            if (rule.containsKey("pupilGaze")) {
+                if (!rule.containsKey("closedEye")) throw new IllegalArgumentException("pupilGaze requires closedEye");
+                if (rule.containsKey("mesh")) throw new IllegalArgumentException("pupilGaze preserves original eye topology");
+                JsonObject gaze = object(rule.get("pupilGaze"), "pupilGaze");
+                keys(gaze, Set.of("offsetXPx", "offsetYPx"));
+                boundedNumber(gaze.get("offsetXPx"), "pupil offsetXPx", 0.25f, 3);
+                boundedNumber(gaze.get("offsetYPx"), "pupil offsetYPx", 0.25f, 2);
+                pupilGazes.put(sourceId, gaze);
             }
             System.out.println("Layer rule: " + name + " => " + sourceId + " " + rule);
         }
@@ -144,18 +154,38 @@ public final class ExportPsdModel {
                 float curve = positivePixel(closure.get("curveDepthPx"), "curveDepthPx") * (maxY - minY) / sourceHeight;
                 float centerY = (minY + maxY) * 0.5f;
                 var target = new RigTargetRef(RigTargetKind.ART_MESH, drawableId, null);
-                for (float openness : new float[] {0f, 0.5f, 1f}) {
+                JsonObject gaze = pupilGazes.get(sourceId);
+                float[] pupil = gaze == null ? null : pupilBounds(source);
+                float[] gazeKeys = gaze == null ? new float[] {0} : new float[] {-1, 0, 1};
+                float offsetX = gaze == null ? 0 : boundedNumber(gaze.get("offsetXPx"), "pupil offsetXPx", 0.25f, 3);
+                float offsetY = gaze == null ? 0 : boundedNumber(gaze.get("offsetYPx"), "pupil offsetYPx", 0.25f, 2);
+                if (gaze != null && (offsetX > Math.min(pupil[0], source.getRaster().getWidth() - pupil[2]) * 0.5f ||
+                    offsetY > Math.min(pupil[1], sourceHeight - pupil[3]) * 0.5f))
+                    throw new IllegalArgumentException("Pupil offset exceeds the fixed face-color margin");
+                int pupilVertices = 0;
+                for (int i = 0; gaze != null && i < positions.length; i += 2)
+                    if (pupilWeight((positions[i] - minX) / (maxX - minX) * source.getRaster().getWidth(),
+                        (positions[i + 1] - minY) / (maxY - minY) * sourceHeight, source, pupil) > 0.25f) pupilVertices++;
+                if (gaze != null && pupilVertices < 1) throw new IllegalStateException("Pupil gaze requires an interior pupil vertex");
+                for (float openness : new float[] {0f, 0.5f, 1f}) for (float gazeX : gazeKeys) for (float gazeY : gazeKeys) {
                     var delta = new ArrayList<Float>(positions.length);
                     for (int i = 0; i < positions.length; i += 2) {
                         float u = 2f * (positions[i] - minX) / (maxX - minX) - 1f;
-                        float closedY = centerY + curve * (1f - u * u) + (positions[i + 1] - centerY) * closeScale;
-                        delta.add(0f);
-                        delta.add((closedY - positions[i + 1]) * (1f - openness));
+                        float closeDelta = centerY + curve * (1f - u * u) +
+                            (positions[i + 1] - centerY) * closeScale - positions[i + 1];
+                        float weight = gaze == null ? 0 : pupilWeight((positions[i] - minX) / (maxX - minX) * source.getRaster().getWidth(),
+                            (positions[i + 1] - minY) / (maxY - minY) * sourceHeight, source, pupil) * openness;
+                        delta.add(weight == 0 || gazeX == 0 ? 0f : gazeX * offsetX * weight * (maxX - minX) / source.getRaster().getWidth());
+                        delta.add(closeDelta * (1f - openness) - gazeY * offsetY * weight * (maxY - minY) / sourceHeight);
                     }
-                    edits = edits.setKeyform(new RigKeyformSetEdit(target, Map.of(parameter, openness),
+                    var pose = new LinkedHashMap<String, Float>();
+                    pose.put(parameter, openness);
+                    if (gaze != null) { pose.put("ParamEyeBallX", gazeX); pose.put("ParamEyeBallY", gazeY); }
+                    edits = edits.setKeyform(new RigKeyformSetEdit(target, pose,
                         new RigKeyformGeometryEdit(null, null, null, null, null, delta), null));
                 }
                 System.out.println("Authored eye closure: " + drawableId + " -> " + parameter + " @ 0 / 0.5 / 1, no opacity fade");
+                if (gaze != null) System.out.println("Authored local pupil gaze: " + drawableId + " 27 joint keys, pinned white ROI boundary, pupil vertices=" + pupilVertices);
             }
         }
         if (profile.containsKey("headConnection"))
@@ -199,11 +229,14 @@ public final class ExportPsdModel {
                 if (drawable.getGeometryGrid().getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
                     throw new IllegalStateException("Eye parameter contains no geometric movement: " + drawableId);
                 checkedEyes.add(sourceId);
+                if (pupilGazes.containsKey(sourceId)) validatePupilGaze(drawable, required);
             }
         }
         if (!checkedFeet.equals(rootPinned) || !checkedEyes.equals(expectedEyeBindings.keySet()))
             throw new IllegalStateException("Not every reviewed source binding survived generation");
         if (profile.containsKey("fullBody")) validateFullBody(rig, unmodifiedRig, object(profile.get("fullBody"), "fullBody"), actionBindings);
+        if (!pupilGazes.isEmpty() && (pupilGazes.size() != 2 || !profile.containsKey("headConnection")))
+            throw new IllegalStateException("Gaze capability requires both pupils and the authored head connection");
 
         var result = pipeline.run(input, output, config,
             (stage, fraction) -> System.out.printf("%3d%% %s%n", Math.round(fraction * 100f), stage));
@@ -225,6 +258,9 @@ public final class ExportPsdModel {
             }
         }
         mapping.append(']');
+        if (!pupilGazes.isEmpty()) {
+            mapping.append(",\n  \"gaze\": {\"schemaVersion\": 1, \"head\": true, \"eyes\": true}");
+        }
         if (profile.containsKey("fullBody")) {
             JsonObject fullBody = object(profile.get("fullBody"), "fullBody");
             for (String group : List.of("handAttachments", "eyeAttachments")) {
@@ -269,6 +305,7 @@ public final class ExportPsdModel {
             .append("\n  \"authoringJarSha256\": ").append(quote(sha256(authoringJar))).append(',')
             .append("\n  \"rootPinnedMeshes\": ").append(checkedFeet.size()).append(',')
             .append("\n  \"movingEyeBindings\": ").append(checkedEyes.size()).append(',')
+            .append("\n  \"localPupilGazeBindings\": ").append(pupilGazes.size()).append(',')
             .append("\n  \"chestAnchoredHead\": ").append(profile.containsKey("headConnection")).append(',')
             .append("\n  \"fullBodyRig\": ").append(profile.containsKey("fullBody")).append(',')
             .append("\n  \"actionBoundMeshes\": ").append(profile.containsKey("fullBody") ? actionBindings.size() : 0).append(',')
@@ -296,6 +333,65 @@ public final class ExportPsdModel {
         evidence.append("]\n}\n");
         Files.writeString(output.resolve("authoring-validation.json"), evidence.toString());
         System.out.println("Official Cubism runtime and Editor validation remain separate required checks");
+    }
+
+    private static float[] pupilBounds(SourceLayer source) {
+        var raster = source.getRaster();
+        byte[] rgba = raster.getRgba();
+        int left = raster.getWidth(), top = raster.getHeight(), right = 0, bottom = 0, count = 0;
+        for (int y = 0; y < raster.getHeight(); y++) for (int x = 0; x < raster.getWidth(); x++) {
+            int offset = (y * raster.getWidth() + x) * 4;
+            if ((rgba[offset + 3] & 255) < 128 || Math.max(rgba[offset] & 255,
+                Math.max(rgba[offset + 1] & 255, rgba[offset + 2] & 255)) >= 180) continue;
+            left = Math.min(left, x); top = Math.min(top, y);
+            right = Math.max(right, x + 1); bottom = Math.max(bottom, y + 1); count++;
+        }
+        if (count < 12 || left < 2 || top < 2 || right > raster.getWidth() - 2 || bottom > raster.getHeight() - 2)
+            throw new IllegalStateException("Pupil gaze requires a dark pupil surrounded by a fixed face-color margin");
+        return new float[] {left, top, right, bottom};
+    }
+
+    private static float pupilWeight(float x, float y, SourceLayer source, float[] pupil) {
+        float xWeight = x < pupil[0] ? smoothStep(x / pupil[0]) : x > pupil[2]
+            ? smoothStep((source.getRaster().getWidth() - x) / (source.getRaster().getWidth() - pupil[2])) : 1;
+        float yWeight = y < pupil[1] ? smoothStep(y / pupil[1]) : y > pupil[3]
+            ? smoothStep((source.getRaster().getHeight() - y) / (source.getRaster().getHeight() - pupil[3])) : 1;
+        return xWeight * yWeight;
+    }
+
+    private static void validatePupilGaze(Drawable drawable, String eyeParameter) throws Exception {
+        var grid = drawable.getGeometryGrid();
+        requireAxes(grid, Set.of(eyeParameter, "ParamEyeBallX", "ParamEyeBallY"));
+        if (grid.getCells().size() != 27) throw new IllegalStateException("Pupil gaze requires 27 joint eyelid/XY keys");
+        float[] closed = null;
+        boolean movedX = false, movedY = false;
+        float[] positions = drawable.getMesh().getPositions();
+        float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY, maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
+        for (int i = 0; i < positions.length; i += 2) {
+            minX = Math.min(minX, positions[i]); maxX = Math.max(maxX, positions[i]);
+            minY = Math.min(minY, positions[i + 1]); maxY = Math.max(maxY, positions[i + 1]);
+        }
+        for (var cell : grid.getCells()) {
+            var pose = coordinate(grid, cell.getCoordinate());
+            float[] deltas = cell.getForm().getPositionDeltas();
+            if (pose.get(eyeParameter) == 0) {
+                if (closed == null) closed = deltas;
+                else if (!Arrays.equals(closed, deltas)) throw new IllegalStateException("Closed eyelids must not follow pupil gaze");
+            }
+            if (pose.get(eyeParameter) == 1) {
+                if (pose.get("ParamEyeBallX") == 0 && pose.get("ParamEyeBallY") == 0 && !allZero(deltas))
+                    throw new IllegalStateException("Pupil gaze changed the neutral eye geometry");
+                for (int i = 0; i < deltas.length; i += 2) {
+                    if ((positions[i] == minX || positions[i] == maxX || positions[i + 1] == minY || positions[i + 1] == maxY) &&
+                        (deltas[i] != 0 || deltas[i + 1] != 0))
+                        throw new IllegalStateException("Pupil gaze moved a white ROI boundary vertex");
+                    movedX |= Math.abs(deltas[i]) > 0.00001f;
+                    movedY |= Math.abs(deltas[i + 1]) > 0.00001f;
+                }
+            }
+        }
+        if (!movedX || !movedY) throw new IllegalStateException("Pupil gaze contains an inert axis");
+        System.out.println("Pupil gaze verification: real XY geometry, exact neutral, identical closed eyelids across all gaze keys");
     }
 
     private static PipelineConfig configure(PipelineConfig base, JsonObject settings,
