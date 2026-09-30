@@ -190,7 +190,30 @@ function separateTorso(children) {
   const body = children.find(x => x.name === 'topwear'), b = body.imageData;
   const contours = [[222, 124], [240, 128], [260, 126], [278, 129], [290, 133], [295, 132]];
   for (const side of ['r', 'l']) {
-    const wing = children.find(x => x.name === 'handwear-' + side), w = wing.imageData;
+    const wing = children.find(x => x.name === 'handwear-' + side), original = wing.imageData;
+    const padding = 5, newLeft = wing.left - (side === 'l' ? padding : 0), width = original.width + padding;
+    const data = new Uint8ClampedArray(width * original.height * 4);
+    for (let y = 0; y < original.height; y++) {
+      const start = (y * width + wing.left - newLeft) * 4;
+      data.set(original.data.subarray(y * original.width * 4, (y + 1) * original.width * 4), start);
+    }
+    wing.left = newLeft;
+    const w = wing.imageData = { width, height: original.height, data };
+    // Include the entire original inner feather stroke, which the old static mask left on the torso
+    for (let y = 0; y < w.height; y++) {
+      const wy = wing.top + y;
+      if (wy < 236 || wy > 292) continue;
+      const occupied = [];
+      for (let x = 0; x < w.width; x++) if (w.data[(y * w.width + x) * 4 + 3]) occupied.push(x);
+      if (!occupied.length) continue;
+      const edge = side === 'r' ? occupied.at(-1) : occupied[0];
+      for (let step = 1; step <= padding; step++) {
+        const x = edge + step * (side === 'r' ? 1 : -1), wx = wing.left + x;
+        if (x < 0 || x >= w.width || wx < body.left || wx >= body.left + b.width) continue;
+        const source = ((wy - body.top) * b.width + wx - body.left) * 4;
+        w.data.set(b.data.subarray(source, source + 4), (y * w.width + x) * 4);
+      }
+    }
     for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) {
       const wx = wing.left + x, wy = wing.top + y, p = (y * w.width + x) * 4;
       if (wy < 222 || wy >= 295 || !w.data[p + 3]) continue;
@@ -202,7 +225,7 @@ function separateTorso(children) {
       const outside = wx < edge || wx > canvas.width - edge;
       // Move the old occluded wing silhouette into its moving layer, including its antialiased outline
       const a = w.data[p + 3] / 255, behind = b.data[bi + 3] / 255, alpha = a + behind * (1 - a);
-      if (outside || b.data[bi + 3] === 255) {
+      if (outside || Math.round(alpha * 255) === 255) {
         for (let c = 0; c < 3; c++) w.data[p + c] = Math.round((w.data[p + c] * a + b.data[bi + c] * behind * (1 - a)) / alpha);
         w.data[p + 3] = Math.round(alpha * 255);
       }
