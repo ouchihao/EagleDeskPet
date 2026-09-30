@@ -20,6 +20,7 @@
     "irides-r": "ArtMeshEyelashR"
   },
   "foregroundDrawableIds": ["ArtMeshHandwearL","ArtMeshHandwearR"],
+  "gaze": {"schemaVersion": 1, "head": true, "eyes": true},
   "handAttachments": {
     "l": {"drawableId": "ArtMeshHandwearL", "source": [244,286]},
     "r": {"drawableId": "ArtMeshHandwearR", "source": [140,286]}
