@@ -62,9 +62,9 @@
     }
   }
   function checkOffice(report, kind, x, y, label) {
-    const headX = kind === "WorkLoop" ? 18 : 16,
-      headY = kind === "WorkLoop" ? 9 : 8,
-      headTilt = kind === "WorkLoop" ? 9 : 7;
+    const headX = kind === "WorkLoop" ? 24 : 22,
+      headY = kind === "WorkLoop" ? 12 : 11,
+      headTilt = kind === "WorkLoop" ? 12 : 10;
     check(report.gaze.actionSupported, label + " accepts gaze while typing");
     check(
       Math.abs(report.parameters.ParamAngleX - report.actionParameters.ParamAngleX - x * headX) < 0.6 &&
@@ -80,7 +80,7 @@
     check(
       kind === "BusyLoop"
         ? report.parameters.ParamBusyEyes === 1 && report.parameters.ParamEyeBallX === 0 && report.parameters.ParamEyeBallY === 0
-        : Math.abs(report.parameters.ParamEyeBallX - x * 0.9) < 0.04 && Math.abs(report.parameters.ParamEyeBallY - y * 0.85) < 0.04,
+        : Math.abs(report.parameters.ParamEyeBallX - x) < 0.04 && Math.abs(report.parameters.ParamEyeBallY - y) < 0.04,
       label + (kind === "BusyLoop" ? " preserves pupil-less yellow busy eyes" : " really moves bound pupils"),
     );
   }

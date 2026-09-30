@@ -12,9 +12,9 @@
     <AssemblyTitle>小鹰桌宠</AssemblyTitle>
     <Product>小鹰桌宠</Product>
     <Description>一只会逐帧表演搞怪动作的 60 FPS Windows 小鹰桌宠</Description>
-    <Version>1.12.0-preview.4</Version>
-    <FileVersion>1.12.0.4</FileVersion>
-    <InformationalVersion>1.12.0-preview.4</InformationalVersion>
+    <Version>1.12.0-preview.5</Version>
+    <FileVersion>1.12.0.5</FileVersion>
+    <InformationalVersion>1.12.0-preview.5</InformationalVersion>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\eagle-app.ico</ApplicationIcon>

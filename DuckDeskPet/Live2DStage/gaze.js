@@ -1,19 +1,19 @@
 "use strict";
 (() => {
   const limits = Object.freeze({
-    ParamAngleX: 22,
-    ParamAngleY: 12,
-    ParamAngleZ: 12,
-    ParamEyeBallX: 0.9,
-    ParamEyeBallY: 0.85,
+    ParamAngleX: 30,
+    ParamAngleY: 16,
+    ParamAngleZ: 16,
+    ParamEyeBallX: 1,
+    ParamEyeBallY: 1,
   });
   const profiles = Object.freeze({
     Idle: limits,
-    WorkLoop: Object.freeze({ ...limits, ParamAngleX: 18, ParamAngleY: 9, ParamAngleZ: 9 }),
+    WorkLoop: Object.freeze({ ...limits, ParamAngleX: 24, ParamAngleY: 12, ParamAngleZ: 12 }),
     BusyLoop: Object.freeze({
-      ParamAngleX: 16,
-      ParamAngleY: 8,
-      ParamAngleZ: 7,
+      ParamAngleX: 22,
+      ParamAngleY: 11,
+      ParamAngleZ: 10,
       ParamEyeBallX: 0,
       ParamEyeBallY: 0,
     }),
