@@ -60,6 +60,19 @@ node --test tools/Live2DArt/pack-eagle.test.mjs
 
 ## 2. 生成 CMO3 / MOC3
 
+### 全动作与六套服装源（独立增量）
+
+`pack-action-eagle.mjs <new-output-dir>` 从已验收 Canonical PSD 派生新源，不改写 Canonical。它复用当前六套服装素材与中立 UV 绑定，将肩根和前臂机械拆成带 4 像素不透明重叠的两段，并加入独立上 / 下喙、口腔和三种猜拳手型。新增部件保留真实像素、`hidden=false`、默认 opacity=0，待模型参数绑定接管。
+
+辅助原画由内置 imagegen 生成，完整提示词见 [ACTION-PARTS-PROMPT.md](../../DuckDeskPet/Assets/Live2DSource/ACTION-PARTS-PROMPT.md)。生成图和 Canonical PSD 均有输入指纹门禁；其他服装来源写入生成的 `source-manifest.json`。输出六套 PSD / neutral 及三个餐具 PNG。源生成通过不等于全部动作播放或生产迁移通过。
+
+```powershell
+node tools/Live2DArt/pack-action-eagle.mjs .codex-build/live2d-full-source
+node --test tools/Live2DArt/pack-action-eagle.test.mjs
+```
+
+以下为基础 Canonical 的独立导出示例；全动作 profile 与模型按其单独验收记录选用。
+
 将 `$java`、`$psd2liveApp` 改为本机真实绝对路径；输出目录必须不存在。类路径只指向用户已检查、取得的外部工具，不会自动安装依赖。
 
 ```powershell
