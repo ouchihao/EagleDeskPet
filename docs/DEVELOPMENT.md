@@ -12,7 +12,33 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.2/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.2-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.3/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.3-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+
+<a id="preview3-摸鱼与光标注视"></a>
+## preview.3 摸鱼与光标注视
+
+需求与验收清单见 [REQ-012](REQUIREMENTS.md#req-012) / [REQ-013](REQUIREMENTS.md#req-013)。本节记录当前接口和验证边界，不宣告新版本已发布。
+
+- `LoafingPolicy` 按有效工作区间和持久随机状态抽签；`PetCareService` 唯一结算金币、经验、食物与心情。休息固定半小时，无金币和任何自动经验，粮食仍积累；休息心情基础衰减为 1 / 小时。渲染模块不能补发奖励
+- `LoafingVisualTimeline` / `LoafingSpriteLayer` 管理原味表情叠层；`Live2DStage/loafing.js` 管理独立模型 / 电脑转场。`SendLoafing(phase, seconds, paused, kind)` 以最多 20 Hz 同步，阶段 / 暂停边界立即发送，使用独立 generation / revision 过滤旧消息；正常工作时间轴冻结到交接结束
+- `GazePolicy` 只使用本地鼠标坐标，宿主 `PointFromScreen` 转换、20 Hz 发送，`gaze.js` 在模型声明安全参数后平滑驱动。除站立之外禁用跟随，遵循用户开关与系统减弱动画设置；无能力的旧包不伪造眼球运动
+- 存档仍为 v4，新摸鱼字段有兼容默认值；没有新的经济迁移，已有 v4 钱包不能再次清零。旧版本升 v4 的独立备份与一次性重置沿用原保护，测试只写隔离资料
+- 5,113.50 币 / 七天是关闭随机摸鱼的默认有效工作定标。`EconomySelfTest` 中该基线显式控制随机输入；不把它解释为新版实际挂机七天必得，价格本轮不再次调整
+
+已执行的逻辑检查点：摸鱼 Core 提交 `518047d` 的自测 51 / 51、经济 64 / 64、存档 12 / 12；转场提交 `bbbf1df` 的 Stage 24、注视 11、摸鱼 10，共 45 / 45 JavaScript 测试。它们覆盖确定性调度、区间结算、存取档、协议、参数边界和暂停，不代替真实 Core 模型、WPF 叠层、输入或故障交接验收。
+
+```powershell
+dotnet run --project .\DuckDeskPet.SelfTest -c Release
+dotnet run --project .\tools\EconomySelfTest -c Release -- "$((Get-Location).Path)"
+dotnet run --project .\tools\PetStoreSelfTest -c Release -- "$((Get-Location).Path)"
+node --test .\DuckDeskPet\Live2DStage\actions.test.cjs .\DuckDeskPet\Live2DStage\gaze.test.cjs .\DuckDeskPet\Live2DStage\loafing.test.mjs
+dotnet run --project .\tools\LoafingSelfTest -c Release -- "$((Get-Location).Path)" .codex-build/loafing-review
+.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.3\EagleDeskPet.exe -Mode live2d-loafing
+```
+
+最后两项为新联调入口，必须保留本次实际结果再判断通过；不要复用证据目录。PNG 兼容后端另运行 `-Mode loafing` 并显式选择 `EAGLE_PET_RENDERER=png`。真实 Core 注视验证用 [GazeStageSelfTest](../tools/GazeStageSelfTest/README.md)，只对本地模型 / 窗口画布操作，不注入系统鼠标、不读真实用户存档。
+
+已知素材边界：原抠鼻 / 袈裟 GIF 截为各 35 帧，40 ms / 帧（25 FPS），往返播放避免首末硬切；最高 60 Hz 仅指位置、转场及渲染调度，不声称有 60 张不同表情帧。摸鱼暂不换服装；真实手握木鱼、桌面遮挡、原图抠边、掉帧后双后端同步、取消 / 重启、跨 DPI 和长期性能均需另看画面和宿主报告。原有 14 段核心动作与六套衣装包不因新增叠层而重编号。
 
 ## v1.12 便签、原生提醒和角色包测试
 
@@ -22,7 +48,7 @@ dotnet run --project .\tools\NativeReminderSelfTest -c Release
 dotnet run --project .\tools\ReminderSelfTest -c Release
 dotnet run --project .\tools\ReminderIntegrationSelfTest -c Release -- .codex-build/reminder-ui
 dotnet run --project .\tools\CharacterPackSelfTest -c Release
-.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.2\EagleDeskPet.exe
+.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.3\EagleDeskPet.exe
 ```
 
 这些测试创建隔离数据；主 EXE 联调的系统通知通道使用替身，不注册生产身份。真实 Windows 原生 API 的专用独立应用测试见 [NativeReminderSelfTest](../tools/NativeReminderSelfTest/README.md)，需显式操作并清理专用测试身份，不得改系统勿扰或生产资料来强求通过。角色包校验不等于通过真实 Cubism 模型加载；早期透明 WebGL 探针见 [Live2D P0](LIVE2D-P0-RESULTS.md)，当前真实主程序、六套模型和混合动画的入口与证据见 [动画验证](LIVE2D-FULL-ACTIONS.md)。便签 / 提醒的证据与未测边界见[预览版验证记录](VALIDATION-v1.12-preview.md)。
