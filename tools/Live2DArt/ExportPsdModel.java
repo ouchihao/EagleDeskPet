@@ -223,20 +223,26 @@ public final class ExportPsdModel {
                 mapping.append(quote(actionBindings.get(string(item, "foreground layer"))));
             }
         }
-        mapping.append("],\n  \"handAttachments\": {");
+        mapping.append(']');
         if (profile.containsKey("fullBody")) {
-            JsonObject attachments = object(object(profile.get("fullBody"), "fullBody").get("handAttachments"), "handAttachments");
-            boolean firstAttachment = true;
-            for (var entry : attachments.entrySet()) {
-                JsonObject attachment = object(entry.getValue(), "attachment");
-                if (!firstAttachment) mapping.append(',');
-                firstAttachment = false;
-                mapping.append("\n    ").append(quote(entry.getKey())).append(": {\"drawableId\": ")
-                    .append(quote(actionBindings.get(string(attachment.get("layer"), "attachment layer"))))
-                    .append(", \"source\": ").append(attachment.get("source")).append('}');
+            JsonObject fullBody = object(profile.get("fullBody"), "fullBody");
+            for (String group : List.of("handAttachments", "eyeAttachments")) {
+                if (!fullBody.containsKey(group)) continue;
+                JsonObject attachments = object(fullBody.get(group), group);
+                mapping.append(",\n  ").append(quote(group)).append(": {");
+                boolean firstAttachment = true;
+                for (var entry : attachments.entrySet()) {
+                    JsonObject attachment = object(entry.getValue(), "attachment");
+                    if (!firstAttachment) mapping.append(',');
+                    firstAttachment = false;
+                    mapping.append("\n    ").append(quote(entry.getKey())).append(": {\"drawableId\": ")
+                        .append(quote(actionBindings.get(string(attachment.get("layer"), "attachment layer"))))
+                        .append(", \"source\": ").append(attachment.get("source")).append('}');
+                }
+                mapping.append("\n  }");
             }
         }
-        mapping.append("\n  },\n  \"parameters\": [");
+        mapping.append(",\n  \"parameters\": [");
         firstMapping = true;
         for (Parameter parameter : rig.getPuppet().getParameters()) {
             if (!firstMapping) mapping.append(',');
@@ -327,10 +333,13 @@ public final class ExportPsdModel {
 
     private static RigEditOverlay authorFullBody(RigEditOverlay edits, BuiltRig rig, PipelineAnalysis analysis,
             JsonObject settings, Map<String, String> bindings) throws Exception {
-        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "busyEyes", "foregroundLayers", "handAttachments"));
+        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "busyEyes", "foregroundLayers", "handAttachments", "eyeAttachments"));
         int width = analysis.getSource().getWidthPx(), height = analysis.getSource().getHeightPx();
         float rootY = boundedNumber(settings.get("wingRootY"), "wingRootY", 0, height);
         float groundY = boundedNumber(settings.get("bodyGroundY"), "bodyGroundY", 1, height);
+        if (settings.containsKey("eyeAttachments"))
+            for (var item : object(settings.get("eyeAttachments"), "eyeAttachments").values())
+                meshSpace(string(object(item, "eye attachment").get("layer"), "eye attachment layer"), rig, analysis, bindings);
         for (String side : List.of("L", "R")) {
             JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
             keys(wing, Set.of("layers", "pivotX", "pivotY", "elbowX", "elbowY", "foldDegrees"));
@@ -421,16 +430,19 @@ public final class ExportPsdModel {
             if (!bindings.containsKey(layer) || !foreground.add(layer))
                 throw new IllegalArgumentException("Foreground layer must resolve to one unique action mesh: " + layer);
         }
-        JsonObject attachments = object(settings.get("handAttachments"), "handAttachments");
-        keys(attachments, Set.of("l", "r"));
-        for (var item : attachments.values()) {
-            JsonObject attachment = object(item, "attachment");
-            keys(attachment, Set.of("layer", "source"));
-            if (!bindings.containsKey(string(attachment.get("layer"), "attachment layer")))
-                throw new IllegalArgumentException("Attachment layer is not an authored action mesh");
-            JsonArray source = array(attachment.get("source"), "attachment source");
-            if (source.size() != 2) throw new IllegalArgumentException("Attachment source must contain x/y");
-            for (var coordinate : source) boundedNumber(coordinate, "attachment coordinate", 0, 10000);
+        for (String group : List.of("handAttachments", "eyeAttachments")) {
+            if (group.equals("eyeAttachments") && !settings.containsKey(group)) continue;
+            JsonObject attachments = object(settings.get(group), group);
+            keys(attachments, Set.of("l", "r"));
+            for (var item : attachments.values()) {
+                JsonObject attachment = object(item, "attachment");
+                keys(attachment, Set.of("layer", "source"));
+                if (!bindings.containsKey(string(attachment.get("layer"), "attachment layer")))
+                    throw new IllegalArgumentException("Attachment layer is not an authored action mesh");
+                JsonArray source = array(attachment.get("source"), "attachment source");
+                if (source.size() != 2) throw new IllegalArgumentException("Attachment source must contain x/y");
+                for (var coordinate : source) boundedNumber(coordinate, "attachment coordinate", 0, 10000);
+            }
         }
         for (var role : roles.entrySet()) {
             Drawable mesh = meshes.get(bindings.get(role.getKey()));
@@ -446,12 +458,24 @@ public final class ExportPsdModel {
         }
         if (settings.containsKey("beak")) {
             JsonObject beak = object(settings.get("beak"), "beak");
-            for (String role : List.of("upper", "lower", "inner")) {
+            for (String role : List.of("closed", "upper", "lower", "inner")) {
                 Drawable mesh = meshes.get(bindings.get(string(beak.get(role), role)));
                 var grid = mesh.getGeometryGrid();
-                if (grid == null || grid.getCells().size() != 7 || grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
+                if (grid == null || grid.getCells().size() != 7 || !role.equals("closed") && grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
                     throw new IllegalStateException("Beak part lacks seven geometric keyforms: " + role);
-                requireAxes(grid, Set.of("ParamBeakOpen"));
+                var rest = grid.getCells().stream().filter(cell -> neutral(grid, cell.getCoordinate())).findFirst().orElseThrow();
+                if (!allZero(rest.getForm().getPositionDeltas())) throw new IllegalStateException("Beak neutral geometry changed: " + role);
+                var opacity = mesh.getChannelGrids().get(FormChannel.OPACITY);
+                for (var candidate : List.of(grid, opacity)) {
+                    if (role.equals("closed")) {
+                        for (KeyformAxis axis : candidate.getAxes())
+                            if (!Set.of("ParamBeakOpen", "ParamMouthOpenY").contains(mangledString(axis, KeyformAxis.class, "getParameterId-")))
+                                throw new IllegalStateException("Closed beak contains an unexpected parameter");
+                    } else requireAxes(candidate, Set.of("ParamBeakOpen"));
+                }
+                var opacityRest = opacity.getCells().stream().filter(cell -> neutral(opacity, cell.getCoordinate())).findFirst().orElseThrow();
+                if (!(opacityRest.getForm() instanceof ChannelValue.Scalar value) || value.getValue() != (role.equals("closed") ? 1f : 0f))
+                    throw new IllegalStateException("Beak neutral visibility changed: " + role);
             }
         }
         if (settings.containsKey("busyEyes")) for (JsonElement item : array(settings.get("busyEyes"), "busyEyes")) {
@@ -552,9 +576,17 @@ public final class ExportPsdModel {
 
     private static RigEditOverlay authorBeak(RigEditOverlay edits, BuiltRig rig, PipelineAnalysis analysis, JsonObject settings,
             Map<String, String> bindings) throws Exception {
-        keys(settings, Set.of("closed", "upper", "lower", "inner", "legacyHidden", "hingeY", "gapPx"));
+        keys(settings, Set.of("closed", "upper", "lower", "inner", "legacyHidden", "hingeY", "gapPx", "upperFlatten", "lowerScale", "innerBounds"));
         float hingeY = boundedNumber(settings.get("hingeY"), "beak hingeY", 0, analysis.getSource().getHeightPx());
         float gap = boundedNumber(settings.get("gapPx"), "beak gapPx", 2, 30);
+        float flatten = boundedNumber(settings.get("upperFlatten"), "upperFlatten", 0, 0.6f);
+        float lowerScale = boundedNumber(settings.get("lowerScale"), "lowerScale", 0.3f, 1);
+        JsonArray innerBounds = array(settings.get("innerBounds"), "innerBounds");
+        if (innerBounds.size() != 4) throw new IllegalArgumentException("innerBounds must contain left/top/width/height");
+        float innerLeft = boundedNumber(innerBounds.get(0), "inner left", 0, analysis.getSource().getWidthPx());
+        float innerTop = boundedNumber(innerBounds.get(1), "inner top", 0, analysis.getSource().getHeightPx());
+        float innerWidth = boundedNumber(innerBounds.get(2), "inner width", 1, analysis.getSource().getWidthPx() - innerLeft);
+        float innerHeight = boundedNumber(innerBounds.get(3), "inner height", 1, analysis.getSource().getHeightPx() - innerTop);
         edits = parameter(edits, "ParamBeakOpen", 0, 1);
         for (String role : List.of("closed", "upper", "lower", "inner")) {
             MeshSpace mesh = meshSpace(string(settings.get(role), role), rig, analysis, bindings);
@@ -563,17 +595,22 @@ public final class ExportPsdModel {
                 float alpha = role.equals("closed") ? 1 - reveal : reveal;
                 var delta = new ArrayList<Float>(mesh.positions().length);
                 for (int i = 0; i < mesh.positions().length; i += 2) {
-                    float y = mesh.y(i), targetY = switch (role) {
-                        case "upper" -> y - gap * 0.22f * open;
-                        case "lower" -> y + gap * 0.78f * open;
-                        case "inner" -> open == 0 ? y : hingeY + (y - hingeY) * (0.05f + 0.70f * open);
+                    float x = mesh.x(i), y = mesh.y(i), targetY = open == 0 ? y : switch (role) {
+                        case "upper" -> y - (gap * 0.22f + Math.max(0, y - hingeY) * flatten) * open;
+                        case "lower" -> hingeY + (y - hingeY) * (1 - (1 - lowerScale) * open) + gap * 0.78f * open;
+                        case "inner" -> innerTop + innerHeight -
+                            (1 - (y - mesh.canvas().getTop()) / mesh.canvas().getHeight()) * innerHeight * open;
                         default -> y;
                     };
-                    delta.add(0f); delta.add((targetY - y) / mesh.scaleY());
+                    float cavityWidth = innerWidth * (0.30f + 0.70f * smoothStep(open));
+                    float targetX = role.equals("inner") && open != 0 ? innerLeft + innerWidth / 2 +
+                        ((x - mesh.canvas().getLeft()) / mesh.canvas().getWidth() - 0.5f) * cavityWidth : x;
+                    delta.add((targetX - x) / mesh.scaleX()); delta.add((targetY - y) / mesh.scaleY());
                 }
                 edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, mesh.id(), null),
                     Map.of("ParamBeakOpen", open), new RigKeyformGeometryEdit(null, null, null, null, null, delta),
-                    new RigKeyformChannelsEdit(alpha, null, null, null, null, null, null)));
+                    new RigKeyformChannelsEdit(alpha, null,
+                        role.equals("inner") ? List.of(0.60f, 0.58f, 0.55f) : null, null, null, null, null)));
             }
         }
         for (JsonElement item : array(settings.get("legacyHidden"), "legacyHidden")) {

@@ -19,11 +19,15 @@ L / R 指角色自身左右，因此 R 是屏幕左侧翼。以下新增参数�
 
 原生 `ParamAngleX/Y/Z`、`ParamBodyAngleX/Y/Z`、`ParamBreath`、`ParamEyeLOpen/ROpen`、眉毛参数继续可用。忙碌眼分别有 0 / 0.5 / 1 睁眼几何，不能用跨眼型渐变制造黑瞳与黄色眼重影。`ParamMouthOpenY` 是保留的第三方原生参数，不作为鸟喙动作接口。
 
+张嘴时上喙下缘轻压扁、下喙变薄，内腔以固定下缘逐渐打开并覆盖两侧夹缝，避免独立 V 形下喙与悬空口腔。`ParamBeakOpen=0` 保留全部嘴部中立顶点和可见性，办公闭嘴画面不受影响。
+
 ## 图层与遮挡
 
 上臂留在脸后，前臂留在嘴前；桌面遮挡的前景候选只有两个前臂，不能把带隐藏肩根的整翼强行提升到脸前。运行时读取每份模型的 `action-bindings.json`，其 `drawables` 为源层名到实际 drawable ID 的映射，`foregroundDrawableIds` 为明确的前景集合，`parameters` 包含完整 id / min / max / default。不得猜测 PSD2Live 自动编号。
 
 `handAttachments.l/r` 显式记录前臂 drawable ID 和原生画布握点。道具应以中立网格三角形重心权重定位该点，再随 Core 变形追踪，不以时间曲线或固定屏幕偏移猜测手的位置。
+
+`eyeAttachments.l/r` 采用同一结构，绑定脸部网格的外眼角位置，供小泪珠跟随转头和身体运动。不能绑定会压扁的眼皮网格，也不新增眼泪参数。
 
 新增部件必须 `hidden=false`，默认 opacity=0，才能保留可见动作所需的像素与网格。衣服沿用同一参数契约；头饰和眼镜显式挂 `DeformHeadContainer`，背饰挂 `DeformBodyZBreath`。`calibrationLayers` 只包含原 17 个主体层，新增帽子或披风不得改变头身比例的自动估计。
 

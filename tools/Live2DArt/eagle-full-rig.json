@@ -42,11 +42,12 @@
   "fullBody": {
     "foregroundLayers": ["forearm-l", "forearm-r"],
     "handAttachments": { "l": { "layer": "forearm-l", "source": [244, 286] }, "r": { "layer": "forearm-r", "source": [140, 286] } },
+    "eyeAttachments": { "l": { "layer": "face", "source": [238, 159] }, "r": { "layer": "face", "source": [159, 159] } },
     "wingRootY": 197,
     "bodyGroundY": 309,
     "leftWing": { "layers": ["handwear-l", "forearm-l"], "pivotX": 246, "pivotY": 221, "elbowX": 244, "elbowY": 247, "foldDegrees": 110 },
     "rightWing": { "layers": ["handwear-r", "forearm-r"], "pivotX": 134, "pivotY": 221, "elbowX": 138, "elbowY": 247, "foldDegrees": 110 },
-    "beak": { "closed": "mouth close", "upper": "beak-upper", "lower": "beak-lower", "inner": "beak-inner", "legacyHidden": ["mouth", "mouth lower"], "hingeY": 171, "gapPx": 16 },
+    "beak": { "closed": "mouth close", "upper": "beak-upper", "lower": "beak-lower", "inner": "beak-inner", "legacyHidden": ["mouth", "mouth lower"], "hingeY": 171, "gapPx": 10, "upperFlatten": 0.25, "lowerScale": 0.55, "innerBounds": [173, 172, 50, 18] },
     "busyEyes": [
       { "layer": "busy-eye-l", "normal": "irides-l", "eyeParameter": "ParamEyeLOpen", "heightPx": 0.75, "curveDepthPx": 0.8 },
       { "layer": "busy-eye-r", "normal": "irides-r", "eyeParameter": "ParamEyeROpen", "heightPx": 0.75, "curveDepthPx": 0.8 }

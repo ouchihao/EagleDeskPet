@@ -70,6 +70,7 @@ public final class ExportPsdModelSelfTest {
         }
         if (parsedProfile.containsKey("fullBody")) {
             int actionMeshes = ((JsonObject) parsedProfile.get("fullBody")).containsKey("busyEyes") ? 14 : 10;
+            if (((JsonObject) parsedProfile.get("fullBody")).containsKey("eyeAttachments")) actionMeshes++;
             if (!validation.contains("\"fullBodyRig\": true") || !validation.contains("\"actionBoundMeshes\": " + actionMeshes))
                 throw new AssertionError("Missing full-body mesh authoring assertions");
             JsonObject bindings = (JsonObject) Json.Default.parseToJsonElement(Files.readString(validOutput.resolve("action-bindings.json")));
@@ -82,11 +83,20 @@ public final class ExportPsdModelSelfTest {
             JsonObject attachments = (JsonObject) bindings.get("handAttachments");
             if (!attachments.keySet().equals(Set.of("l", "r")))
                 throw new AssertionError("Both prop attachment points must survive authoring");
+            if (((JsonObject) parsedProfile.get("fullBody")).containsKey("eyeAttachments")) {
+                JsonObject eyes = (JsonObject) bindings.get("eyeAttachments");
+                JsonObject drawables = (JsonObject) bindings.get("drawables");
+                if (!eyes.keySet().equals(Set.of("l", "r")) || eyes.values().stream().anyMatch(eye ->
+                    !((JsonObject) eye).get("drawableId").equals(drawables.get("face"))))
+                    throw new AssertionError("Both tears must attach to the face rather than collapsing eyelids");
+            }
             mark("full-body mesh movement, rest geometry, jaw shapes, two prop attachments and foreground bindings verified");
             reject(input, evidence, "wing-empty-layers", change(validProfile, "fullBody.leftWing", "layers", "[]"), "Wing layers must not be empty");
             reject(input, evidence, "wing-pivot-above-root", change(validProfile, "fullBody.leftWing", "pivotY", "190"), "wing pivotY must be in");
             reject(input, evidence, "elbow-above-shoulder", change(validProfile, "fullBody.leftWing", "elbowY", "210"), "elbowY must be in");
             reject(input, evidence, "beak-gap-disabled", change(validProfile, "fullBody.beak", "gapPx", "0"), "beak gapPx must be in");
+            reject(input, evidence, "beak-inner-empty", change(validProfile, "fullBody.beak", "innerBounds", "[171,172,0,18]"), "inner width must be in");
+            reject(input, evidence, "beak-lower-inverted", change(validProfile, "fullBody.beak", "lowerScale", "-1"), "lowerScale must be in");
             reject(input, evidence, "foreground-missing", change(validProfile, "fullBody", "foregroundLayers", "[\"absent-part\"]"), "Foreground layer must resolve");
             reject(input, evidence, "attachment-missing", change(validProfile, "fullBody", "handAttachments", "{\"r\":{\"layer\":\"absent-part\",\"source\":[140,286]}}"), "Attachment layer is not an authored action mesh");
             reject(input, evidence, "unbound-forearm", replace(validProfile,
