@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using DuckDeskPet.Core;
 using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
 
 namespace DuckDeskPet;
 
@@ -16,7 +15,7 @@ internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
     private const string Origin = "https://stage.eagledeskpet.invalid";
     private static long _nextGeneration;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-    private readonly WebView2CompositionControl _view = new()
+    private readonly GraphicsSafeWebView2CompositionControl _view = new()
     {
         DefaultBackgroundColor = System.Drawing.Color.Transparent,
         IsHitTestVisible = false,
@@ -42,6 +41,7 @@ internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
     internal Live2DFramePresenter(Grid parent)
     {
         _parent = parent;
+        _view.GraphicsInitializationFailed += exception => Fail(exception.Message);
         Panel.SetZIndex(_layer, 10);
         _coreSurface.Children.Add(_view);
         _layer.Children.Add(_coreSurface);
@@ -60,12 +60,14 @@ internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
     {
         try
         {
+            await _view.CompositionReady.WaitAsync(TimeSpan.FromSeconds(30));
+            if (_disposed || _failed) return;
             PrepareFiles(runtime);
             string profile = Path.Combine(AppPaths.DataDirectory, "live2d-web-profile");
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: profile);
-            if (_disposed) return;
+            if (_disposed || _failed) return;
             await _view.EnsureCoreWebView2Async(environment).WaitAsync(TimeSpan.FromSeconds(30));
-            if (_disposed) return;
+            if (_disposed || _failed) return;
             var core = _view.CoreWebView2;
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.AreDefaultContextMenusEnabled = false;
@@ -371,6 +373,7 @@ internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
     {
         if (_browserDisposed) return;
         _browserDisposed = true;
+        _view.StopGraphicsInitialization();
         DisposeHybridLayer();
         _parent.Children.Remove(_layer);
         _view.Dispose();

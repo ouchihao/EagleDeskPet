@@ -94,6 +94,9 @@ try {
     [ordered]@{
         passed = $petReport.passed
         completed = $petReport.completed
+        executable = $petExe
+        processId = $petChild.Id
+        processExitCode = $petChild.ExitCode
         mode = $Mode
         elapsedSeconds = $petReport.elapsedSeconds
         actualBackend = $petReport.actualBackend
