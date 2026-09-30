@@ -19,6 +19,8 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 
 需求与验收清单见 [REQ-012](REQUIREMENTS.md#req-012) / [REQ-013](REQUIREMENTS.md#req-013)。本节记录当前接口和验证边界，不宣告新版本已发布。
 
+2026-09-30 本机 Demo 已完成：最终自包含 `dist/v1.12.0-preview.3-loafing/EagleDeskPet.exe` 的两种摸鱼后端与原业务联调通过，六套真实瞳孔 Stage 47 / 47。检查点、SHA256 和尚未验证的边界见 [本轮证据](VALIDATION-v1.12-preview.md#preview3)，不是远端 GitHub Release。
+
 - `LoafingPolicy` 按有效工作区间和持久随机状态抽签；`PetCareService` 唯一结算金币、经验、食物与心情。休息固定半小时，无金币和任何自动经验，粮食仍积累；休息心情基础衰减为 1 / 小时。渲染模块不能补发奖励
 - `LoafingVisualTimeline` / `LoafingSpriteLayer` 管理原味表情叠层；`Live2DStage/loafing.js` 管理独立模型 / 电脑转场。`SendLoafing(phase, seconds, paused, kind)` 以最多 20 Hz 同步，阶段 / 暂停边界立即发送，使用独立 generation / revision 过滤旧消息；正常工作时间轴冻结到交接结束
 - `GazePolicy` 只使用本地鼠标坐标，宿主 `PointFromScreen` 转换、20 Hz 发送，`gaze.js` 在模型声明安全参数后平滑驱动。除站立之外禁用跟随，遵循用户开关与系统减弱动画设置；无能力的旧包不伪造眼球运动

@@ -1,4 +1,34 @@
-# v1.12.0-preview.1 · 实现与验证记录
+# v1.12 预览版 · 实现与验证记录
+
+<a id="preview3"></a>
+## 2026-09-30 · preview.3 无薪摸鱼与头眼跟随
+
+本机产物：`dist/v1.12.0-preview.3-loafing/EagleDeskPet.exe`，489,907,247 字节；产品版本 `1.12.0-preview.3+239f31bd19e8cc3dc0e0764ad1043c19b6ee5cb3`。SHA256：`D18AA77DC52C2DA38C8076F1FCAF36F5F7ACE9043FEEC750A1BFD63194E2C2C6`。保留同目录 `Live2DStage` 与第三方说明；Live2D 使用原已验证本机 SDK 配置，不把它宣称为任意电脑免配置 Live2D 分发包。
+
+| 验证 | 结果 / 边界 |
+| --- | --- |
+| 核心 / 经济 / 存档 | 51 / 64 / 12 项通过，含确定性调度、重启随机状态、半小时无金币且无任何自动经验、离线封顶、回拨、v4 不再清币 |
+| 素材与视觉时间轴 | 14 项通过，70 张原帧保持 250×250、字幕透明、脸内部不透明、道具完整分割、40 ms 往返播放、暂停和完整复工 |
+| 光标规则 / 作者 / Stage | 18 / 39 / 47 项通过；六套真实 Core 模型四向移动有效，默认中立 / 半闭 / 闭眼 / 忙碌与旧版逐像素 0 差 |
+| JS 动作 / 注视 / 摸鱼 | 24 / 11 / 10 项通过，独立协议、终点、暂停、眼型闭合切换与桌面遮挡 |
+| 最终 EXE Live2D 摸鱼 | 41.19 秒通过，两种动作完整进出，资本家衣装 / 薄荷桌 / 黄金电脑保持；暂停、零收益、取消、Core 诊断通过 |
+| 最终 EXE PNG 摸鱼 | 39.00 秒通过，同一组合与业务路径；不声称 PNG 可以独立转动模型眼睛 |
+| 最终 EXE 原业务 | 7 / 7，27.1 秒；吃饭终帧、暂停、办公至忙碌与退出、装备生效、商店与小剧场独立预览、GL / 参数诊断 |
+| 养成 UI / 发布清单 | 16 / 34 项通过；展示收益暂停，Stage 新增两个模块纳入允许列表 |
+
+本机原始证据（不含真实用户资料，临时目录不进入 Git）：
+
+- `.codex-build/loafing-visual-qa-final`：两种动作深浅底关键帧与 14 项结果
+- `.codex-build/live2d-gaze-v3-six-stage-qa`：六套四向图册、47 项报告及本地 Stage 录像
+- `%TEMP%/EagleExpansionSmoke-9cea0238ed6d4c9b8e1a7332d3b22dbd/evidence/loafing-smoke.json`：最终 Live2D 摸鱼
+- `%TEMP%/EagleExpansionSmoke-b69c0c41a558496bbe1eb66761104365/evidence/loafing-smoke.json`：最终 PNG 摸鱼
+- `%TEMP%/EagleExpansionSmoke-cae08489fbba4cb593b8ea91b4ca5b00/evidence/live2d-smoke.json`：最终业务 7 项
+
+主机快照由实际 Core 画布与生产 WPF 叠层同一绘制路径合成，不采集用户桌面。已人工检查默认 / 资本家角色的抛电脑、藏桌后、GIF 循环、起身与回收电脑关键帧；没有把单张截图作为连续 60 FPS 证明。原 GIF 为 25 fps，转场与头眼采用连续采样；未认证物理显示帧率、长时间内存 / 稳定性、人工跨屏 DPI 操作以及摸鱼中途图形设备故障。Core 已测试存档恢复，真实进程在各转场点强制退出 / 重开尚未逐项审片。
+
+新增木鱼 / 木槌使用 ImageGen，角色原 GIF 不重画；资源来源与提示词在 [Loafing 素材说明](../DuckDeskPet/Assets/Loafing/README.md)。修复过本机加载器的 320 像素强制缩放、半透明脸内残影、道具跨中线裁切、跨后端轨迹差异；最终 EXE 是上述修复后的产物。没有访问或修改真实宠物存档，没有新一轮清金币，没有 push 或创建远端 Release。
+
+## preview.1 历史记录
 
 日期：2026-09-22。范围是正式需求 REQ-009～011，不包括备选 IDEA 的自动立项。REQ-001～008 保留既有 Demo 实现。
 
