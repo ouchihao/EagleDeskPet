@@ -1,0 +1,182 @@
+{
+  "id": "outfit.hoodie",
+  "layers": [
+    {
+      "name": "footwear-r",
+      "left": 138,
+      "top": 305,
+      "width": 55,
+      "height": 32,
+      "opacity": 1
+    },
+    {
+      "name": "footwear-l",
+      "left": 193,
+      "top": 305,
+      "width": 52,
+      "height": 32,
+      "opacity": 1
+    },
+    {
+      "name": "topwear",
+      "left": 112,
+      "top": 197,
+      "width": 160,
+      "height": 112,
+      "opacity": 1
+    },
+    {
+      "name": "handwear-r",
+      "left": 111,
+      "top": 197,
+      "width": 54,
+      "height": 57,
+      "opacity": 1
+    },
+    {
+      "name": "handwear-l",
+      "left": 219,
+      "top": 197,
+      "width": 54,
+      "height": 57,
+      "opacity": 1
+    },
+    {
+      "name": "face",
+      "left": 118,
+      "top": 84,
+      "width": 149,
+      "height": 158,
+      "opacity": 1
+    },
+    {
+      "name": "facedetail-r",
+      "left": 139,
+      "top": 162,
+      "width": 23,
+      "height": 12,
+      "opacity": 1
+    },
+    {
+      "name": "facedetail-l",
+      "left": 235,
+      "top": 162,
+      "width": 23,
+      "height": 12,
+      "opacity": 1
+    },
+    {
+      "name": "eyebrow-r",
+      "left": 152,
+      "top": 125,
+      "width": 29,
+      "height": 14,
+      "opacity": 1
+    },
+    {
+      "name": "eyebrow-l",
+      "left": 214,
+      "top": 125,
+      "width": 31,
+      "height": 16,
+      "opacity": 1
+    },
+    {
+      "name": "irides-r",
+      "left": 150,
+      "top": 139,
+      "width": 32,
+      "height": 25,
+      "opacity": 1
+    },
+    {
+      "name": "irides-l",
+      "left": 215,
+      "top": 139,
+      "width": 30,
+      "height": 25,
+      "opacity": 1
+    },
+    {
+      "name": "busy-eye-r",
+      "left": 152,
+      "top": 141,
+      "width": 32,
+      "height": 24,
+      "opacity": 0
+    },
+    {
+      "name": "busy-eye-l",
+      "left": 215,
+      "top": 141,
+      "width": 32,
+      "height": 24,
+      "opacity": 0
+    },
+    {
+      "name": "mouth",
+      "left": 187,
+      "top": 172,
+      "width": 22,
+      "height": 13,
+      "opacity": 1
+    },
+    {
+      "name": "mouth lower",
+      "left": 184,
+      "top": 177,
+      "width": 29,
+      "height": 13,
+      "opacity": 1
+    },
+    {
+      "name": "mouth close",
+      "left": 165,
+      "top": 148,
+      "width": 68,
+      "height": 50,
+      "opacity": 1
+    },
+    {
+      "name": "beak-inner",
+      "left": 176,
+      "top": 163,
+      "width": 44,
+      "height": 34,
+      "opacity": 0
+    },
+    {
+      "name": "beak-lower",
+      "left": 176,
+      "top": 173,
+      "width": 46,
+      "height": 21,
+      "opacity": 0
+    },
+    {
+      "name": "beak-upper",
+      "left": 167,
+      "top": 151,
+      "width": 63,
+      "height": 40,
+      "opacity": 0
+    },
+    {
+      "name": "forearm-r",
+      "left": 111,
+      "top": 242,
+      "width": 54,
+      "height": 53,
+      "opacity": 1
+    },
+    {
+      "name": "forearm-l",
+      "left": 219,
+      "top": 242,
+      "width": 54,
+      "height": 52,
+      "opacity": 1
+    }
+  ],
+  "psdSha256": "aaf0ba2d3e5a60661d9c8f1faca8bb0ebb2c524fda5ec4dc4d94bdbeced2d7b4"
+}

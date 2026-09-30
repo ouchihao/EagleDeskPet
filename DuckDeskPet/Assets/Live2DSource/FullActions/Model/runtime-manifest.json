@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "outfits": {
+    "outfit.default": {
+      "modelUrl": "/model/eagle.model3.json"
+    },
+    "outfit.office": {
+      "modelUrl": "/model/outfits/office/eagle.model3.json"
+    },
+    "outfit.hoodie": {
+      "modelUrl": "/model/outfits/hoodie/eagle.model3.json"
+    },
+    "outfit.ox": {
+      "modelUrl": "/model/outfits/ox/eagle.model3.json"
+    },
+    "outfit.hero": {
+      "modelUrl": "/model/outfits/hero/eagle.model3.json"
+    },
+    "outfit.astronaut": {
+      "modelUrl": "/model/outfits/astronaut/eagle.model3.json"
+    }
+  },
+  "extras": {
+    "bowlFull": {
+      "url": "/model/props/bowlFull.png",
+      "rect": [
+        158,
+        229,
+        79,
+        60
+      ]
+    },
+    "bowlEmpty": {
+      "url": "/model/props/bowlEmpty.png",
+      "rect": [
+        158,
+        235,
+        79,
+        54
+      ]
+    },
+    "tea": {
+      "url": "/model/props/tea.png",
+      "rect": [
+        165,
+        192,
+        51,
+        41
+      ]
+    }
+  },
+  "defaultEquipment": {
+    "desk": "desk.default",
+    "computer": "computer.default",
+    "outfit": "outfit.default"
+  }
+}

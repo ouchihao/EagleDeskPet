@@ -1,0 +1,1222 @@
+{
+  "version": 1,
+  "canvas": {
+    "width": 384,
+    "height": 346
+  },
+  "variants": [
+    {
+      "id": "outfit.default",
+      "layers": [
+        {
+          "name": "footwear-r",
+          "left": 138,
+          "top": 305,
+          "width": 55,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-l",
+          "left": 193,
+          "top": 305,
+          "width": 52,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "topwear",
+          "left": 112,
+          "top": 197,
+          "width": 160,
+          "height": 112,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-r",
+          "left": 111,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-l",
+          "left": 219,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "face",
+          "left": 118,
+          "top": 84,
+          "width": 149,
+          "height": 158,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-r",
+          "left": 139,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-l",
+          "left": 235,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-r",
+          "left": 152,
+          "top": 125,
+          "width": 29,
+          "height": 14,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-l",
+          "left": 214,
+          "top": 125,
+          "width": 31,
+          "height": 16,
+          "opacity": 1
+        },
+        {
+          "name": "irides-r",
+          "left": 150,
+          "top": 139,
+          "width": 32,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "irides-l",
+          "left": 215,
+          "top": 139,
+          "width": 30,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "busy-eye-r",
+          "left": 152,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "busy-eye-l",
+          "left": 215,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "mouth",
+          "left": 187,
+          "top": 172,
+          "width": 22,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth lower",
+          "left": 184,
+          "top": 177,
+          "width": 29,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth close",
+          "left": 165,
+          "top": 148,
+          "width": 68,
+          "height": 50,
+          "opacity": 1
+        },
+        {
+          "name": "beak-inner",
+          "left": 176,
+          "top": 163,
+          "width": 44,
+          "height": 34,
+          "opacity": 0
+        },
+        {
+          "name": "beak-lower",
+          "left": 176,
+          "top": 173,
+          "width": 46,
+          "height": 21,
+          "opacity": 0
+        },
+        {
+          "name": "beak-upper",
+          "left": 167,
+          "top": 151,
+          "width": 63,
+          "height": 40,
+          "opacity": 0
+        },
+        {
+          "name": "forearm-r",
+          "left": 111,
+          "top": 242,
+          "width": 54,
+          "height": 53,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-l",
+          "left": 219,
+          "top": 242,
+          "width": 54,
+          "height": 52,
+          "opacity": 1
+        }
+      ],
+      "psdSha256": "2e6582e90cff9afcf2b849419e30012e92cb72af64277555bd1720925ed3a28c"
+    },
+    {
+      "id": "outfit.office",
+      "layers": [
+        {
+          "name": "footwear-r",
+          "left": 138,
+          "top": 305,
+          "width": 55,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-l",
+          "left": 193,
+          "top": 305,
+          "width": 52,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "topwear",
+          "left": 112,
+          "top": 197,
+          "width": 160,
+          "height": 112,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-r",
+          "left": 111,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-l",
+          "left": 219,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "face",
+          "left": 118,
+          "top": 84,
+          "width": 149,
+          "height": 158,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-r",
+          "left": 139,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-l",
+          "left": 235,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-r",
+          "left": 152,
+          "top": 125,
+          "width": 29,
+          "height": 14,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-l",
+          "left": 214,
+          "top": 125,
+          "width": 31,
+          "height": 16,
+          "opacity": 1
+        },
+        {
+          "name": "irides-r",
+          "left": 150,
+          "top": 139,
+          "width": 32,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "irides-l",
+          "left": 215,
+          "top": 139,
+          "width": 30,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "busy-eye-r",
+          "left": 152,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "busy-eye-l",
+          "left": 215,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "mouth",
+          "left": 187,
+          "top": 172,
+          "width": 22,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth lower",
+          "left": 184,
+          "top": 177,
+          "width": 29,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth close",
+          "left": 165,
+          "top": 148,
+          "width": 68,
+          "height": 50,
+          "opacity": 1
+        },
+        {
+          "name": "beak-inner",
+          "left": 176,
+          "top": 163,
+          "width": 44,
+          "height": 34,
+          "opacity": 0
+        },
+        {
+          "name": "beak-lower",
+          "left": 176,
+          "top": 173,
+          "width": 46,
+          "height": 21,
+          "opacity": 0
+        },
+        {
+          "name": "beak-upper",
+          "left": 167,
+          "top": 151,
+          "width": 63,
+          "height": 40,
+          "opacity": 0
+        },
+        {
+          "name": "outfit-glasses",
+          "left": 132,
+          "top": 131,
+          "width": 125,
+          "height": 42,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-r",
+          "left": 111,
+          "top": 242,
+          "width": 54,
+          "height": 53,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-l",
+          "left": 219,
+          "top": 242,
+          "width": 54,
+          "height": 52,
+          "opacity": 1
+        }
+      ],
+      "psdSha256": "8a19cf7e45ed24d0814711226b4905370603f667ab45fa0991dd24b2146c5ddb"
+    },
+    {
+      "id": "outfit.hoodie",
+      "layers": [
+        {
+          "name": "footwear-r",
+          "left": 138,
+          "top": 305,
+          "width": 55,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-l",
+          "left": 193,
+          "top": 305,
+          "width": 52,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "topwear",
+          "left": 112,
+          "top": 197,
+          "width": 160,
+          "height": 112,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-r",
+          "left": 111,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-l",
+          "left": 219,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "face",
+          "left": 118,
+          "top": 84,
+          "width": 149,
+          "height": 158,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-r",
+          "left": 139,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-l",
+          "left": 235,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-r",
+          "left": 152,
+          "top": 125,
+          "width": 29,
+          "height": 14,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-l",
+          "left": 214,
+          "top": 125,
+          "width": 31,
+          "height": 16,
+          "opacity": 1
+        },
+        {
+          "name": "irides-r",
+          "left": 150,
+          "top": 139,
+          "width": 32,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "irides-l",
+          "left": 215,
+          "top": 139,
+          "width": 30,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "busy-eye-r",
+          "left": 152,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "busy-eye-l",
+          "left": 215,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "mouth",
+          "left": 187,
+          "top": 172,
+          "width": 22,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth lower",
+          "left": 184,
+          "top": 177,
+          "width": 29,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth close",
+          "left": 165,
+          "top": 148,
+          "width": 68,
+          "height": 50,
+          "opacity": 1
+        },
+        {
+          "name": "beak-inner",
+          "left": 176,
+          "top": 163,
+          "width": 44,
+          "height": 34,
+          "opacity": 0
+        },
+        {
+          "name": "beak-lower",
+          "left": 176,
+          "top": 173,
+          "width": 46,
+          "height": 21,
+          "opacity": 0
+        },
+        {
+          "name": "beak-upper",
+          "left": 167,
+          "top": 151,
+          "width": 63,
+          "height": 40,
+          "opacity": 0
+        },
+        {
+          "name": "forearm-r",
+          "left": 111,
+          "top": 242,
+          "width": 54,
+          "height": 53,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-l",
+          "left": 219,
+          "top": 242,
+          "width": 54,
+          "height": 52,
+          "opacity": 1
+        }
+      ],
+      "psdSha256": "aaf0ba2d3e5a60661d9c8f1faca8bb0ebb2c524fda5ec4dc4d94bdbeced2d7b4"
+    },
+    {
+      "id": "outfit.ox",
+      "layers": [
+        {
+          "name": "outfit-back",
+          "left": 160,
+          "top": 231,
+          "width": 167,
+          "height": 98,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-r",
+          "left": 138,
+          "top": 305,
+          "width": 55,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-l",
+          "left": 193,
+          "top": 305,
+          "width": 52,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "topwear",
+          "left": 112,
+          "top": 197,
+          "width": 160,
+          "height": 112,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-r",
+          "left": 111,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-l",
+          "left": 219,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "face",
+          "left": 118,
+          "top": 84,
+          "width": 149,
+          "height": 158,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-r",
+          "left": 139,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-l",
+          "left": 235,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-r",
+          "left": 152,
+          "top": 125,
+          "width": 29,
+          "height": 14,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-l",
+          "left": 214,
+          "top": 125,
+          "width": 31,
+          "height": 16,
+          "opacity": 1
+        },
+        {
+          "name": "irides-r",
+          "left": 150,
+          "top": 139,
+          "width": 32,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "irides-l",
+          "left": 215,
+          "top": 139,
+          "width": 30,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "busy-eye-r",
+          "left": 152,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "busy-eye-l",
+          "left": 215,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "mouth",
+          "left": 187,
+          "top": 172,
+          "width": 22,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth lower",
+          "left": 184,
+          "top": 177,
+          "width": 29,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth close",
+          "left": 165,
+          "top": 148,
+          "width": 68,
+          "height": 50,
+          "opacity": 1
+        },
+        {
+          "name": "beak-inner",
+          "left": 176,
+          "top": 163,
+          "width": 44,
+          "height": 34,
+          "opacity": 0
+        },
+        {
+          "name": "beak-lower",
+          "left": 176,
+          "top": 173,
+          "width": 46,
+          "height": 21,
+          "opacity": 0
+        },
+        {
+          "name": "beak-upper",
+          "left": 167,
+          "top": 151,
+          "width": 63,
+          "height": 40,
+          "opacity": 0
+        },
+        {
+          "name": "outfit-head",
+          "left": 96,
+          "top": 23,
+          "width": 191,
+          "height": 116,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-r",
+          "left": 111,
+          "top": 242,
+          "width": 54,
+          "height": 53,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-l",
+          "left": 219,
+          "top": 242,
+          "width": 54,
+          "height": 52,
+          "opacity": 1
+        }
+      ],
+      "psdSha256": "939f92cbcc4359566ec9f27a5af0793428f67585f602e77313aa919da5b5c7e7"
+    },
+    {
+      "id": "outfit.hero",
+      "layers": [
+        {
+          "name": "outfit-back",
+          "left": 89,
+          "top": 196,
+          "width": 205,
+          "height": 123,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-r",
+          "left": 138,
+          "top": 305,
+          "width": 55,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-l",
+          "left": 193,
+          "top": 305,
+          "width": 52,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "topwear",
+          "left": 112,
+          "top": 197,
+          "width": 160,
+          "height": 112,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-r",
+          "left": 111,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-l",
+          "left": 219,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "face",
+          "left": 118,
+          "top": 84,
+          "width": 149,
+          "height": 158,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-r",
+          "left": 139,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-l",
+          "left": 235,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-r",
+          "left": 152,
+          "top": 125,
+          "width": 29,
+          "height": 14,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-l",
+          "left": 214,
+          "top": 125,
+          "width": 31,
+          "height": 16,
+          "opacity": 1
+        },
+        {
+          "name": "irides-r",
+          "left": 150,
+          "top": 139,
+          "width": 32,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "irides-l",
+          "left": 215,
+          "top": 139,
+          "width": 30,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "busy-eye-r",
+          "left": 152,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "busy-eye-l",
+          "left": 215,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "mouth",
+          "left": 187,
+          "top": 172,
+          "width": 22,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth lower",
+          "left": 184,
+          "top": 177,
+          "width": 29,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth close",
+          "left": 165,
+          "top": 148,
+          "width": 68,
+          "height": 50,
+          "opacity": 1
+        },
+        {
+          "name": "beak-inner",
+          "left": 176,
+          "top": 163,
+          "width": 44,
+          "height": 34,
+          "opacity": 0
+        },
+        {
+          "name": "beak-lower",
+          "left": 176,
+          "top": 173,
+          "width": 46,
+          "height": 21,
+          "opacity": 0
+        },
+        {
+          "name": "beak-upper",
+          "left": 167,
+          "top": 151,
+          "width": 63,
+          "height": 40,
+          "opacity": 0
+        },
+        {
+          "name": "outfit-head",
+          "left": 109,
+          "top": 60,
+          "width": 165,
+          "height": 59,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-r",
+          "left": 111,
+          "top": 242,
+          "width": 54,
+          "height": 53,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-l",
+          "left": 219,
+          "top": 242,
+          "width": 54,
+          "height": 52,
+          "opacity": 1
+        }
+      ],
+      "psdSha256": "cb70e2d39177a1025591b6e1a19367ffa4c05a7ff7cd3a37023aec3d99ad16f4"
+    },
+    {
+      "id": "outfit.astronaut",
+      "layers": [
+        {
+          "name": "outfit-back",
+          "left": 100,
+          "top": 218,
+          "width": 183,
+          "height": 99,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-r",
+          "left": 138,
+          "top": 305,
+          "width": 55,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "footwear-l",
+          "left": 193,
+          "top": 305,
+          "width": 52,
+          "height": 32,
+          "opacity": 1
+        },
+        {
+          "name": "topwear",
+          "left": 112,
+          "top": 197,
+          "width": 160,
+          "height": 112,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-r",
+          "left": 111,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "handwear-l",
+          "left": 219,
+          "top": 197,
+          "width": 54,
+          "height": 57,
+          "opacity": 1
+        },
+        {
+          "name": "face",
+          "left": 118,
+          "top": 84,
+          "width": 149,
+          "height": 158,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-r",
+          "left": 139,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "facedetail-l",
+          "left": 235,
+          "top": 162,
+          "width": 23,
+          "height": 12,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-r",
+          "left": 152,
+          "top": 125,
+          "width": 29,
+          "height": 14,
+          "opacity": 1
+        },
+        {
+          "name": "eyebrow-l",
+          "left": 214,
+          "top": 125,
+          "width": 31,
+          "height": 16,
+          "opacity": 1
+        },
+        {
+          "name": "irides-r",
+          "left": 150,
+          "top": 139,
+          "width": 32,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "irides-l",
+          "left": 215,
+          "top": 139,
+          "width": 30,
+          "height": 25,
+          "opacity": 1
+        },
+        {
+          "name": "busy-eye-r",
+          "left": 152,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "busy-eye-l",
+          "left": 215,
+          "top": 141,
+          "width": 32,
+          "height": 24,
+          "opacity": 0
+        },
+        {
+          "name": "mouth",
+          "left": 187,
+          "top": 172,
+          "width": 22,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth lower",
+          "left": 184,
+          "top": 177,
+          "width": 29,
+          "height": 13,
+          "opacity": 1
+        },
+        {
+          "name": "mouth close",
+          "left": 165,
+          "top": 148,
+          "width": 68,
+          "height": 50,
+          "opacity": 1
+        },
+        {
+          "name": "beak-inner",
+          "left": 176,
+          "top": 163,
+          "width": 44,
+          "height": 34,
+          "opacity": 0
+        },
+        {
+          "name": "beak-lower",
+          "left": 176,
+          "top": 173,
+          "width": 46,
+          "height": 21,
+          "opacity": 0
+        },
+        {
+          "name": "beak-upper",
+          "left": 167,
+          "top": 151,
+          "width": 63,
+          "height": 40,
+          "opacity": 0
+        },
+        {
+          "name": "outfit-head",
+          "left": 98,
+          "top": 64,
+          "width": 188,
+          "height": 175,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-r",
+          "left": 111,
+          "top": 242,
+          "width": 54,
+          "height": 53,
+          "opacity": 1
+        },
+        {
+          "name": "forearm-l",
+          "left": 219,
+          "top": 242,
+          "width": 54,
+          "height": 52,
+          "opacity": 1
+        }
+      ],
+      "psdSha256": "b3aa3779d2cebae11e51841c1a421e655f0be299e43830073fecab9a52692155"
+    }
+  ],
+  "extras": {
+    "bowlFull": {
+      "url": "props/bowlFull.png",
+      "rect": [
+        158,
+        229,
+        79,
+        60
+      ]
+    },
+    "bowlEmpty": {
+      "url": "props/bowlEmpty.png",
+      "rect": [
+        158,
+        235,
+        79,
+        54
+      ]
+    },
+    "tea": {
+      "url": "props/tea.png",
+      "rect": [
+        165,
+        192,
+        51,
+        41
+      ]
+    }
+  },
+  "sources": {
+    "DuckDeskPet/Assets/Live2DSource/Canonical/eagle.psd": "bc071b8fcbd1b3ccd85a0937808b6b31f3e3274260cf3414073d5e6740ec6c2b",
+    "DuckDeskPet/Assets/Live2DSource/eagle-action-parts-v1.png": "439fc5d78e0dc1b52450ae85806ca9739c1762c1e27d3f936fec6ac283ca36d9",
+    "DuckDeskPet/Assets/Animations/BusyLoop/frame-0000.png": "a965710f3f6c5ceb7b53a159e6e82b4bd6da756ff57d3c6c63f115620f38d654",
+    "DuckDeskPet/Assets/OutfitBindings/Default-v1.zip": "b8965eda409bfccd7232b69b68fc7e9b11147f79ae4590378fef9446bf637a61",
+    "DuckDeskPet/Assets/mascot-animated-neutral.png": "5b9663d55ed51b26c675fc6ab2616a0cad4b73fac148a4888da93faee455b2cc",
+    "DuckDeskPet/Assets/Outfits/Office/neutral.png": "0afef88cc99920ba2949ebbf885c9829adc0722e97f7d993209548e1ddae6ee4",
+    "DuckDeskPet/Assets/Outfits/Office/appearance.json": "a78813e71da5ffb7d6f9baef6e44925e583eb8a62ece694798ef5238a8313c73",
+    "DuckDeskPet/Assets/Outfits/Office/Layers/glasses.png": "1ab55b307530d74c3f77d1e660e9644f7443950013d114c4bc788be854bb474c",
+    "DuckDeskPet/Assets/Outfits/Hoodie/neutral.png": "fa26126513bbcaa16397767ef888b217a7920968ef4f4d081773a5641b6a2c2d",
+    "DuckDeskPet/Assets/Outfits/Ox/appearance.json": "6496a1a564d2c4157b837e0aaec1bba0f7fa35bd37d3f4b0f0387255d4de6fa3",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/torso.png": "ee3f6b44836595a3bbc2132445e982ab9e6e38dffda1c4fd72003b94922c5ce7",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/left-sleeve.png": "39550935d443c8e562ab09f1ba1b33f6aa5c3b648afaa44c3e8fa6a90ba3fdf9",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/right-sleeve.png": "b36abc774cc6040c9b1d195f5afbcd152235c8eb805a2fa6817ed4547da75174",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/left-boot.png": "1ebcb567ec2e580743e281948333b8d13cac14a16d56d2d0d66d876d1b342727",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/right-boot.png": "48f043cee2116fbd7f14e681799869da7d30fdb2f925441fcf59c5b82c88d2b0",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/head.png": "8a0f738e0a72b3da8ae1944d899dc48816d56957e375e6b8374af0f478fc1551",
+    "DuckDeskPet/Assets/Outfits/Ox/Layers/back.png": "1183beb20389e48e85d9ae2bfa2eaf97da355bdbad0551576d88d7f28f8f5f0b",
+    "DuckDeskPet/Assets/Outfits/Hero/appearance.json": "29a90c56d564a5b3630e7c3fcd458d7ffa5b19663cc4bae6301d036a63a6b3a6",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/torso.png": "0fed3af3d54de6f969201a277f470a5997d22c563b0bc0551909d3f965a64737",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/left-sleeve.png": "5cf296f2ffac41b5522ea7c0c056cd93833086c8c9536a9e4ca901cfc6c99e21",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/right-sleeve.png": "cd17683a6ef8d07c0a795cd54cd8140bdb085f92fdcb7343d765757928ea3288",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/left-boot.png": "d538e539cf66b79b9c24bbb28c7bea04a61c1be867ef4c7a8cfb8351726dde7e",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/right-boot.png": "19e14e79ea3c9cb5dfc0c61589f77909e00476a5899976d0162e426692cee3e4",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/head.png": "b281b11abff311ceaddfde55aab5661af1014203766c1ef6b559402af70edadb",
+    "DuckDeskPet/Assets/Outfits/Hero/Layers/back.png": "dd6239bcae892201c4ea3c716adb2595f1ea46397afbef9845d03eed555ba78c",
+    "DuckDeskPet/Assets/Outfits/Astronaut/appearance.json": "73deabaae17069f13c670f13b2a9d93aae75d35c2f381a7337b7f98153fe5cff",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/torso.png": "cd26443066ce8e69ad89a07054e88a3080558a674a48799e7cce9244eace956d",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/left-sleeve.png": "2b0ae02934123ae1e72ea43e7e185cc3bd4260438c3fe7727878998b38862e9c",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/right-sleeve.png": "c6f9ee0dfa8788286c3faee6c2feedb73b0e52d3c96a5d7f220573980e6904fc",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/left-boot.png": "19f79a4c2aedf7cd71bebb028e5867df167a644a1fe6abb63e9acf9cb6508084",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/right-boot.png": "5ae6db92947dd1b8d411c182d9177216af0830092351dc4afa480155fc950821",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/head.png": "f70dbce2bf0f9e2d34b94a5fcc0abd21bc334909fb6fc51a1a64027e8a6ce742",
+    "DuckDeskPet/Assets/Outfits/Astronaut/Layers/back.png": "d9e4373f4d80521e539a1f997c816d0f743b276229b95b9ebc65d13c71c06301"
+  },
+  "defaultNeutralVisibleDifferences": 0
+}

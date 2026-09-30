@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "drawables": {
+    "face": "ArtMeshFace",
+    "eyebrow-l": "ArtMeshEyebrowL",
+    "eyebrow-r": "ArtMeshEyebrowR",
+    "handwear-l": "ArtMeshHandwearL2",
+    "forearm-l": "ArtMeshHandwearL",
+    "handwear-r": "ArtMeshHandwearR2",
+    "forearm-r": "ArtMeshHandwearR",
+    "mouth close": "ArtMeshMouthClose",
+    "beak-upper": "ArtMeshFaceDetail",
+    "beak-lower": "ArtMeshFaceDetail2",
+    "beak-inner": "ArtMeshFaceDetail3",
+    "mouth": "ArtMeshMouth2",
+    "mouth lower": "ArtMeshMouth",
+    "busy-eye-l": "ArtMeshFaceDetailL",
+    "irides-l": "ArtMeshEyelashL",
+    "busy-eye-r": "ArtMeshFaceDetailR",
+    "irides-r": "ArtMeshEyelashR"
+  },
+  "foregroundDrawableIds": ["ArtMeshHandwearL","ArtMeshHandwearR"],
+  "handAttachments": {
+    "l": {"drawableId": "ArtMeshHandwearL", "source": [244,286]},
+    "r": {"drawableId": "ArtMeshHandwearR", "source": [140,286]}
+  },
+  "eyeAttachments": {
+    "l": {"drawableId": "ArtMeshFace", "source": [238,159]},
+    "r": {"drawableId": "ArtMeshFace", "source": [159,159]}
+  },
+  "parameters": [
+    {"id": "ParamAngleX", "min": -45.0, "max": 45.0, "default": 0.0},
+    {"id": "ParamAngleY", "min": -30.0, "max": 30.0, "default": 0.0},
+    {"id": "ParamAngleZ", "min": -30.0, "max": 30.0, "default": 0.0},
+    {"id": "ParamBodyAngleX", "min": -10.0, "max": 10.0, "default": 0.0},
+    {"id": "ParamBodyAngleY", "min": -10.0, "max": 10.0, "default": 0.0},
+    {"id": "ParamBodyAngleZ", "min": -10.0, "max": 10.0, "default": 0.0},
+    {"id": "ParamEyeLOpen", "min": 0.0, "max": 1.0, "default": 1.0},
+    {"id": "ParamEyeROpen", "min": 0.0, "max": 1.0, "default": 1.0},
+    {"id": "ParamEyeBallX", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamEyeBallY", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamEyeBallForm", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamBrowLY", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamBrowRY", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamMouthForm", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamMouthOpenY", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamBreath", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamHairFront", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamHairBack", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamWingLLift", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamWingLSwing", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamWingLFold", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamWingRLift", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamWingRSwing", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamWingRFold", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamBodySquash", "min": -1.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamBeakOpen", "min": 0.0, "max": 1.0, "default": 0.0},
+    {"id": "ParamBusyEyes", "min": 0.0, "max": 1.0, "default": 0.0}
+  ]
+}
