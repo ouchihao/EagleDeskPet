@@ -20,7 +20,7 @@ public partial class PetWindow
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(280));
         var elapsed = Stopwatch.StartNew();
         bool isolated = false;
-        const int expectedCases = 13;
+        const int expectedCases = 12;
         string? fatal = null;
         object? renderCadence = null;
         string reportPath = Path.Combine(output, "expansion-smoke.json");
@@ -33,7 +33,6 @@ public partial class PetWindow
             cases = results, error = fatal, dataDirectory = AppPaths.DataDirectory,
             realHost = true, realRenderClock = true, ownWindowRenderingOnly = true,
             renderCadence,
-            rpsClickToThrowMilliseconds = _uiSmokeRpsStarts,
             limitations = new[]
             {
                 "Shop purchase uses the real transaction coordinator; the custom confirmation dialog is covered separately by ShopSelfTest.",
@@ -80,7 +79,7 @@ public partial class PetWindow
             {
                 PetMenu.PlacementTarget = PetVisual; PetMenu.IsOpen = true;
                 await Task.Delay(100, timeout.Token);
-                ExpansionCheck(PetMenu.Items.Contains(GameMenuItem) && PetMenu.Items.Contains(TaskInboxMenuItem), "New menu entries are missing.");
+                ExpansionCheck(PetMenu.Items.Contains(TaskInboxMenuItem), "New menu entries are missing.");
                 RenderOwnVisual(PetMenu, Path.Combine(output, "expansion-menu.png")); PetMenu.IsOpen = false;
                 var shopMenu = PetMenu.Items.OfType<MenuItem>().Single(x => x.Header?.ToString()?.Contains("小卖部", StringComparison.Ordinal) == true);
                 shopMenu.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
@@ -214,26 +213,6 @@ public partial class PetWindow
                 StopWorking(); await ExpansionIdleAsync(timeout.Token);
             });
 
-            await Case("real guessing game reveals after throw and saves one cooldown reward", async () =>
-            {
-                await ExpansionIdleAsync(timeout.Token);
-                CareState.Mood = 50; CareState.LastGameRewardUtc = null;
-                ExpansionCheck(_store.Save(CareState), "Could not seed isolated game reward state.");
-                GameMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-                await _gameOpening.WaitAsync(timeout.Token);
-                ExpansionCheck(_gameWindow?.IsVisible == true && IsGameActive, "Game menu did not open a real exclusive game.");
-                await ExpansionRpsRoundAsync(output, "first", timeout.Token);
-                var firstReward = CareState.LastGameRewardUtc;
-                ExpansionCheck(firstReward is not null && CareState.Mood > 51.9 && CareState.Mood <= 52.1, "Completed game did not add exactly its small mood reward.");
-                var saved = new PetStore(AppPaths.DataDirectory).Load();
-                ExpansionCheck(saved is not null && saved.LastGameRewardUtc == firstReward && saved.Mood > 51.9, "Cooldown and mood were not durable together.");
-                ((Button)_gameWindow!.FindName("ReplayButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                await ExpansionRpsRoundAsync(output, "cooldown", timeout.Token);
-                ExpansionCheck(CareState.LastGameRewardUtc == firstReward && CareState.Mood <= 52.1, "Immediate replay bypassed the persisted cooldown.");
-                _gameWindow!.Close();
-                await ExpansionWaitAsync(() => !IsGameActive, timeout.Token, "game complete close");
-            });
-
             if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_SKIP_OUTFIT") == "1")
             {
                 results.Add(new("complete office outfit acquisition, preview, switch and return", "skipped", 0,
@@ -345,8 +324,6 @@ public partial class PetWindow
                     PetMenu.IsOpen = false; _contentPreviewWindow?.Close(); _shopWindow?.Close(); _taskInboxWindow?.Close();
                     _emotions.Enabled = false; _pendingFeed = false; _behavior.CancelAutomaticEmotions();
                     if (CareState.IsWorking) StopWorking();
-                    await CancelGameForPauseAsync().WaitAsync(cleanup.Token);
-                    _gameWindow?.Close();
                     await ExpansionIdleAsync(cleanup.Token);
                 }
                 catch (Exception ex)
@@ -423,30 +400,6 @@ public partial class PetWindow
         RenderOwnVisual(Root, Path.Combine(output, imageName));
         await ExpansionWaitAsync(() => _behavior.CurrentSample.Sequence == sequence && _behavior.CurrentSample.Progress >= .90, token, kind + " ending");
         await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.Idle && _behavior.CurrentSample.Sequence == sequence, token, kind + " full completion");
-    }
-
-    private async Task ExpansionRpsRoundAsync(string output, string suffix, CancellationToken token)
-    {
-        var window = _gameWindow ?? throw new InvalidOperationException("Game window missing.");
-        long before = _behavior.CurrentSample.Sequence;
-        var responseTime = Stopwatch.StartNew();
-        ((Button)window.FindName("RockButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        await ExpansionWaitAsync(() => _behavior.CurrentSample.Sequence > before && _behavior.CurrentSample.Kind is ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors,
-            token, "actual RPS throw");
-        _uiSmokeRpsStarts.Add(Math.Round(responseTime.Elapsed.TotalMilliseconds, 2));
-        ExpansionCheck(((TextBlock)window.FindName("StageText")).Text == "出拳！" && !_gameThrown, "Result was disclosed before the throw animation finished.");
-        int food = CareState.Food, pets = CareState.TotalPets;
-        FeedPet(); PetHead(); await StartWorkingAsync();
-        ExpansionCheck(CareState.Food == food && CareState.TotalPets == pets && !CareState.IsWorking, "Game exclusivity let another interaction mutate care/work.");
-        long throwingSequence = _behavior.CurrentSample.Sequence;
-        await ExpansionWaitAsync(() => _behavior.CurrentSample.Sequence == throwingSequence && _behavior.CurrentSample.Progress >= .45,
-            token, "RPS throw midpoint");
-        ExpansionCheck(((TextBlock)window.FindName("StageText")).Text == "出拳！" && !_gameThrown, "Mid-throw result was revealed prematurely.");
-        RenderOwnVisual(Root, Path.Combine(output, $"expansion-rps-{suffix}-throw.png"));
-        RenderOwnVisual(window, Path.Combine(output, $"expansion-rps-{suffix}-waiting.png"));
-        await ExpansionWaitAsync(() => ((Button)window.FindName("ReplayButton")).IsEnabled, token, "RPS complete result", 25);
-        ExpansionCheck(_gameReactionComplete && _behavior.CurrentSample.Kind == ClipKind.Idle, "RPS enabled replay before complete reaction.");
-        RenderOwnVisual(window, Path.Combine(output, $"expansion-rps-{suffix}-result.png"));
     }
 
     private string ExpansionContentFingerprint() => JsonSerializer.Serialize(new

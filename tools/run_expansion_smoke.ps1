@@ -2,6 +2,9 @@
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [string]$DotnetRoot,
+    [ValidateSet('expansion', 'live2d', 'live2d-business', 'live2d-gallery', 'live2d-review')][string]$Mode = 'expansion',
+    [string]$Live2DConfig,
+    [string]$ReviewOutfit = 'outfit.default',
     [switch]$SkipOutfit
 )
 
@@ -12,6 +15,12 @@ if ($DotnetRoot) {
     $petRuntime = (Get-Item -LiteralPath $DotnetRoot -ErrorAction Stop).FullName
     if (-not (Test-Path -LiteralPath (Join-Path $petRuntime 'dotnet.exe'))) { throw 'DotnetRoot must contain dotnet.exe.' }
 }
+if ($Live2DConfig) {
+    $petLiveConfig = (Get-Item -LiteralPath $Live2DConfig -ErrorAction Stop).FullName
+    if ([IO.Path]::GetExtension($petLiveConfig) -ne '.json') { throw 'Live2DConfig must be the prepared local-runtime.json.' }
+}
+$petHardLimit = $(if ($Mode -like 'live2d*') { 650 } else { 300 })
+$petReportName = $(if ($Mode -like 'live2d*') { 'live2d-smoke.json' } else { 'expansion-smoke.json' })
 
 # Always create a new temp root. There is intentionally no parameter for reusing
 # another data directory: seeding test currency must never touch an existing pet.
@@ -34,10 +43,13 @@ $petStart.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
 $petStart.EnvironmentVariables['EAGLE_PET_DATA_DIR'] = $petData
 $petStart.EnvironmentVariables['EAGLE_PET_SMOKE_DIR'] = $petEvidence
 $petStart.EnvironmentVariables['EAGLE_PET_SMOKE_RUN_ROOT'] = $petRunRoot
-$petStart.EnvironmentVariables['EAGLE_PET_SMOKE_MODE'] = 'expansion'
+$petStart.EnvironmentVariables['EAGLE_PET_SMOKE_MODE'] = $Mode
+$petStart.EnvironmentVariables['EAGLE_PET_REVIEW_OUTFIT'] = $ReviewOutfit
 $petStart.EnvironmentVariables['EAGLE_PET_TEST_CHANNEL'] = $petRunId
 $petStart.EnvironmentVariables['EAGLE_PET_SMOKE_SKIP_OUTFIT'] = $(if ($SkipOutfit) { '1' } else { '0' })
 if ($DotnetRoot) { $petStart.EnvironmentVariables['DOTNET_ROOT'] = $petRuntime }
+if ($Live2DConfig) { $petStart.EnvironmentVariables['EAGLE_PET_LIVE2D_CONFIG'] = $petLiveConfig }
+if ($Mode -like 'live2d*') { $petStart.EnvironmentVariables['EAGLE_PET_RENDERER'] = 'live2d' }
 
 $petChild = [Diagnostics.Process]::Start($petStart)
 $petElapsed = [Diagnostics.Stopwatch]::StartNew()
@@ -46,22 +58,22 @@ $petCloseRequested = $false
 try {
     # Each wait is bounded to 250 ms; only this exact child PID is controlled.
     while (-not $petChild.WaitForExit(250)) {
-        if ($petElapsed.Elapsed.TotalSeconds -ge 295 -and -not $petCloseRequested) {
+        if ($petElapsed.Elapsed.TotalSeconds -ge ($petHardLimit - 5) -and -not $petCloseRequested) {
             $petCloseRequested = $true
             $petChild.CloseMainWindow() | Out-Null
         }
-        if ($petElapsed.Elapsed.TotalSeconds -ge 300) {
+        if ($petElapsed.Elapsed.TotalSeconds -ge $petHardLimit) {
             $petTimedOut = $true
             $petChild.Kill()
             break
         }
     }
-    $petReportPath = Join-Path $petEvidence 'expansion-smoke.json'
+    $petReportPath = Join-Path $petEvidence $petReportName
     if ($petTimedOut -or -not (Test-Path -LiteralPath $petReportPath)) {
         $petFailure = [ordered]@{
             passed = $false
             completed = $false
-            launcherFailure = $(if ($petTimedOut) { 'Child exceeded the 300 second hard limit; only the isolated child was terminated.' } else { 'The child exited without an expansion report. Check that the supplied Release includes expansion smoke.' })
+            launcherFailure = $(if ($petTimedOut) { "Child exceeded the $petHardLimit second hard limit; only the isolated child was terminated." } else { "The child exited without $petReportName. Check that the supplied Release includes $Mode smoke." })
             executable = $petExe
             processId = $petChild.Id
             dataDirectory = $petData

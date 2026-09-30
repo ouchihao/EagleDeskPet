@@ -62,15 +62,15 @@ internal static class Program
             int pngReads = resources.PngReads - before;
             Check(result.IsAvailable && result.Warning is null,
                 $"real {outfit.Id} resources fully decode without warnings");
-            Check(result.SupportedClips.Count == 20 && result.SupportedClips.Contains(ClipKind.Idle),
-                $"real {outfit.Id} supports all 19 actions plus neutral");
-            Check(validated.Assets is { Actions.Count: 19 } assets && assets.Actions.Sum(x => x.FrameCount) == 2491,
-                $"real {outfit.Id} manifest declares exactly 19 clips and 2491 frames");
+            Check(result.SupportedClips.Count == 15 && result.SupportedClips.Contains(ClipKind.Idle),
+                $"real {outfit.Id} supports all 14 actions plus neutral");
+            Check(validated.Assets is { Actions.Count: 14 } assets && assets.Actions.Sum(x => x.FrameCount) == 1694,
+                $"real {outfit.Id} manifest declares exactly 14 clips and 1694 frames");
             if (validated.Layers is null)
-                Check(pngReads == 2492, $"real {outfit.Id} actually reads all 2491 frames and its neutral PNG");
+                Check(pngReads == 1695, $"real {outfit.Id} actually reads all 1694 frames and its neutral PNG");
             else
-                Check(validated.Layers.FrameCount == 2492 && pngReads > 0,
-                    $"real {outfit.Id} validates all 2492 source-hashed anatomical maps and its actual costume pieces");
+                Check(validated.Layers.FrameCount == 1695 && pngReads > 0,
+                    $"real {outfit.Id} validates all 1695 source-hashed anatomical maps and its actual costume pieces");
             Console.WriteLine($"REAL {outfit.Id}: available={result.IsAvailable}; pngReads={pngReads}; warning={result.Warning ?? "none"}");
         }
         GC.Collect();
@@ -86,9 +86,9 @@ internal static class Program
         var catalog = OutfitCatalog.Load(fixture);
         Check(catalog.Outfits.Count == 3 && catalog.DefaultOutfitId == OutfitCatalog.DefaultId, "registry identifies three packs");
         var defaultReady = await catalog.GetAvailabilityAsync(OutfitCatalog.DefaultId);
-        Check(defaultReady.IsAvailable && defaultReady.SupportedClips.Count == 20, "default supports all 19 actions plus neutral");
+        Check(defaultReady.IsAvailable && defaultReady.SupportedClips.Count == 15, "default supports all 14 actions plus neutral");
         var officeReady = await catalog.GetAvailabilityAsync(Office);
-        Check(officeReady.IsAvailable && officeReady.SupportedClips.Count == 20, "complete office validates actual PNGs");
+        Check(officeReady.IsAvailable && officeReady.SupportedClips.Count == 15, "complete office validates actual PNGs");
         Check((await catalog.GetAvailabilityAsync(Other)).IsAvailable, "second complete replacement pack validates");
         int reads = fixture.TotalReads;
         await catalog.GetAvailabilityAsync(Office);
@@ -114,12 +114,6 @@ internal static class Program
         await Unavailable("wrong canvas dimensions", f => f.Files[OfficeRoot + "neutral.png"] = Fixture.Png(383, 346, Colors.Red));
         await Unavailable("wrong frame count", f => f.ChangeOffice(a => a.Actions[0].FrameCount--));
         await Unavailable("wrong duration", f => f.ChangeOffice(a => a.Actions[0].DurationSeconds = 1.99));
-        await Unavailable("old short guessing-game timing", f => f.ChangeOffice(a =>
-        {
-            var rock = a.Actions.Single(x => x.Clip == "RpsRock"); rock.FrameCount = 121; rock.DurationSeconds = 2;
-        }));
-        await Unavailable("missing extended gesture ending", f => f.Files.TryRemove(OfficeRoot + "Animations/RpsRock/frame-0168.png", out _));
-        await Unavailable("missing extended reaction ending", f => f.Files.TryRemove(OfficeRoot + "Animations/RpsWin/frame-0144.png", out _));
         await Unavailable("wrong phase", f => f.ChangeOffice(a => a.Actions[0].Phase = "loop"));
         await Unavailable("wrong group", f => f.ChangeOffice(a => a.Actions[0].Group = "Interaction"));
         await Unavailable("missing expansion clip", f => f.ChangeOffice(a => a.Actions.RemoveAll(x => x.Clip == "Tea")));
@@ -197,7 +191,7 @@ internal static class Program
     private static async Task TestTransientRelease(Fixture fixture, OutfitCatalog catalog)
     {
         ClipKind[] emotions = [ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit, ClipKind.Annoyed];
-        ClipKind[] games = [ClipKind.Tea, ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose];
+        ClipKind[] transients = [ClipKind.Tea];
         var image = new Image();
         using var player = new RasterFramePlayer(image, catalog);
         await player.WarmAsync();
@@ -205,29 +199,29 @@ internal static class Program
         Check(player.DecodedFrameCount == 787, "common plus intentionally retained emotion cache has 787 frames");
         for (int round = 0; round < 3; round++)
         {
-            await player.WarmClipsAsync(games);
-            Check(player.DecodedFrameCount == 1705 && games.All(player.IsClipReady), $"game round {round + 1} lazily warms all extended transient clips");
+            await player.WarmClipsAsync(transients);
+            Check(player.DecodedFrameCount == 908 && transients.All(player.IsClipReady), $"transient pass {round + 1} lazily warms the owned tea clip");
             player.Apply(Sample(ClipKind.Tea));
             var displayed = image.Source;
-            player.ReleaseClips(games.Concat(new[] { ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.Idle }));
+            player.ReleaseClips(transients.Concat(new[] { ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.Idle }));
             Check(player.DecodedFrameCount == 908 && player.IsClipReady(ClipKind.Tea) &&
-                  !player.IsClipReady(ClipKind.RpsRock) && ReferenceEquals(displayed, image.Source),
-                $"game round {round + 1} release protects the playing clip and common three");
+                  !player.IsClipReady(ClipKind.WorkLoop) && ReferenceEquals(displayed, image.Source),
+                $"transient pass {round + 1} release protects the playing clip and common three");
             player.Apply(ClipSample.Idle);
             int reads = fixture.TotalReads;
-            player.ReleaseClips(games);
-            player.ReleaseClips(games); // Repeated boundary notifications do not trigger reloading.
-            Check(player.DecodedFrameCount == 787 && games.All(kind => !player.IsClipReady(kind)) &&
+            player.ReleaseClips(transients);
+            player.ReleaseClips(transients); // Repeated boundary notifications do not trigger reloading.
+            Check(player.DecodedFrameCount == 787 && transients.All(kind => !player.IsClipReady(kind)) &&
                   emotions.All(player.IsClipReady) && fixture.TotalReads == reads,
-                $"game round {round + 1} returns to bounded retained cache without IO or emotion eviction");
+                $"transient pass {round + 1} returns to bounded retained cache without IO or emotion eviction");
         }
         await player.WarmClipAsync(ClipKind.Tea);
         player.Apply(Sample(ClipKind.Tea));
-        player.Apply(Sample(ClipKind.RpsRock)); // Unprepared action holds the preceding, still visible tea image.
-        player.ReleaseClips([ClipKind.Tea, ClipKind.RpsRock]);
+        player.Apply(Sample(ClipKind.WorkLoop)); // Unprepared action holds the preceding, still visible tea image.
+        player.ReleaseClips([ClipKind.Tea]);
         Check(player.IsClipReady(ClipKind.Tea), "release protects the actually displayed clip even when an unready sample was requested");
         player.Apply(ClipSample.Idle);
-        player.ReleaseClips(emotions.Concat(games));
+        player.ReleaseClips(emotions.Concat(transients));
         Check(player.DecodedFrameCount == 363, "explicit emotion shutdown can release its four sequences without touching common clips");
         await player.WarmClipAsync(ClipKind.WorkLoop);
         player.Apply(Sample(ClipKind.WorkLoop));
@@ -520,7 +514,7 @@ internal static class Program
             ClipKind[] kinds = [ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.WorkEnter, ClipKind.WorkLoop,
                 ClipKind.WorkToBusy, ClipKind.BusyLoop, ClipKind.WorkExit, ClipKind.BusyExit,
                 ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit, ClipKind.Tea,
-                ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose, ClipKind.Annoyed];
+                ClipKind.Annoyed];
             var assets = new AnimationAssets { Version = 1, Neutral = root == "Assets/" ? "Assets/mascot-animated-neutral.png" : root + "neutral.png" };
             Files[assets.Neutral] = png;
             foreach (var kind in kinds)

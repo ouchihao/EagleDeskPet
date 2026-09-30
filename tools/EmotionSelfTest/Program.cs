@@ -172,8 +172,6 @@ internal static class Program
             var (seconds, frames) = kind switch
             {
                 ClipKind.HungryEnter or ClipKind.HungryExit => (1.5, 91),
-                ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors => (2.8, 169),
-                ClipKind.RpsWin or ClipKind.RpsLose => (2.4, 145),
                 ClipKind.HungryLoop or ClipKind.Tea or ClipKind.Annoyed => (2.0, 121),
                 _ => throw new InvalidOperationException("Missing an independent frame/timing contract for " + kind),
             };
@@ -309,8 +307,8 @@ internal static class Program
     }
     private static void ExclusiveActions()
     {
-        var b = new PetBehaviorController(); b.SuspendAutomatic(true); b.RequestAction(ClipKind.RpsRock); IdleBeat(b, ClipKind.RpsRock);
-        b.RequestAction(ClipKind.RpsWin); End(b); Equal(ClipKind.Idle, b.Advance(Step).Kind); IdleBeat(b, ClipKind.RpsWin);
+        var b = new PetBehaviorController(); b.SuspendAutomatic(true); b.RequestAction(ClipKind.Tea); IdleBeat(b, ClipKind.Tea);
+        b.RequestAction(ClipKind.Annoyed); End(b); Equal(ClipKind.Idle, b.Advance(Step).Kind); IdleBeat(b, ClipKind.Annoyed);
         End(b); b.Advance(Step); for (int i = 0; i < 600; i++) Equal(ClipKind.Idle, b.Advance(Step).Kind);
     }
     private static void ResumeAutomatic()

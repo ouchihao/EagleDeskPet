@@ -27,7 +27,7 @@ public partial class PetWindow
     private void TickEmotions(DateTimeOffset now)
     {
         bool ready = EmotionClips.All(_framePlayer.IsClipReady);
-        if (_emotions.Enabled && !ready && _assetsReady && !IsGameActive && !_emotionLoadFailed)
+        if (_emotions.Enabled && !ready && _assetsReady && !_emotionLoadFailed)
             _ = PrepareEmotionAssetsAsync();
         var evaluation = _emotions.Evaluate(CareState, now,
             ready && !InteractionsUnavailable && !_nativeDragInProgress && !_pendingFeed &&
@@ -45,7 +45,7 @@ public partial class PetWindow
         try
         {
             await _framePlayer.WarmClipAsync(ClipKind.Annoyed);
-            if (!_isClosing && !_behavior.IsPaused && !WorkInProgress && !IsGameActive)
+            if (!_isClosing && !_behavior.IsPaused && !WorkInProgress)
                 _behavior.QueueReaction(PetBehaviorKind.Annoyed);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or NotSupportedException)
@@ -64,7 +64,7 @@ public partial class PetWindow
     private async void HungryPreviewMenu_OnClick(object sender, RoutedEventArgs e)
     {
         if (_hungryScenePreview is not null) { _hungryScenePreview.Activate(); return; }
-        var window = new HungryScenePreviewWindow(_framePlayer.CurrentOutfitId, _workStage.ActiveSelection)
+        var window = new HungryScenePreviewWindow(_framePlayer.CurrentOutfitId, _workStage.ActiveSelection, CreatePreviewPresentationAsync)
             { Owner = this, Topmost = Topmost };
         _hungryScenePreview = window;
         window.Closed += (_, _) => { if (ReferenceEquals(_hungryScenePreview, window)) _hungryScenePreview = null; };

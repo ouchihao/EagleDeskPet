@@ -27,10 +27,5 @@ public enum ClipKind
     HungryLoop = 41,
     HungryExit = 42,
     Tea = 50,
-    RpsRock = 51,
-    RpsPaper = 52,
-    RpsScissors = 53,
-    RpsWin = 54,
-    RpsLose = 55,
     Annoyed = 56,
 }

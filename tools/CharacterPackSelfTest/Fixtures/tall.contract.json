@@ -214,82 +214,6 @@
         "mouthOpen"
       ]
     },
-    "RpsRock": {
-      "support": "complete",
-      "model": "secondary",
-      "resource": "puppet/export/motions/rpsrock.motion3.json",
-      "durationSeconds": 2.8,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "holdStartSeconds": 1,
-      "holdEndSeconds": 1.87,
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsPaper": {
-      "support": "complete",
-      "model": "secondary",
-      "resource": "puppet/export/motions/rpspaper.motion3.json",
-      "durationSeconds": 2.8,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "holdStartSeconds": 1,
-      "holdEndSeconds": 1.87,
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsScissors": {
-      "support": "complete",
-      "model": "secondary",
-      "resource": "puppet/export/motions/rpsscissors.motion3.json",
-      "durationSeconds": 2.8,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "holdStartSeconds": 1,
-      "holdEndSeconds": 1.87,
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsWin": {
-      "support": "complete",
-      "model": "secondary",
-      "resource": "puppet/export/motions/rpswin.motion3.json",
-      "durationSeconds": 2.4,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsLose": {
-      "support": "complete",
-      "model": "secondary",
-      "resource": "puppet/export/motions/rpslose.motion3.json",
-      "durationSeconds": 2.4,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
     "Annoyed": {
       "support": "complete",
       "model": "secondary",
@@ -617,31 +541,6 @@
       "sha256": null
     },
     "puppet/export/motions/tea.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "puppet/export/motions/rpsrock.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "puppet/export/motions/rpspaper.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "puppet/export/motions/rpsscissors.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "puppet/export/motions/rpswin.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "puppet/export/motions/rpslose.motion3.json": {
       "role": "motion",
       "byteLength": 0,
       "sha256": null

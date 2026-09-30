@@ -18,6 +18,7 @@ internal static class CareTests
         ("Petting cooldown prevents reward spam", Petting),
         ("Care clock rollback cannot create rewards", ClockRollback),
         ("Care save JSON round-trips and normalizes", Persistence),
+        ("Retired minigame metadata remains inert while care progress survives", RetiredGameMetadata),
         ("Care achievements unlock once", Achievements),
         ("Behavior reactions preserve endpoints and idle beats", SafeReaction),
         ("Behavior repeated actions are not discarded", RepeatedReaction),
@@ -25,6 +26,25 @@ internal static class CareTests
         ("Behavior pause rejects requests and clears stale work", Pause),
         ("Notification display data is bounded Unicode", Notifications),
     };
+
+    private static void RetiredGameMetadata()
+    {
+        var saved = new PetState
+        {
+            LastUpdatedUtc = Start, LastGameRewardUtc = Start.AddDays(1), Coins = 125.75m,
+            Experience = 80, TotalMeals = 7, TotalPets = 12, TotalWorkSeconds = 345,
+        };
+        var restored = new PetCareService(JsonSerializer.Deserialize<PetState>(JsonSerializer.Serialize(saved)), Start);
+        var state = restored.State;
+        Equal(saved.LastGameRewardUtc, state.LastGameRewardUtc);
+        Equal(saved.Coins, state.Coins); Equal(saved.Experience, state.Experience);
+        Equal(saved.TotalMeals, state.TotalMeals); Equal(saved.TotalPets, state.TotalPets);
+        Near(saved.TotalWorkSeconds, state.TotalWorkSeconds);
+        var roundTrip = JsonSerializer.Deserialize<PetState>(JsonSerializer.Serialize(state.CreateSnapshot()))!;
+        Equal(saved.LastGameRewardUtc, roundTrip.LastGameRewardUtc);
+        Check(restored.Pet(Start).Success, "Retired reward metadata blocked normal petting");
+        Equal(saved.TotalPets + 1, restored.State.TotalPets);
+    }
 
     private static void InitialState()
     {

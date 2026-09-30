@@ -41,7 +41,7 @@ public partial class PetWindow
     internal bool NotificationsEnabled => _companion.NotificationsEnabled;
     internal bool ActiveBanterEnabled => _companion.ActiveBanterEnabled;
     internal bool WorkInProgress => CareState.IsWorking || _behavior.IsWorkSceneActive || _behavior.IsWorkRequested || _preparingWork;
-    internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsGameActive || IsFeeding || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
+    internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsFeeding || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
     internal bool CanStartWork => !InteractionsUnavailable && CareState.Fullness > 0;
     internal string WorkStatus => _preparingWork ? "搬工位中…" : CareState.IsWorking
         ? $"{(CareState.IsBusy ? "忙碌中" : "办公中")} · {(int)(CareState.WorkSessionSeconds / 60)} 分 {((int)CareState.WorkSessionSeconds % 60):00} 秒"
@@ -250,7 +250,7 @@ public partial class PetWindow
     private void TickBanter(double elapsedSeconds)
     {
         string? line = _banter.Tick(elapsedSeconds, _isClosing || !_assetsReady || _nativeDragInProgress ||
-            _behavior.IsPaused || IsGameActive || _bubble?.IsVisible == true || _activeNotice is not null || _notices.Count > 0,
+            _behavior.IsPaused || _bubble?.IsVisible == true || _activeNotice is not null || _notices.Count > 0,
             CareState.IsWorking ? BanterContext.Working : _emotions.IsHungry ? BanterContext.Hungry :
             _emotions.IsLowMood ? BanterContext.LowMood : DateTime.Now.Hour >= 22 ? BanterContext.LateNight : BanterContext.Ordinary);
         if (line is not null) ShowBubble("", line, "", canOpen: false, seconds: 5, isBanter: true);

@@ -9,16 +9,16 @@ public partial class PetWindow
     private readonly Dictionary<string, bool> _contentResources = new(StringComparer.Ordinal);
     private bool _preparingOwnedAction, _outfitApplying;
     private bool _transientResourcesWereInUse;
-    private static readonly ClipKind[] TransientContentClips = [ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose, ClipKind.Tea];
+    private static readonly ClipKind[] TransientContentClips = [ClipKind.Tea];
 
     private void ReleaseUnusedTransientResources()
     {
-        if (IsGameActive || _preparingOwnedAction) { _transientResourcesWereInUse = true; return; }
+        if (_preparingOwnedAction) { _transientResourcesWereInUse = true; return; }
         if (!_transientResourcesWereInUse || _behavior.CurrentSample.Kind != ClipKind.Idle || _behavior.PendingCount != 0 || IsContentEquipmentApplying) return;
         _framePlayer.ReleaseClips(TransientContentClips);
         _transientResourcesWereInUse = false;
     }
-    internal bool IsContentInteractionBusy => IsGameActive || IsFeeding || _preparingReaction || _preparingOwnedAction || _outfitApplying || IsContentEquipmentApplying;
+    internal bool IsContentInteractionBusy => IsFeeding || _preparingReaction || _preparingOwnedAction || _outfitApplying || IsContentEquipmentApplying;
     internal bool IsContentResourceAvailable(ContentDefinition item) => _contentResources.GetValueOrDefault(item.Id);
 
     private async Task InitializeContentResourcesAsync()

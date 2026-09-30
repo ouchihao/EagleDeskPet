@@ -39,6 +39,8 @@ internal static class Program
             Test("Closing during preview preload cancels work and releases every retained frame", ClosePreviewDuringLoad);
             Test("Club theatre previews keep real layers and all controls visible at minimum/default sizes and 1x/1.28x on dark/light surrounds", PreviewChromeScreenshots);
             Test("Content theatre loads actual desk/action resources, pauses privately and has no mutable care services", ContentTheatre);
+            Test("Preview backend contract waits for terminal acknowledgement and restores matching raster layers on failure", PreviewAcknowledgement);
+            Test("Closing during backend preparation cancels the private loader and releases preview frames", CloseDuringBackendPreparation);
             File.WriteAllText(Path.Combine(_output, "report.json"), JsonSerializer.Serialize(new
             { passed = Failures.Count == 0, assertions = Assertions, failures = Failures,
               ownVisualTreeOnly = true, desktopCapture = false, userStateAccess = false }, new JsonSerializerOptions { WriteIndented = true }));
@@ -329,6 +331,61 @@ internal static class Program
         var preparation = window.PrepareAsync(); window.Close(); WaitUi(preparation); WaitUi(window.PrepareAsync());
         Check(!window.IsPrepared && !window.IsRenderLoopAttached && window.RetainedFrameCount == 0 &&
             PreviewDescendants<Image>((DependencyObject)window.Content).All(x => x.Source is null), "A completed stale preload resurrected a closed preview.");
+    }
+    private static void PreviewAcknowledgement()
+    {
+        var backend = new ControlledPresentation();
+        var window = new HungryScenePreviewWindow(OutfitCatalog.DefaultId, new("work.default", "desk.mint", "computer.midnight"),
+            (_, equipment, _, _) => { backend.ActiveEquipment = equipment; return Task.FromResult<IPetPresentationBackend?>(backend); });
+        try
+        {
+            WaitUi(window.PrepareAsync());
+            for (int i = 0; i < 150 && window.CurrentSample.Phase != ClipPlaybackPhase.Terminal; i++) StepPreview(window);
+            var terminal = window.CurrentSample;
+            Check(terminal.Kind == ClipKind.HungryEnter && terminal.Phase == ClipPlaybackPhase.Terminal, "Fixture did not reach its full entry pose");
+            for (int i = 0; i < 120; i++) StepPreview(window);
+            Check(window.CurrentSample == terminal && !window.CanReplay, "Unacknowledged backend skipped the entry terminal or credited idle time");
+            backend.Acknowledged = true;
+            StepPreview(window);
+            Check(window.CurrentSample.Kind == ClipKind.HungryLoop && window.CurrentSample.Sequence > terminal.Sequence, "Confirmed terminal did not enter the continuous scene loop");
+            backend.Fail();
+            Check(!window.IsLive2D && window.WarningText.Contains("matching raster") &&
+                PreviewDescendants<Image>((DependencyObject)window.Content).All(x => x.Opacity == 1), "Fallback left invisible raster layers or silently changed the selected outfit");
+            Check(window.EffectiveSelection?.DeskId == "desk.mint" && window.EffectiveOutfitId == OutfitCatalog.DefaultId, "Backend failure changed preview equipment");
+        }
+        finally { window.Close(); }
+        Check(backend.Disposed, "Closed preview retained its backend");
+    }
+    private static void CloseDuringBackendPreparation()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool cancelled = false;
+        var window = new HungryScenePreviewWindow(OutfitCatalog.DefaultId, new("work.default", "desk.default", "computer.default"),
+            async (_, _, _, token) =>
+            {
+                entered.SetResult();
+                try { await Task.Delay(Timeout.Infinite, token); }
+                catch (OperationCanceledException) { cancelled = true; throw; }
+                return null;
+            });
+        var preparation = window.PrepareAsync();
+        WaitUi(entered.Task); window.Close(); WaitUi(preparation);
+        Check(cancelled && !window.IsPrepared && window.RetainedFrameCount == 0 && !window.IsRenderLoopAttached,
+            "Closing did not cancel stage preparation before releasing the private actor");
+    }
+
+    private sealed class ControlledPresentation : IPetPresentationBackend
+    {
+        public bool IsActive { get; private set; } = true;
+        public bool IsPreparing => false;
+        public string? Warning { get; private set; }
+        public PresentationEquipment? ActiveEquipment { get; set; }
+        public event Action? PresentationChanged;
+        internal bool Acknowledged, Disposed;
+        public bool CanAdvance(ClipSample sample) => !IsActive || sample.Phase != ClipPlaybackPhase.Terminal || Acknowledged;
+        public void Present(ClipSample sample, bool paused, bool force = false) { }
+        internal void Fail() { IsActive = false; Warning = "Using matching raster fallback"; PresentationChanged?.Invoke(); }
+        public void Dispose() { Disposed = true; IsActive = false; }
     }
     private static void PreviewChromeScreenshots()
     {

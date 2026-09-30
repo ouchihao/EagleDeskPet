@@ -90,6 +90,8 @@ public partial class PetWindow : Window
                 }
             }
             if (_isClosing) return;
+            await InitializeLive2DAsync();
+            if (_isClosing) return;
             _assetsReady = true;
             _behavior.SetWorkState(CareState.IsWorking, CareState.IsBusy);
             SubscribeRendering();
@@ -114,7 +116,6 @@ public partial class PetWindow : Window
             _clientSetupWindow.Activate();
             return;
         }
-        if (!TryCloseGameForPetExit()) e.Cancel = true;
         if (!TryCloseFeedingForPetExit()) e.Cancel = true;
     }
 
@@ -126,6 +127,7 @@ public partial class PetWindow : Window
         StopReminders();
         StopNotebook();
         StopCare();
+        _live2D?.Dispose();
         _framePlayer.Dispose();
         _windowSource?.RemoveHook(WindowMessageHook);
         _windowSource = null;
@@ -175,10 +177,9 @@ public partial class PetWindow : Window
         }
 
         bool wasWorking = _behavior.IsWorkSceneActive;
-        ClipSample sample = _behavior.Advance(deltaSeconds);
-        ApplyPose(_behavior.CurrentProceduralPose);
-        _framePlayer.Apply(sample);
-        _workStage.Apply(sample, deltaSeconds);
+        ClipSample sample = _live2D?.CanAdvance(_behavior.CurrentSample) == false
+            ? _behavior.CurrentSample : _behavior.Advance(deltaSeconds);
+        ApplyPresentation(sample, deltaSeconds);
         TickFeeding();
         RefreshContentAtSafeBoundary();
         ReleaseUnusedTransientResources();
@@ -300,7 +301,6 @@ public partial class PetWindow : Window
         StopWorkMenuItem.IsEnabled = CareState.IsWorking;
         BanterMenuItem.IsChecked = ActiveBanterEnabled;
         EmotionMenuItem.IsChecked = _emotions.Enabled;
-        GameMenuItem.IsEnabled = IsGameActive || !InteractionsUnavailable;
         PauseMenuItem.IsEnabled = !WorkInProgress && !IsFeeding && !_pauseChanging && !IsContentEquipmentApplying && !_preparingOwnedAction;
         PauseMenuItem.IsChecked = _settings.IsPaused;
         TopmostMenuItem.IsChecked = _settings.IsTopmost;
@@ -310,7 +310,7 @@ public partial class PetWindow : Window
         LargeMenuItem.IsChecked = Math.Abs(_settings.SizeScale - 1.28) < 0.01;
     }
 
-    private async void PauseMenuItem_OnClick(object sender, RoutedEventArgs e)
+    private void PauseMenuItem_OnClick(object sender, RoutedEventArgs e)
     {
         if (_pauseChanging || IsContentEquipmentApplying || _preparingOwnedAction || IsFeeding) return;
         if (WorkInProgress) { Say("先取消工作，再暂停待机动作。 "); return; }
@@ -318,14 +318,11 @@ public partial class PetWindow : Window
         _pauseChanging = true;
         try
         {
-            if (targetPaused) await CancelGameForPauseAsync();
             if (_isClosing) return;
             _settings.IsPaused = targetPaused;
             _behavior.SetPaused(targetPaused);
-            ApplyPose(_behavior.CurrentProceduralPose);
-            _framePlayer.Apply(_behavior.CurrentSample);
+            ApplyPresentation(_behavior.CurrentSample, 0, force: true);
             SaveCurrentSettings();
-            if (!targetPaused) ResumeGameAfterPause();
         }
         catch (Exception ex) when (ex is not OutOfMemoryException) { Say("动作还没收好，本次没有切换暂停状态。 "); }
         finally { _pauseChanging = false; }

@@ -32,7 +32,7 @@ internal static class Program
             ("Save conflict preserves disk while one in-memory meal finishes", SaveFailure),
             ("Close waits through the queued meal then retries at its full end", Closing),
             ("A subsequent completed meal is allowed without changing cooldown", NextMeal),
-            ("Production work, pause, game and equipment guards include feeding", Wiring),
+            ("Production work, pause and equipment guards include feeding without the retired minigame", Wiring),
         };
         foreach (var (name, body) in cases)
         {
@@ -62,14 +62,14 @@ internal static class Program
         }
         void FullQueue() => WithPet(p =>
         {
-            foreach (var clip in new[] { ClipKind.Tea, ClipKind.Annoyed, ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors })
+            foreach (var clip in new[] { ClipKind.Tea, ClipKind.Annoyed, ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.Wiggle, ClipKind.Hop, ClipKind.Nod })
                 Check(p.Behavior.RequestAction(clip) == PetBehaviorRequestResult.Queued, "Fixture queue failed.");
             Check(p.Behavior.PreviewReaction(PetBehaviorKind.Fed) == PetBehaviorRequestResult.RejectedFull, "Full admitted.");
             p.FeedPet(); Check(p.CareState.Food == 10 && p.CareState.TotalMeals == 0 && !p.IsFeeding && p.Behavior.PendingCount == 8, "Full queue consumed food or changed requests.");
         });
         void EvictableQueue() => WithPet(p =>
         {
-            foreach (var clip in new[] { ClipKind.Tea, ClipKind.Annoyed, ClipKind.Yawn, ClipKind.Shy, ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors }) p.Behavior.RequestAction(clip);
+            foreach (var clip in new[] { ClipKind.Tea, ClipKind.Annoyed, ClipKind.Yawn, ClipKind.Shy, ClipKind.Wiggle, ClipKind.Hop, ClipKind.Nod }) p.Behavior.RequestAction(clip);
             p.Behavior.QueueReaction(PetBehaviorKind.Notification);
             Check(p.Behavior.PreviewReaction(PetBehaviorKind.Fed) == PetBehaviorRequestResult.Queued && p.Behavior.PendingCount == 8, "Preview discarded an item.");
             p.FeedPet(); Check(p.IsFeeding && p.CareState.Food == 9 && p.Behavior.PendingCount == 8, "Safe eviction failed.");
@@ -164,12 +164,13 @@ internal static class Program
             string care = File.ReadAllText(Path.Combine(args[0], "DuckDeskPet", "PetWindow.Care.cs"));
             string main = File.ReadAllText(Path.Combine(args[0], "DuckDeskPet", "PetWindow.xaml.cs"));
             string content = File.ReadAllText(Path.Combine(args[0], "DuckDeskPet", "PetWindow.ContentResources.cs"));
-            string play = File.ReadAllText(Path.Combine(args[0], "DuckDeskPet", "PetWindow.Play.cs"));
             Check(care.Split('\n').Single(x => x.Contains("internal bool InteractionsUnavailable =>")).Contains("IsFeeding"), "Interaction guard missing.");
             Check(content.Split('\n').Single(x => x.Contains("internal bool IsContentInteractionBusy =>")).Contains("IsFeeding"), "Equipment guard missing.");
             Check(main.Contains("TickFeeding();") && main.Contains("TryCloseFeedingForPetExit()") &&
                 main.Split('\n').Any(x => x.Contains("if (_pauseChanging") && x.Contains("IsFeeding")), "Host feed tick/close/pause missing.");
-            Check(care.Contains("CanStartWork => !InteractionsUnavailable") && play.Contains("InteractionsUnavailable || IsContentInteractionBusy"), "Work/game guard missing.");
+            Check(care.Contains("CanStartWork => !InteractionsUnavailable"), "Work guard missing.");
+            Check(!File.Exists(Path.Combine(args[0], "DuckDeskPet", "PetWindow.Play.cs")) &&
+                !File.Exists(Path.Combine(args[0], "DuckDeskPet", "RpsWindow.xaml")), "Retired minigame UI or coordinator remains");
         }
     }
     private static void Check(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

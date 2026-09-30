@@ -64,9 +64,8 @@
                         <Border Background="#F3ECD9" CornerRadius="10" Padding="12,9" Margin="0,0,0,10">
                             <TextBlock x:Name="StatusText" FontSize="12" Foreground="#6E624C" AutomationProperties.LiveSetting="Polite"/>
                         </Border>
-                        <UniformGrid Columns="3" Margin="-3,0">
+                        <UniformGrid Columns="2" Margin="-3,0">
                             <Button Click="Shop_OnClick" Margin="3,0" Background="#FFFDF6" Padding="8,12"><StackPanel><TextBlock Text="小卖部" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="把工资变可爱" FontSize="10" Foreground="#7C877E" Margin="0,5,0,0"/></StackPanel></Button>
-                            <Button Click="Game_OnClick" Margin="3,0" Background="#FFFDF6" Padding="8,12"><StackPanel><TextBlock Text="猜拳局" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="来，鹰你一把" FontSize="10" Foreground="#7C877E" Margin="0,5,0,0"/></StackPanel></Button>
                             <Button x:Name="HonorWallButton" Click="HonorWall_OnClick" Margin="3,0" Background="#FFFDF6" Padding="8,12"><StackPanel><TextBlock Text="荣誉室" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock x:Name="AchievementsText" FontSize="10" Foreground="#7C877E" Margin="0,5,0,0" TextAlignment="Center"/></StackPanel></Button>
                         </UniformGrid>
                         <CheckBox x:Name="BanterCheck" Content="听它碎碎念 · 每分钟最多一句" Click="Banter_OnClick" FontSize="11" Foreground="#768276" Margin="1,14,0,0"/>

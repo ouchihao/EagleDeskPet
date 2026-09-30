@@ -16,6 +16,7 @@
     <Compile Include="../../DuckDeskPet/OutfitCompositeMetadata.cs" Link="OutfitCompositeMetadata.cs" />
     <Compile Include="../../DuckDeskPet/HungryScenePreviewWindow.cs" Link="HungryScenePreviewWindow.cs" />
     <Compile Include="../../DuckDeskPet/ContentPreviewWindow.cs" Link="ContentPreviewWindow.cs" />
+    <Compile Include="../../DuckDeskPet/IPetPresentationBackend.cs" Link="IPetPresentationBackend.cs" />
     <Compile Include="../../DuckDeskPet/PreviewStageChrome.cs" Link="PreviewStageChrome.cs" />
     <Page Include="../../DuckDeskPet/Themes/PetTheme.xaml" Link="Themes/PetTheme.xaml" />
     <Resource Include="../../DuckDeskPet/Assets/actions.json" Link="Assets/actions.json" />

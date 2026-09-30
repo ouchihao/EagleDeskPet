@@ -18,15 +18,19 @@ internal sealed class HungryScenePreviewWindow : Window
     private readonly Image _pet = Layer(), _back = Layer(), _front = Layer(), _computer = Layer(), _fire = Layer();
     private readonly TextBlock _stageText, _warning;
     private readonly Button _pause, _replay, _finish;
+    private readonly PreviewPresentationFactory? _preparePresentation;
+    private readonly Grid _presentationSurface = new() { Width = 256, Height = 232, IsHitTestVisible = false };
+    private IPetPresentationBackend? _presentation;
     private RasterFramePlayer? _player;
     private WorkStageRenderer? _stage;
     private Task? _prepareTask;
     private double _idleSeconds;
     private bool _ready, _paused, _finishing, _closed, _subscribed;
 
-    internal HungryScenePreviewWindow(string outfitId, SceneSelection selection)
+    internal HungryScenePreviewWindow(string outfitId, SceneSelection selection, PreviewPresentationFactory? preparePresentation = null)
     {
         _requestedOutfit = outfitId; _requestedScene = selection;
+        _preparePresentation = preparePresentation;
         Title = "大头鹰 · 空碗小剧场"; Width = 420; Height = 510; MinWidth = 350; MinHeight = 390;
         Background = PreviewStageChrome.Paper; Foreground = PreviewStageChrome.Ink; FontFamily = new("Microsoft YaHei UI");
         WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false;
@@ -40,6 +44,7 @@ internal sealed class HungryScenePreviewWindow : Window
         header.Children.Add(_warning); root.Children.Add(header);
         var layers = new Grid { Width = 302, Height = 265, ClipToBounds = true, Background = Brushes.Transparent };
         foreach (var image in new[] { _fire, _back, _pet, _front, _computer }) layers.Children.Add(image);
+        Panel.SetZIndex(_presentationSurface, 10); layers.Children.Add(_presentationSurface);
         var viewport = PreviewStageChrome.Stage(layers);
         Grid.SetRow(viewport, 1); root.Children.Add(viewport);
         var footer = new StackPanel { Margin = new(0, 12, 0, 0) };
@@ -62,6 +67,7 @@ internal sealed class HungryScenePreviewWindow : Window
     }
 
     internal bool IsPrepared => _ready && !_closed;
+    internal bool IsLive2D => _presentation?.IsActive == true;
     internal bool IsRenderLoopAttached => _subscribed;
     internal bool CanReplay => IsPrepared && !_timeline.IsActive && _idleSeconds >= 2;
     internal int RetainedFrameCount => _player?.DecodedFrameCount ?? 0;
@@ -98,6 +104,19 @@ internal sealed class HungryScenePreviewWindow : Window
             else warnings.Add("所选工位暂不可用，本次只预览经典木桌；已保存的装备不会改变。");
             if (_closed) return;
             stage.Apply(ClipSample.Idle);
+            if (_preparePresentation is not null)
+            {
+                try
+                {
+                    _presentation = await _preparePresentation(_presentationSurface,
+                        new(stage.ActiveSelection.DeskId, stage.ActiveSelection.ComputerId, player.CurrentOutfitId), ClipSample.Idle, _loading.Token);
+                    if (_closed) { _presentation?.Dispose(); return; }
+                    if (_presentation is not null) _presentation.PresentationChanged += UpdatePresentation;
+                    if (_presentation?.Warning is { } warning) warnings.Add(warning);
+                    UpdatePresentation();
+                }
+                catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException)) { warnings.Add("Live2D 暂不可用，使用相同装备的逐帧小剧场。"); }
+            }
             _warning.Text = string.Join("\n", warnings);
             _ready = true; _timeline.Start(); ApplyFrame(); UpdateControls(); UpdateClock();
         }
@@ -129,8 +148,10 @@ internal sealed class HungryScenePreviewWindow : Window
     {
         bool run = IsPrepared && !_paused && (_timeline.IsActive || _idleSeconds < 2) &&
             IsVisible && IsActive && WindowState != WindowState.Minimized;
+        bool changed = run != _subscribed;
         if (run && !_subscribed) { _rate.Reset(); CompositionTarget.Rendering += OnRendering; _subscribed = true; }
         else if (!run && _subscribed) { CompositionTarget.Rendering -= OnRendering; _subscribed = false; _rate.Reset(); }
+        if (changed) _presentation?.Present(_timeline.CurrentSample, paused: !run, force: true);
     }
     private void OnRendering(object? sender, EventArgs e)
     {
@@ -139,12 +160,24 @@ internal sealed class HungryScenePreviewWindow : Window
     private void AdvanceTimeline(double deltaSeconds)
     {
         if (!IsPrepared || _paused) return;
-        if (_timeline.IsActive) _timeline.Advance(deltaSeconds);
+        if (_timeline.IsActive)
+        {
+            if (_presentation?.CanAdvance(_timeline.CurrentSample) != false) _timeline.Advance(deltaSeconds);
+        }
         else _idleSeconds = Math.Min(2, _idleSeconds + deltaSeconds);
         ApplyFrame(); UpdateControls(); UpdateClock();
     }
     private void ApplyFrame()
-    { _player?.Apply(_timeline.CurrentSample); _stage?.Apply(_timeline.CurrentSample); }
+    {
+        _player?.Apply(_timeline.CurrentSample); _stage?.Apply(_timeline.CurrentSample);
+        _presentation?.Present(_timeline.CurrentSample, paused: !_subscribed);
+    }
+    private void UpdatePresentation()
+    {
+        foreach (var image in new[] { _pet, _back, _front, _computer, _fire, _stage?.ForegroundLayer })
+            if (image is not null) image.Opacity = IsLive2D ? 0 : 1;
+        if (_presentation?.Warning is { } warning) _warning.Text = warning;
+    }
     private void UpdateControls()
     {
         _pause.Content = _paused ? "继续" : "暂停";
@@ -170,6 +203,7 @@ internal sealed class HungryScenePreviewWindow : Window
     }
     private void ReleasePlayers()
     {
+        _presentation?.Dispose(); _presentation = null;
         _player?.Dispose(); _player = null;
         _stage?.ReleaseFireFrames(); _stage = null;
         foreach (var image in new[] { _pet, _back, _front, _computer, _fire }) image.Source = null;

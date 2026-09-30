@@ -327,8 +327,7 @@ public sealed class PetCareService
             LastUpdatedUtc = futureSave ? now : lastUpdated,
             LastFedUtc = NormalizeInteraction(saved.LastFedUtc, futureSave, now),
             LastPettedUtc = NormalizeInteraction(saved.LastPettedUtc, futureSave, now),
-            // A future game-reward timestamp is a persisted high-water mark.
-            // Rebasing it on restart would shorten the anti-spam cooldown.
+            // Preserve legacy profile metadata without reviving the retired minigame
             LastGameRewardUtc = saved.LastGameRewardUtc?.ToUniversalTime(),
             TotalMeals = Math.Clamp(saved.TotalMeals, 0, 1_000_000),
             TotalPets = Math.Clamp(saved.TotalPets, 0, 1_000_000),

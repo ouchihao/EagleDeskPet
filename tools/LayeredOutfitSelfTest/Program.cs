@@ -47,7 +47,7 @@ internal static class Program
         var f = new Fixture(); var catalog = OutfitCatalog.Load(f);
         var available = await catalog.GetAvailabilityAsync("outfit.layered");
         Console.WriteLine($"Fixture availability: {available.IsAvailable}, clips={available.SupportedClips.Count}, {available.Warning}");
-        Check(available.IsAvailable && available.SupportedClips.Count == 20, "compact costume validates all 19 actions plus neutral");
+        Check(available.IsAvailable && available.SupportedClips.Count == 15, "compact costume validates all 14 actions plus neutral");
         var preview = (await RasterFramePlayer.LoadOutfitPreviewFramesAsync(catalog, "outfit.layered"))[0];
         Check(preview.IsFrozen, "preload returns a frozen cross-thread image");
         Check(Pixel(preview, 191, 267).B > Pixel(preview, 191, 267).R + 80, "torso UV uses clothing texture");
@@ -251,7 +251,7 @@ internal static class Program
         {
             ClipKind[] supported = [ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat, ClipKind.WorkEnter, ClipKind.WorkLoop, ClipKind.WorkToBusy,
                 ClipKind.BusyLoop, ClipKind.WorkExit, ClipKind.BusyExit, ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit,
-                ClipKind.Tea, ClipKind.RpsRock, ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose, ClipKind.Annoyed];
+                ClipKind.Tea, ClipKind.Annoyed];
             var actions = supported.Select(kind =>
             {
                 var definition = ClipCatalog.GetDefinition(kind);

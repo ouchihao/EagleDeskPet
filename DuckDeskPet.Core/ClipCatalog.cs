@@ -13,7 +13,7 @@ public static class ClipCatalog
 
     public static bool IsKnown(ClipKind kind) =>
         (uint)kind <= (uint)ClipKind.Stretch || kind == ClipKind.Eat || IsScene(kind) ||
-        kind is >= ClipKind.Tea and <= ClipKind.Annoyed;
+        kind is ClipKind.Tea or ClipKind.Annoyed;
 
     public static bool IsAutomaticAction(ClipKind kind) =>
         kind == ClipKind.Yawn;
@@ -45,8 +45,6 @@ public static class ClipCatalog
         ClipKind.HungryEnter => new(kind, 91, 1.50, 0.50),
         ClipKind.HungryLoop => new(kind, 121, 2.00, 0.50),
         ClipKind.HungryExit => new(kind, 91, 1.50, 0.50),
-        ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors => new(kind, 169, 2.80, 0.50),
-        ClipKind.RpsWin or ClipKind.RpsLose => new(kind, 145, 2.40, 0.50),
         ClipKind.Tea or ClipKind.Annoyed => new(kind, 121, 2.00, 0.50),
         ClipKind.Wiggle => new(kind, 30, 1.00, 0.50),
         ClipKind.Hop => new(kind, 36, 1.15, 0.47),

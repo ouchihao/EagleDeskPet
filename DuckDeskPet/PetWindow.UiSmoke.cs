@@ -9,7 +9,6 @@ namespace DuckDeskPet;
 
 public partial class PetWindow
 {
-    private readonly List<double> _uiSmokeRpsStarts = new();
 
     private async Task RunClubUiSmokeAsync(string output, CancellationToken token)
     {

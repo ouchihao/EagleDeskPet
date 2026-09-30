@@ -14,8 +14,7 @@ public static partial class CharacterPackValidator
     public const long MaximumTotalResourceBytes = 512L * 1024 * 1024;
     public static readonly ImmutableArray<ClipKind> RequiredActions = [ClipKind.Idle, ClipKind.Yawn, ClipKind.Shy, ClipKind.Eat,
         ClipKind.WorkEnter, ClipKind.WorkLoop, ClipKind.WorkToBusy, ClipKind.BusyLoop, ClipKind.WorkExit, ClipKind.BusyExit,
-        ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit, ClipKind.Tea, ClipKind.RpsRock,
-        ClipKind.RpsPaper, ClipKind.RpsScissors, ClipKind.RpsWin, ClipKind.RpsLose, ClipKind.Annoyed];
+        ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit, ClipKind.Tea, ClipKind.Annoyed];
     public static readonly ImmutableArray<string> RequiredAnchors = ["foot", "head", "body", "bubble", "mouth", "leftHand", "rightHand", "bowl", "keyboard", "deskSurface"];
     public static readonly ImmutableArray<string> SceneLayerOrder = ["fire", "character-body", "desk-back", "character-foreground", "desk-front", "computer"];
     private static readonly JsonSerializerOptions Json = new()
@@ -153,8 +152,6 @@ public static partial class CharacterPackValidator
             bool hold = action.HoldStartSeconds is not null || action.HoldEndSeconds is not null;
             if (hold) Require(action.HoldStartSeconds is double start && action.HoldEndSeconds is double end && double.IsFinite(start) && double.IsFinite(end) && start >= 0 && end > start && end <= action.DurationSeconds,
                 "ACTION_HOLD", location, "The readable pose interval must lie inside the motion.");
-            if (kind is ClipKind.RpsRock or ClipKind.RpsPaper or ClipKind.RpsScissors && action.Support == CharacterActionSupport.Complete)
-                Require(action.HoldEndSeconds - action.HoldStartSeconds >= .86, "GESTURE_HOLD", location, "Complete guessing gestures need at least 0.86 s of readable hold.");
         }
         Require(p.Actions.TryGetValue("Idle", out var idle) && idle.Support == CharacterActionSupport.Complete, "IDLE_REQUIRED", "actions.Idle", "A complete safe neutral is required.");
         foreach (var (semantic, parameter) in p.Parameters)

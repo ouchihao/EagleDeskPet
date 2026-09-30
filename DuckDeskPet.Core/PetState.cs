@@ -16,6 +16,7 @@ public sealed class PetState
     public DateTimeOffset LastUpdatedUtc { get; set; }
     public DateTimeOffset? LastFedUtc { get; set; }
     public DateTimeOffset? LastPettedUtc { get; set; }
+    // Retain the retired minigame field when reading and saving existing profiles
     public DateTimeOffset? LastGameRewardUtc { get; set; }
     public int TotalMeals { get; set; }
     public int TotalPets { get; set; }

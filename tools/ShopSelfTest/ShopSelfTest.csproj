@@ -12,6 +12,7 @@
     <Compile Include="../../DuckDeskPet/HonorWallWindow.xaml.cs" Link="HonorWallWindow.xaml.cs" />
     <Compile Include="../../DuckDeskPet/NativeMethods.cs" Link="NativeMethods.cs" />
     <Compile Include="../../DuckDeskPet/ContentPreviewWindow.cs" Link="ContentPreviewWindow.cs" />
+    <Compile Include="../../DuckDeskPet/IPetPresentationBackend.cs" Link="IPetPresentationBackend.cs" />
     <Compile Include="../../DuckDeskPet/PreviewStageChrome.cs" Link="PreviewStageChrome.cs" />
     <Compile Include="../../DuckDeskPet/AnimationAssets.cs" Link="AnimationAssets.cs" />
     <Compile Include="../../DuckDeskPet/OutfitCatalog.cs" Link="OutfitCatalog.cs" />

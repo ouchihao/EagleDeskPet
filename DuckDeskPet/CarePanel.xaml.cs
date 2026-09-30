@@ -67,7 +67,6 @@ public partial class CarePanel : Window
     private void GitHub_OnClick(object sender, RoutedEventArgs e) => _pet.OpenGitHubWindow();
     private void ClientSetup_OnClick(object sender, RoutedEventArgs e) => _pet.OpenClientSetup();
     private void Shop_OnClick(object sender, RoutedEventArgs e) => _pet.OpenShopWindow();
-    private async void Game_OnClick(object sender, RoutedEventArgs e) => await _pet.OpenGameAsync();
     private void TaskInbox_OnClick(object sender, RoutedEventArgs e) => _pet.OpenTaskInbox();
     private void Window_OnKeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Escape) { e.Handled = true; Close(); } }
     private void Food_OnDown(object sender, MouseButtonEventArgs e)

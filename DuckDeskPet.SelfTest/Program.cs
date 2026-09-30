@@ -26,11 +26,6 @@ internal static class Program
         ClipKind.Shimmy,
         ClipKind.Stretch,
         ClipKind.Eat,
-        ClipKind.RpsRock,
-        ClipKind.RpsPaper,
-        ClipKind.RpsScissors,
-        ClipKind.RpsWin,
-        ClipKind.RpsLose,
     };
 
     private static int Main()
@@ -40,6 +35,7 @@ internal static class Program
             ("Frame gate cadence", FrameGateCadence),
             ("Frame gate stalls", FrameGateStalls),
             ("Catalog separates idle and interaction actions", CatalogContract),
+            ("Retired minigame clips cannot be scheduled", RetiredGameClips),
             ("Every requested clip has complete endpoints", CompleteRequestedClips),
             ("Automatic action and exact 2-second idle", AutomaticActionAndExactIdle),
             ("Automatic scheduling selects only idle-group Yawn", AutomaticCoverageWithoutRepeats),
@@ -155,6 +151,18 @@ internal static class Program
 
         Assert(!ClipCatalog.IsKnown((ClipKind)10), "Removed transition enum value is still known.");
         Assert(!ClipCatalog.IsAutomaticAction(ClipKind.Wiggle), "Legacy Wiggle entered the automatic pool.");
+    }
+
+    private static void RetiredGameClips()
+    {
+        foreach (int value in Enumerable.Range(51, 5))
+        {
+            Assert(!ClipCatalog.IsKnown((ClipKind)value), "A retired minigame id is still known");
+            bool rejected = false;
+            try { new PetBehaviorController().RequestAction((ClipKind)value); }
+            catch (ArgumentOutOfRangeException) { rejected = true; }
+            Assert(rejected, "A retired minigame id entered the action queue");
+        }
     }
 
     private static void CompleteRequestedClips()

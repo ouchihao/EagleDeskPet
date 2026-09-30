@@ -20,6 +20,11 @@ public partial class PetWindow
         Directory.CreateDirectory(output);
         try
         {
+            if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") is "live2d" or "live2d-business" or "live2d-gallery" or "live2d-review")
+            {
+                await RunLive2DSmokeAsync(output);
+                return;
+            }
             if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") == "expansion")
             {
                 await RunExpansionSmokeAsync(output);

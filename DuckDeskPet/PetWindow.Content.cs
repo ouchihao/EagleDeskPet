@@ -171,7 +171,12 @@ public partial class PetWindow
             throw new InvalidDataException("No compatible available workplace selection.");
         await _workStage.RequestSelectionAsync(selection);
         if (_contentStopped || _isClosing) return;
-        try { await ApplyEquippedOutfitAsync(); }
+        try
+        {
+            await ApplyEquippedOutfitAsync();
+            _workStage.Apply(_behavior.CurrentSample);
+            await ApplyLive2DEquipmentAsync();
+        }
         finally
         {
             // RequestSelection prepares props; Apply commits them at the real
@@ -184,7 +189,8 @@ public partial class PetWindow
 
     private void SynchronizeEquipmentBonuses()
     {
-        var actual = (_workStage.ActiveSelection.DeskId, _workStage.ActiveSelection.ComputerId, _framePlayer.CurrentOutfitId);
+        var displayed = _live2D?.IsActive == true ? _live2D.ActiveEquipment! : RasterEquipment;
+        var actual = (displayed.Desk, displayed.Computer, displayed.Outfit);
         if (_appliedBonusSelection == actual && !_care.IsCatchUpPending) return;
         string Resolve(ContentSlot slot, string visualId) => ContentCatalog.Definitions.FirstOrDefault(item =>
             item.Slot == slot && (slot == ContentSlot.Outfit ? item.OutfitId : item.ScenePropId) == visualId)?.Id
@@ -208,7 +214,7 @@ public partial class PetWindow
         if (!IsContentResourceAvailable(item!)) throw new InvalidDataException("Preview assets are not available.");
         _contentPreviewWindow?.Close();
         TryContentSceneSelection(CareState.Content, out var selection, out _);
-        var window = new ContentPreviewWindow(item!, selection, IsContentResourceAvailable)
+        var window = new ContentPreviewWindow(item!, selection, IsContentResourceAvailable, CreatePreviewPresentationAsync)
             { Owner = this, Topmost = Topmost };
         _contentPreviewWindow = window;
         window.Closed += (_, _) => { if (ReferenceEquals(_contentPreviewWindow, window)) _contentPreviewWindow = null; };

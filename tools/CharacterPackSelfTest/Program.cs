@@ -28,7 +28,7 @@ internal static class Program
             foreach (string json in new[] { Round, Tall })
             {
                 var adapter = Author(json).CreateAdapter();
-                Check(adapter.Manifest.Outfits.Count == 6 && adapter.Manifest.Actions.Count == 20);
+                Check(adapter.Manifest.Outfits.Count == 6 && adapter.Manifest.Actions.Count == 15);
                 foreach (string outfit in adapter.Manifest.Outfits.Keys)
                     foreach (ClipKind kind in CharacterPackValidator.RequiredActions.Where(x => x != ClipKind.Idle))
                         Check(adapter.ActionResource(kind, outfit) == adapter.Action(kind).Resource);
@@ -40,7 +40,7 @@ internal static class Program
         Reject("duration mismatch", n => n["actions"]!["Eat"]!["durationSeconds"] = 1.2, "ACTION_DURATION");
         Reject("missing explicit action support", n => n["actions"]!["Eat"]!.AsObject().Remove("support"), "JSON_INVALID");
         Reject("wrong endpoint pose", n => n["actions"]!["WorkExit"]!["exitPose"] = "working", "ACTION_PHASE");
-        Reject("unreadable guessing gesture", n => n["actions"]!["RpsPaper"]!["holdEndSeconds"] = 1.2, "GESTURE_HOLD");
+        Reject("invalid action hold interval", n => n["actions"]!["Eat"]!["holdEndSeconds"] = -1, "ACTION_HOLD");
         Reject("missing anchor", n => n["anchors"]!.AsObject().Remove("bubble"), "ANCHOR_MISSING");
         Reject("pixel anchor instead of normalized", n => n["anchors"]!["foot"]!["y"] = 336, "ANCHOR_INVALID");
         Reject("missing blink parameter", n => n["parameters"]!.AsObject().Remove("eyeLeftOpen"), "CAPABILITY_PARAMETER");

@@ -27,14 +27,17 @@
     <PackageReference Include="Tomlyn" Version="0.19.0" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.31" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Live2DStage\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Remove="Assets\mascot-animated-neutral.png" />
     <None Remove="Assets\actions.json" />
     <Resource Include="Assets\actions.json" />
     <None Remove="Assets\outfits.json;Assets\Outfits\**\*.png;Assets\Outfits\**\actions.json" />
-    <Resource Include="Assets\outfits.json;Assets\Outfits\**\actions.json;Assets\Outfits\**\neutral.png;Assets\Outfits\**\Animations\**\frame-*.png" />
+    <Resource Include="Assets\outfits.json;Assets\Outfits\**\actions.json;Assets\Outfits\**\neutral.png;Assets\Outfits\**\Animations\**\frame-*.png"
+              Exclude="Assets\Outfits\**\Animations\Rps*\**" />
     <None Remove="Assets\OutfitBindings\*.zip;Assets\Outfits\**\appearance.json" />
     <Resource Include="Assets\OutfitBindings\*.zip;Assets\Outfits\**\appearance.json;Assets\Outfits\**\Layers\*.png;Assets\Outfits\**\thumbnail.png" />
     <None Remove="Assets\SceneProps\work-scenes.json" />
@@ -42,7 +45,7 @@
     <None Remove="Assets\Animations\**\frame-*.png" />
     <Resource Include="Assets\mascot-animated-neutral.png" />
     <Resource Include="Assets\Animations\**\frame-*.png"
-              Exclude="Assets\Animations\Bomb\**;Assets\Animations\SideEye\**;Assets\Animations\WorkToBusy\**;Assets\Animations\BusyExit\**" />
+              Exclude="Assets\Animations\Bomb\**;Assets\Animations\SideEye\**;Assets\Animations\WorkToBusy\**;Assets\Animations\BusyExit\**;Assets\Animations\Rps*\**" />
     <None Remove="Assets\SceneProps\**\*.png" />
     <Resource Include="Assets\SceneProps\**\*.png" Exclude="Assets\SceneProps\Work\Fire\**;Assets\SceneProps\Work\desk.png;Assets\SceneProps\Work\desk-back.png;Assets\SceneProps\Work\desk-front.png" />
     <None Remove="Assets\Badges\*.png" />
