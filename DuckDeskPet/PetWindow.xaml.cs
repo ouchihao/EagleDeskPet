@@ -247,6 +247,7 @@ public partial class PetWindow : Window
         // the user's drag on a mixed-DPI desktop.
         _pendingBottomRightMonitor = nint.Zero;
         _nativeDragInProgress = true;
+        TickGaze(_behavior.CurrentSample);
         _nativeDragObservedMovement = false;
         long startedAt = Stopwatch.GetTimestamp();
 
@@ -301,6 +302,8 @@ public partial class PetWindow : Window
         StopWorkMenuItem.IsEnabled = CareState.IsWorking;
         BanterMenuItem.IsChecked = ActiveBanterEnabled;
         EmotionMenuItem.IsChecked = _emotions.Enabled;
+        GazeMenuItem.IsChecked = _settings.FollowCursor;
+        TickGaze(_behavior.CurrentSample);
         PauseMenuItem.IsEnabled = !WorkInProgress && !IsFeeding && !_pauseChanging && !IsContentEquipmentApplying && !_preparingOwnedAction;
         PauseMenuItem.IsChecked = _settings.IsPaused;
         TopmostMenuItem.IsChecked = _settings.IsTopmost;

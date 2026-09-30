@@ -40,6 +40,7 @@ public partial class PetWindow
         _framePlayer.Apply(sample);
         _workStage.Apply(sample, deltaSeconds);
         ApplyPose(_live2D?.IsActive == true ? Pose.Neutral : _behavior.CurrentProceduralPose);
+        TickGaze(sample);
         _live2D?.Present(sample, _behavior.IsPaused, force);
     }
 

@@ -3,10 +3,12 @@
   const A = globalThis.EagleActions,
     B = globalThis.EagleBridge,
     G = globalThis.EagleGeometry,
+    Eye = globalThis.EagleGaze,
     canvas = document.getElementById("stage");
   const query = new URLSearchParams(location.search),
     qa = query.get("qa") === "1",
     generation = Number(query.get("generation") || (qa ? 1 : NaN));
+  const gaze = new Eye.Tracking(generation);
   const metrics = {
     frames: 0,
     coreUpdates: 0,
@@ -48,6 +50,7 @@
     qaRevision = 0,
     recording,
     lastParameters,
+    lastActionParameters,
     transitionFrom,
     transitionClock,
     frozenParameters,
@@ -385,6 +388,7 @@
       );
       this.pass = "all";
       const bindings = await json(local("action-bindings.json", this.url));
+      this.gazeRanges = Eye.capability(this.model.parameters, bindings.parameters, bindings.gaze);
       const foregroundIds = ["forearm-l", "forearm-r"].map(
         (name) => bindings.drawables?.[name],
       );
@@ -727,6 +731,10 @@
         scene,
       ),
       m = active.model;
+    if (m.gazeRanges) {
+      sample.parameters.ParamEyeBallX = 0;
+      sample.parameters.ParamEyeBallY = 0;
+    }
     let neutralProgress = 0;
     if (neutralizing) {
       neutralProgress = B.transitionProgress(
@@ -737,8 +745,8 @@
       const blend = A.smooth(neutralProgress);
       for (const id of Object.keys(sample.parameters))
         sample.parameters[id] =
-          neutralizing.from[id] +
-          (sample.parameters[id] - neutralizing.from[id]) * blend;
+          (neutralizing.from[id] ?? 0) +
+          (sample.parameters[id] - (neutralizing.from[id] ?? 0)) * blend;
     } else if (transitionFrom && current.phase !== "Terminal") {
       const blend = A.smooth(
         B.transitionProgress(transitionClock, now, current.paused),
@@ -746,8 +754,8 @@
       for (const id of Object.keys(sample.parameters))
         if (id !== "ParamBusyEyes")
           sample.parameters[id] =
-            transitionFrom[id] +
-            (sample.parameters[id] - transitionFrom[id]) * blend;
+            (transitionFrom[id] ?? 0) +
+            (sample.parameters[id] - (transitionFrom[id] ?? 0)) * blend;
       if (blend === 1) transitionFrom = null;
     }
     if (
@@ -757,6 +765,10 @@
       frozenParameters
     )
       Object.assign(sample.parameters, frozenParameters);
+    lastActionParameters = { ...sample.parameters };
+    const idleGaze = current.kind === "Idle" && !neutralizing && !!m.gazeRanges;
+    gaze.step(now, idleGaze, idleGaze && !current.paused && !transitionFrom);
+    if (idleGaze && !transitionFrom) gaze.apply(sample.parameters, m.gazeRanges);
     lastParameters = { ...sample.parameters };
     m.update(sample.parameters);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -947,6 +959,10 @@
     if (dead) return;
     require(message?.protocol === 1 &&
       message.generation === generation, "Message generation mismatch");
+    if (message.type === "gaze") {
+      gaze.receive(message, performance.now());
+      return;
+    }
     if (message.type === "record-raster-frame") {
       if (!rasterFrames.size) return;
       if (message.key === null) {
@@ -1032,7 +1048,7 @@
       current &&
       (next.sequence !== current.sequence || next.kind !== current.kind);
     if (!changed && current && next.paused && !current.paused)
-      frozenParameters = lastParameters;
+      frozenParameters = lastActionParameters;
     if (changed || !next.paused) frozenParameters = null;
     if (changed) {
       terminalKey = "";
@@ -1040,6 +1056,7 @@
       transitionFrom = next.paused ? null : lastParameters;
       transitionClock = { startedAt: now };
     }
+    if (active?.model !== selection.model) gaze.reset();
     active = selection;
     neutralizing = null;
     bridgeRevision = next.revision;
@@ -1347,6 +1364,7 @@
         : null,
       lastSequence: current?.sequence,
       parameters: lastParameters ? { ...lastParameters } : null,
+      gaze: { supported: !!active?.model.gazeRanges, limits: active?.model.gazeRanges, ...gaze.report() },
       recordingSurface: recording ? (rasterFrame ? "Png" : "Live2D") : null,
       rasterFramesPrepared: [...rasterFrames.values()].reduce(
         (count, frames) => count + frames.length,

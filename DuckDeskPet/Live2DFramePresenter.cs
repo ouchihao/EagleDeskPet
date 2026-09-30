@@ -30,7 +30,7 @@ internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
     private readonly Grid _parent;
     private TaskCompletionSource? _prepared, _presented;
     private PresentationEquipment? _pendingEquipment;
-    private long _requestId, _revision, _pendingRevision;
+    private long _requestId, _revision, _pendingRevision, _gazeRevision;
     private bool _loaded, _disposed, _failed, _browserDisposed;
     private double _lastSentAt = double.NegativeInfinity, _terminalSentAt;
     private ClipSample _lastSent = ClipSample.Idle;
@@ -167,6 +167,17 @@ internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
         Post(new { type = "state", protocol = 1, generation = _acknowledgements.Generation, revision = ++_revision,
             sequence = sample.Sequence, kind = sample.Kind.ToString(), phase = sample.Phase.ToString(),
             progress = sample.Progress, durationSeconds = sample.DurationSeconds, paused, equipment });
+    }
+
+    internal void SendGaze(GazeTarget target)
+    {
+        if (!IsActive || IsPreparing || _disposed || _failed) return;
+        try
+        {
+            Post(new { type = "gaze", protocol = 1, generation = _acknowledgements.Generation,
+                revision = ++_gazeRevision, enabled = target.Enabled, x = target.X, y = target.Y });
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { Fail(ex.Message); }
     }
 
     private void Post(object message)

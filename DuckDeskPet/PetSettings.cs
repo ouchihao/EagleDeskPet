@@ -14,6 +14,8 @@ internal sealed class PetSettings
 
     public bool ShowFps { get; set; }
 
+    public bool FollowCursor { get; set; } = true;
+
     public double SizeScale { get; set; } = 1.0;
 
     public int? LeftPixels { get; set; }
