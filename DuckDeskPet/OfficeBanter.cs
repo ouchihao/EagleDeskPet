@@ -1,6 +1,6 @@
 namespace DuckDeskPet;
 
-internal enum BanterContext { Ordinary, Hungry, LowMood, Working, LateNight }
+internal enum BanterContext { Ordinary, LowMood, Working, LateNight }
 
 /// <summary>Low-priority local chatter. The caller supplies elapsed time and UI availability.</summary>
 internal sealed class OfficeBanter
@@ -78,7 +78,6 @@ internal sealed class OfficeBanter
 
     private static readonly IReadOnlyDictionary<BanterContext, string[]> ContextLines = new Dictionary<BanterContext, string[]>
     {
-        [BanterContext.Hungry] = ["空碗也是碗，怎么就没饭。", "肚子在开会，议题只有吃饭。", "画饼不管饱，真饭来一口。", "鹰已饿扁，申请投喂。"],
         [BanterContext.LowMood] = ["快乐库存告急，摸摸能补货吗。", "今天的班，把鹰都上蔫了。", "让我先丧两秒，第三秒再营业。", "我没生气，我在内心翻白眼。"],
         [BanterContext.Working] = ["键盘敲得响，鹰币慢慢涨。", "这不是上班，这是攒桌子基金。", "电脑在发热，本鹰在挣钱。", "认真打字，偷偷想饭。"],
         [BanterContext.LateNight] = ["这么晚了，保存一下再睡吧。", "月亮都打卡了，你还没下班。", "别熬鹰了，明天还能摸鱼。", "困意已送达，记得签收。"],
@@ -97,7 +96,7 @@ internal sealed class OfficeBanter
         "工位很小，胃口很大。",
         "饭点一到，效率爆表。",
         "你负责输出，我负责围观。",
-        "打工可以，饿鹰不行。",
+        "打工可以，快乐也得续杯。",
         "这班上的，羽毛都懂了。",
         "我不是困，是省电模式。",
         "稍等，我的脑子在排队。",
@@ -123,7 +122,7 @@ internal sealed class OfficeBanter
         "这活儿，得配两口饭。",
         "需求又变？那我也变笨。",
         "需求会变，饭点不变。",
-        "能量不足，申请投喂。",
+        "快乐不足，申请投喂。",
         "我在陪工，没在监工。",
         "你歇一下，我装会儿忙。",
         "今日KPI：活着下班。",

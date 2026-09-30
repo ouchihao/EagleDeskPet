@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>EagleDeskPet</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../DuckDeskPet.Core/DuckDeskPet.Core.csproj" />
+    <Compile Include="../../DuckDeskPet/CarePanel.xaml.cs" Link="CarePanel.xaml.cs" />
+    <Compile Include="../../DuckDeskPet/Integration/PetBridgeProtocol.cs" Link="PetBridgeProtocol.cs" />
+    <Page Include="../../DuckDeskPet/CarePanel.xaml" Link="CarePanel.xaml" />
+    <Page Include="../../DuckDeskPet/Themes/PetTheme.xaml" Link="Themes/PetTheme.xaml" />
+    <Resource Include="../../DuckDeskPet/Assets/mascot-animated-neutral.png" Link="Assets/mascot-animated-neutral.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/Eat/frame-0060.png" Link="Assets/Animations/Eat/frame-0060.png" />
+    <Resource Include="../../DuckDeskPet/Assets/Animations/Shy/frame-0060.png" Link="Assets/Animations/Shy/frame-0060.png" />
+  </ItemGroup>
+</Project>

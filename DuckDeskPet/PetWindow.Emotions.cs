@@ -9,7 +9,7 @@ public partial class PetWindow
     private readonly EmotionPolicy _emotions = new();
     private bool _preparingReaction, _preparingEmotionAssets, _emotionLoadFailed, _pendingFeed;
     private HungryScenePreviewWindow? _hungryScenePreview;
-    private static readonly ClipKind[] EmotionClips = [ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit, ClipKind.Annoyed];
+    private static readonly ClipKind[] EmotionClips = [ClipKind.Annoyed];
 
     private async Task PrepareEmotionAssetsAsync()
     {
@@ -32,7 +32,6 @@ public partial class PetWindow
         var evaluation = _emotions.Evaluate(CareState, now,
             ready && !InteractionsUnavailable && !_nativeDragInProgress && !_pendingFeed &&
             _behavior.CurrentSample.Kind == ClipKind.Idle && _behavior.PendingCount == 0 && !IsContentInteractionBusy);
-        if (evaluation.CancelHungryScene) _behavior.CancelHungryScene();
         if (evaluation.Reaction != EmotionReaction.None) _behavior.QueueAutomaticEmotion(evaluation.Reaction);
         // Feeding is consumed once, only after the scene relinquishes its bowl and desk.
         if (_pendingFeed && !InteractionsUnavailable && !_behavior.IsHungrySceneActive &&

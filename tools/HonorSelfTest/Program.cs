@@ -77,11 +77,11 @@ var tests = new (string Name, Action Body)[]
         for (int i = 0; i < 20; i++) HonorCatalog.Evaluate(state);
         Require(JsonSerializer.Serialize(state) == before, "No save mutations after repeated reads.");
     }),
-    ("Snapshot equality ignores hunger mood and working ticks", () =>
+    ("Snapshot equality ignores mood and working ticks", () =>
     {
         var state = new PetState { TotalMeals = 1, TotalPets = 10, Experience = 100 };
         var before = HonorCatalog.Evaluate(state);
-        state.Fullness = 12; state.Mood = 3; state.IsWorking = true; state.WorkSessionSeconds = 23;
+        state.Mood = 3; state.IsWorking = true; state.WorkSessionSeconds = 23;
         Require(HonorCatalog.Evaluate(state).SequenceEqual(before), "UI does not rebuild every care tick.");
         state.TotalMeals++;
         Require(!HonorCatalog.Evaluate(state).SequenceEqual(before), "Actual honor progress triggers refresh.");
@@ -133,12 +133,12 @@ var tests = new (string Name, Action Body)[]
         Require(care.Pet(now).Success && care.State.Achievements.Contains("bond-bronze"), "25th successful interaction recorded.");
         Require(care.Pet(now).Status == PetCareStatus.Cooldown && care.State.TotalPets == 13, "Rapid repeat not counted.");
     }),
-    ("Hunger cutoff prevents unworked time counting", () =>
+    ("Zero mood work still earns valid work honors", () =>
     {
         var now = DateTimeOffset.UtcNow;
-        var care = new PetCareService(new PetState { TotalWorkSeconds = 1790, IsWorking = true, Fullness = 0.02, LastUpdatedUtc = now }, now);
+        var care = new PetCareService(new PetState { TotalWorkSeconds = 1790, IsWorking = true, Mood = 0, LastUpdatedUtc = now }, now);
         care.Advance(now.AddMinutes(10));
-        Require(!care.State.IsWorking && care.State.TotalWorkSeconds < 1800 && Count(care.State, HonorSeries.Work) == 0, "Six effective seconds, not ten wall-clock minutes.");
+        Require(care.State.IsWorking && care.State.TotalWorkSeconds == 2390 && Count(care.State, HonorSeries.Work) == 1, "Mood changes pay, not effective work time or honors.");
     }),
     ("Free rewards can cross collection milestone in the same candidate", () =>
     {

@@ -48,14 +48,13 @@ Check(invalid.Tick(double.NaN, false) is null && invalid.Tick(double.PositiveInf
 
 var expectedContexts = new Dictionary<BanterContext, string[]>
 {
-    [BanterContext.Hungry] = ["空碗也是碗，怎么就没饭。", "肚子在开会，议题只有吃饭。", "画饼不管饱，真饭来一口。", "鹰已饿扁，申请投喂。"],
     [BanterContext.LowMood] = ["快乐库存告急，摸摸能补货吗。", "今天的班，把鹰都上蔫了。", "让我先丧两秒，第三秒再营业。", "我没生气，我在内心翻白眼。"],
     [BanterContext.Working] = ["键盘敲得响，鹰币慢慢涨。", "这不是上班，这是攒桌子基金。", "电脑在发热，本鹰在挣钱。", "认真打字，偷偷想饭。"],
     [BanterContext.LateNight] = ["这么晚了，保存一下再睡吧。", "月亮都打卡了，你还没下班。", "别熬鹰了，明天还能摸鱼。", "困意已送达，记得签收。"],
 };
-Check(expectedContexts.Values.SelectMany(x => x).Distinct(StringComparer.Ordinal).Count() == 16 &&
+Check(expectedContexts.Values.SelectMany(x => x).Distinct(StringComparer.Ordinal).Count() == 12 &&
     expectedContexts.Values.SelectMany(x => x).All(line => line.Length <= 22 && !line.Any(char.IsControl) && !OfficeBanter.Lines.Contains(line)),
-    "Sixteen contextual quips are distinct, compact and separate from sixty ordinary lines");
+    "Twelve contextual quips are distinct, compact and separate from sixty ordinary lines");
 
 foreach (var (context, expected) in expectedContexts)
 {
@@ -80,7 +79,7 @@ foreach (var (context, expected) in expectedContexts)
 
 var changing = new OfficeBanter(new Random(301));
 for (int i = 0; i < 59; i++) changing.Tick(1, false, BanterContext.Working);
-Check(expectedContexts[BanterContext.Hungry].Contains(changing.Tick(1, false, BanterContext.Hungry)),
+Check(expectedContexts[BanterContext.LowMood].Contains(changing.Tick(1, false, BanterContext.LowMood)),
     "Context at the shared minute boundary selects the line; there is no per-context timer");
 Check(changing.Tick(1, false, BanterContext.LateNight) is null && changing.Tick(1, false, BanterContext.LowMood) is null,
     "Changing contexts cannot create an extra bubble immediately after the minute");
@@ -93,7 +92,7 @@ Check(Enumerable.Range(0, 59).Select(_ => Minute(mixed)).SequenceEqual(Enumerabl
     "Contextual turns do not consume or reorder the remaining ordinary shuffle bag");
 
 var contextualToggle = new OfficeBanter(new Random(303));
-for (int i = 0; i < 59; i++) contextualToggle.Tick(1, false, BanterContext.Hungry);
+for (int i = 0; i < 59; i++) contextualToggle.Tick(1, false, BanterContext.LowMood);
 contextualToggle.Enabled = false;
 Check(Minute(contextualToggle, context: BanterContext.Working) is null, "Disabled context changes stay silent");
 contextualToggle.Enabled = true;

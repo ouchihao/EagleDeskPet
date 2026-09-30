@@ -23,26 +23,29 @@ public partial class CarePanel : Window
         PetState state = _pet.CareState;
         LevelText.Text = state.IsMaximumLevel ? $"Lv.{state.Level} · 已满级" :
             $"Lv.{state.Level}  ·  经验 {state.ExperienceIntoLevel:N0}/{state.NextLevelRequirement:N0}";
-        FullnessBar.Value = state.Fullness;
         MoodBar.Value = state.Mood;
-        FullnessText.Text = $"{state.Fullness:0} / 100";
         MoodText.Text = $"{state.Mood:0} / 100";
+        MoodEfficiencyText.Text = $"心情工资效率 {0.5 + state.Mood / 200:P0} · 工作时 +{_pet.MoneyPerWorkMinute:N2} 鹰币 / 分钟";
         FoodText.Text = $"粮袋 {state.Food} / 99";
         var remaining = TimeSpan.FromSeconds(Math.Max(0, 300 - state.FoodProgressSeconds));
         IncomeText.Text = state.Food >= 99 ? "粮袋满啦，先吃一点再攒。" : $"下一份粮食 {remaining:mm\\:ss} · 离线最多积累 2 小时";
         StatusText.Text = message ?? _pet.CareStatus;
         WalletText.Text = $"{state.Coins:N2} 鹰币";
+        MigrationBanner.Visibility = _pet.EconomyMigrationApplied ? Visibility.Visible : Visibility.Collapsed;
+        MigrationBackupText.Text = _pet.EconomyMigrationBackupPath is { } backup ? $"旧档备份：{backup}" : "旧档备份：待首次成功保存。";
         RunWageText.Text = $"本次启动已赚 {_pet.EarnedCoinsThisRun:N2} 鹰币（含本次离线补算，不扣除购物支出）";
         WageText.Text = state.Coins >= EconomyPolicy.MaximumCoins
             ? "钱包已满；满额期间不积压可补领工资。"
             : $"有效工作每分钟 +{_pet.MoneyPerWorkMinute:N2} 鹰币 / +{_pet.WorkExperiencePerMinute:0.##} 经验\n" +
-              $"当前装备：饱食衰减 −{_pet.CurrentEquipmentBonuses.FullnessDecayReduction:P0} · 心情衰减 −{_pet.CurrentEquipmentBonuses.MoodDecayReduction:P0}";
+              $"心情效率 {0.5 + state.Mood / 200:P0} × 装备赚钱 {1 + _pet.CurrentEquipmentBonuses.WorkCoinBonus:P0} · 心情衰减 −{_pet.CurrentEquipmentBonuses.MoodDecayReduction:P0}";
         var honors = HonorCatalog.Evaluate(state);
         AchievementsText.Text = $"点亮 {honors.Count(x => x.IsEarned)} / {honors.Count} 枚";
         GitHubStatusText.Text = _pet.GitHub.IsConnected ? $"@{_pet.GitHub.Login} · {_pet.GitHub.UnreadCount} 条本地未读" : "可选连接，不需要 GitHub 密码。";
         FoodButton.IsEnabled = !_pet.InteractionsUnavailable;
         PetButton.IsEnabled = !_pet.InteractionsUnavailable;
-        FoodButton.ToolTip = PetButton.ToolTip = _pet.WorkInProgress ? "请先取消工作，收好工位后再互动。" : null;
+        PetButton.ToolTip = _pet.WorkInProgress ? "请先取消工作，收好工位后再互动。" : null;
+        FoodButton.ToolTip = _pet.WorkInProgress ? "请先取消工作，收好工位后再互动。" : state.Mood >= 100
+            ? "心情已经满啦，这次不会扣粮。" : "消耗 1 份粮食，心情 +20，不增加经验。";
         WorkText.Text = _pet.WorkStatus;
         WorkButton.Content = state.IsWorking ? "取消工作" : _pet.WorkInProgress ? "收工中…" : "开始工作";
         WorkButton.IsEnabled = state.IsWorking || _pet.CanStartWork;

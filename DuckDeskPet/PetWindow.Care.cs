@@ -28,7 +28,6 @@ public partial class PetWindow
     private PetNotice? _lastNotice;
     private DateTimeOffset _bubbleUntil;
     private DateTimeOffset _lastSaved;
-    private DateTimeOffset _nextHungryHint;
     private DateTimeOffset _lastBanterTick;
     private bool _bubbleIsBanter;
     private bool _preparingWork;
@@ -38,11 +37,13 @@ public partial class PetWindow
     internal decimal MoneyPerWorkMinute => _care.MoneyPerWorkMinute;
     internal decimal WorkExperiencePerMinute => _care.WorkExperiencePerMinute;
     internal EquipmentBonuses CurrentEquipmentBonuses => _care.CurrentBonuses;
+    internal bool EconomyMigrationApplied => _store.MigrationWasApplied || _care.MigrationWasApplied;
+    internal string? EconomyMigrationBackupPath => _store.MigrationBackupPath;
     internal bool NotificationsEnabled => _companion.NotificationsEnabled;
     internal bool ActiveBanterEnabled => _companion.ActiveBanterEnabled;
     internal bool WorkInProgress => CareState.IsWorking || _behavior.IsWorkSceneActive || _behavior.IsWorkRequested || _preparingWork;
     internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsFeeding || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
-    internal bool CanStartWork => !InteractionsUnavailable && CareState.Fullness > 0;
+    internal bool CanStartWork => !InteractionsUnavailable;
     internal string WorkStatus => _preparingWork ? "搬工位中…" : CareState.IsWorking
         ? $"{(CareState.IsBusy ? "忙碌中" : "办公中")} · {(int)(CareState.WorkSessionSeconds / 60)} 分 {((int)CareState.WorkSessionSeconds % 60):00} 秒"
         : _behavior.IsWorkSceneActive ? "正在收工，等我收好电脑。" : "工位空着，随时开工。";
@@ -76,8 +77,10 @@ public partial class PetWindow
             async (notice, token) => await Dispatcher.InvokeAsync(() => ReceiveNotice(notice), DispatcherPriority.Normal, token),
             async token => await Dispatcher.InvokeAsync<object>(() => new
             {
-                name = "大头鹰", level = CareState.Level, fullness = Math.Round(CareState.Fullness),
+                name = "大头鹰", level = CareState.Level,
                 mood = Math.Round(CareState.Mood), food = CareState.Food, coins = CareState.Coins,
+                moodWageEfficiency = Math.Round(0.5 + CareState.Mood / 200, 4),
+                workCoinsPerMinute = MoneyPerWorkMinute,
                 paused = _behavior.IsPaused, notificationsEnabled = NotificationsEnabled,
                 isWorking = CareState.IsWorking, isBusy = CareState.IsBusy,
                 workSessionSeconds = Math.Round(CareState.WorkSessionSeconds, 1), activeBanterEnabled = ActiveBanterEnabled,
@@ -90,6 +93,7 @@ public partial class PetWindow
             }, DispatcherPriority.Normal, token));
         _bridge.Start();
         if (_store.Warning != null) Say(_store.Warning);
+        else if (EconomyMigrationApplied) Say("工资规则已升级，旧鹰币已一次性清零；等级、装备和荣誉都还在。");
     }
 
     private void StopCare()
@@ -115,14 +119,8 @@ public partial class PetWindow
     private void TickCare()
     {
         var now = DateTimeOffset.UtcNow;
-        bool wasWorking = CareState.IsWorking;
         _care.Advance(now);
         _behavior.SetWorkState(CareState.IsWorking, CareState.IsBusy);
-        if (wasWorking && !CareState.IsWorking)
-        {
-            CareStatus = "饿得敲不动键盘了，收工找饭。";
-            Say(CareStatus);
-        }
         if ((now - _lastSaved).TotalSeconds >= 30)
         {
             _store.Save(CareState);
@@ -138,11 +136,6 @@ public partial class PetWindow
         TickEmotions(now);
         TickBanter((now - _lastBanterTick).TotalSeconds);
         _lastBanterTick = now;
-        if (CareState.IsHungry && now >= _nextHungryHint && _activeNotice is null && _notices.Count == 0)
-        {
-            _nextHungryHint = now.AddMinutes(20);
-            Say("饿得前胸贴后脑勺了……饭呢？");
-        }
     }
 
     internal async void PetHead()
@@ -204,7 +197,7 @@ public partial class PetWindow
 
     internal async Task StartWorkingAsync()
     {
-        if (!CanStartWork) { Say(WorkInProgress ? "工位还没收好呢。" : "先恢复动作、吃点饭，再开工吧。 "); return; }
+        if (!CanStartWork) { Say(WorkInProgress ? "工位还没收好呢。" : "先等当前互动结束、恢复动作，再开工吧。 "); return; }
         _preparingWork = true;
         _pendingFeed = false;
         _carePanel?.Refresh();
@@ -251,7 +244,7 @@ public partial class PetWindow
     {
         string? line = _banter.Tick(elapsedSeconds, _isClosing || !_assetsReady || _nativeDragInProgress ||
             _behavior.IsPaused || _bubble?.IsVisible == true || _activeNotice is not null || _notices.Count > 0,
-            CareState.IsWorking ? BanterContext.Working : _emotions.IsHungry ? BanterContext.Hungry :
+            CareState.IsWorking ? BanterContext.Working :
             _emotions.IsLowMood ? BanterContext.LowMood : DateTime.Now.Hour >= 22 ? BanterContext.LateNight : BanterContext.Ordinary);
         if (line is not null) ShowBubble("", line, "", canOpen: false, seconds: 5, isBanter: true);
     }

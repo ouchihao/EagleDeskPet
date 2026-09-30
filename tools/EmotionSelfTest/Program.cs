@@ -11,9 +11,9 @@ internal static class Program
         var tests = new (string Name, Action Test)[]
         {
             ("automatic-emotion-default-off", DefaultOff),
-            ("hunger-25-enter-35-exit", HungerThresholds),
+            ("working-suppresses-automatic-emotion", Working),
             ("mood-25-enter-40-exit", MoodThresholds),
-            ("hunger-priority-over-low-mood", Priority),
+            ("healthy-mood-has-no-automatic-reaction", HealthyMood),
             ("automatic-cooldown-five-minutes", Cooldown),
             ("disallowed-reaction-does-not-consume-cooldown", Blocked),
             ("toggle-does-not-reset-cooldown", Toggle),
@@ -46,7 +46,7 @@ internal static class Program
             ("pause-freezes-hungry-frame-and-root", PauseHungry),
             ("cancel-while-paused-exits-on-resume", CancelPaused),
             ("hungry-root-is-neutral-throughout", HungryAnchored),
-            ("disable-safely-cancels-active-scene", DisableScene),
+            ("automatic-toggle-preserves-manual-scene", DisableScene),
             ("food-reaction-waits-after-complete-exit", FeedAfterHungry),
             ("annoyed-removes-pending-shy-not-active", AnnoyedQueue),
             ("suspend-automatic-keeps-idle", SuspendIdle),
@@ -68,17 +68,20 @@ internal static class Program
         return failures == 0 ? 0 : 1;
     }
 
-    private static PetState State(double fullness = 75, double mood = 70) => new() { Fullness = fullness, Mood = mood, LastUpdatedUtc = Start };
+    private static PetState State(double mood = 70) => new() { Mood = mood, LastUpdatedUtc = Start };
     private static EmotionPolicy Enabled() => new() { Enabled = true };
     private static void DefaultOff()
     {
-        var p = new EmotionPolicy(); Check(!p.Enabled); var result = p.Evaluate(State(0, 0), Start);
-        Equal(EmotionReaction.None, result.Reaction); Check(result.CancelHungryScene); Check(p.LastAutomaticReactionUtc is null);
+        var p = new EmotionPolicy(); Check(!p.Enabled); var result = p.Evaluate(State(0), Start);
+        Equal(EmotionReaction.None, result.Reaction); Check(result.IsLowMood); Check(p.LastAutomaticReactionUtc is null);
     }
-    private static void HungerThresholds()
+    private static void Working()
     {
-        var p = Enabled(); foreach (var pair in new[] { (26d, false), (25d, true), (34.9, true), (35d, false), (30d, false), (25d, true) })
-            Equal(pair.Item2, p.Evaluate(State(pair.Item1), Start, false).IsHungry);
+        var p = Enabled(); var state = State(0); state.IsWorking = true;
+        var working = p.Evaluate(state, Start);
+        Equal(EmotionReaction.None, working.Reaction); Check(working.IsLowMood); Check(p.LastAutomaticReactionUtc is null);
+        state.IsWorking = false;
+        Equal(EmotionReaction.Annoyed, p.Evaluate(state, Start.AddSeconds(1)).Reaction);
     }
     private static void MoodThresholds()
     {
@@ -86,38 +89,42 @@ internal static class Program
             Equal(pair.Item2, p.Evaluate(State(mood: pair.Item1), Start, false).IsLowMood);
         Equal(EmotionReaction.Annoyed, p.Evaluate(State(mood: 10), Start).Reaction);
     }
-    private static void Priority() => Equal(EmotionReaction.HungryScene, Enabled().Evaluate(State(0, 0), Start).Reaction);
+    private static void HealthyMood() => Equal(EmotionReaction.None, Enabled().Evaluate(State(100), Start).Reaction);
     private static void Cooldown()
     {
-        var p = Enabled(); Equal(EmotionReaction.HungryScene, p.Evaluate(State(0), Start).Reaction);
+        var p = Enabled(); Equal(EmotionReaction.Annoyed, p.Evaluate(State(0), Start).Reaction);
         Equal(EmotionReaction.None, p.Evaluate(State(0), Start.AddSeconds(299.9)).Reaction);
-        Equal(EmotionReaction.HungryScene, p.Evaluate(State(0), Start.AddMinutes(5)).Reaction);
+        Equal(EmotionReaction.Annoyed, p.Evaluate(State(0), Start.AddMinutes(5)).Reaction);
     }
     private static void Blocked()
     {
         var p = Enabled(); Equal(EmotionReaction.None, p.Evaluate(State(0), Start, false).Reaction); Check(p.LastAutomaticReactionUtc is null);
-        Equal(EmotionReaction.HungryScene, p.Evaluate(State(0), Start.AddSeconds(1)).Reaction);
+        Equal(EmotionReaction.Annoyed, p.Evaluate(State(0), Start.AddSeconds(1)).Reaction);
     }
     private static void Toggle()
     {
         var p = Enabled(); p.Evaluate(State(0), Start); p.Enabled = false;
-        Check(p.Evaluate(State(0), Start.AddSeconds(1)).CancelHungryScene); p.Enabled = true;
+        Equal(EmotionReaction.None, p.Evaluate(State(0), Start.AddSeconds(1)).Reaction); p.Enabled = true;
         Equal(EmotionReaction.None, p.Evaluate(State(0), Start.AddSeconds(2)).Reaction); Equal<DateTimeOffset?>(Start, p.LastAutomaticReactionUtc);
     }
     private static void Rollback()
     {
         var p = Enabled(); p.Evaluate(State(0), Start); Equal(EmotionReaction.None, p.Evaluate(State(0), Start.AddHours(-1)).Reaction);
-        Equal(EmotionReaction.None, p.Evaluate(State(0), Start.AddSeconds(299)).Reaction); Equal(EmotionReaction.HungryScene, p.Evaluate(State(0), Start.AddSeconds(300)).Reaction);
+        Equal(EmotionReaction.None, p.Evaluate(State(0), Start.AddSeconds(299)).Reaction); Equal(EmotionReaction.Annoyed, p.Evaluate(State(0), Start.AddSeconds(300)).Reaction);
     }
     private static void DisabledContext()
     {
-        var p = new EmotionPolicy(); var r = p.Evaluate(State(20, 20), Start); Check(r.IsHungry && r.IsLowMood); Equal(EmotionReaction.None, r.Reaction);
-        r = p.Evaluate(State(30, 30), Start); Check(r.IsHungry && r.IsLowMood);
-        r = p.Evaluate(State(35, 40), Start); Check(!r.IsHungry && !r.IsLowMood);
+        var p = new EmotionPolicy(); var r = p.Evaluate(State(20), Start); Check(r.IsLowMood); Equal(EmotionReaction.None, r.Reaction);
+        r = p.Evaluate(State(30), Start); Check(r.IsLowMood);
+        r = p.Evaluate(State(40), Start); Check(!r.IsLowMood);
     }
     private static void InvalidStats()
     {
-        var p = Enabled(); var r = p.Evaluate(State(double.NaN, double.PositiveInfinity), Start); Check(!r.IsHungry && !r.IsLowMood); Equal(EmotionReaction.None, r.Reaction);
+        foreach (double mood in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+        {
+            var r = Enabled().Evaluate(State(mood), Start);
+            Check(!r.IsLowMood); Equal(EmotionReaction.None, r.Reaction);
+        }
     }
     private static void ThirdTouch()
     {
@@ -158,7 +165,7 @@ internal static class Program
     }
     private static void PolicyReadOnly()
     {
-        var state = State(0, 0); string before = JsonSerializer.Serialize(state); var p = Enabled();
+        var state = State(0); string before = JsonSerializer.Serialize(state); var p = Enabled();
         p.Evaluate(state, Start); for (int i = 0; i < 5; i++) p.RegisterPetAttempt(Start.AddSeconds(i));
         Equal(before, JsonSerializer.Serialize(state));
     }
@@ -279,9 +286,10 @@ internal static class Program
     }
     private static void DisableScene()
     {
-        var b = Hungry(); var p = Enabled(); p.Evaluate(State(0), Start); p.Enabled = false;
-        if (p.Evaluate(State(0), Start.AddSeconds(1)).CancelHungryScene) b.CancelHungryScene();
-        Check(!b.IsHungryRequested && b.IsHungrySceneActive); End(b); Equal(ClipKind.HungryExit, b.Advance(Step).Kind);
+        var b = Hungry(); var before = b.CurrentSample;
+        b.CancelAutomaticEmotions();
+        Check(b.IsHungryRequested && b.IsHungrySceneActive); Equal(before, b.CurrentSample);
+        End(b); Equal(ClipKind.HungryLoop, b.Advance(Step).Kind);
     }
     private static void FeedAfterHungry()
     {
@@ -335,7 +343,7 @@ internal static class Program
     private static void DisablePendingEmotions()
     {
         var b = new PetBehaviorController(); b.SuspendAutomatic(true);
-        b.QueueAutomaticEmotion(EmotionReaction.Annoyed); b.QueueReaction(PetBehaviorKind.Annoyed); b.RequestHungryScene();
+        b.QueueAutomaticEmotion(EmotionReaction.Annoyed); b.QueueReaction(PetBehaviorKind.Annoyed);
         Equal(2, b.PendingCount); b.CancelAutomaticEmotions(); Equal(1, b.PendingCount); Check(!b.IsHungryRequested);
         IdleBeat(b, ClipKind.Annoyed); End(b); b.Advance(Step);
         for (int i = 0; i < 300; i++) Equal(ClipKind.Idle, b.Advance(Step).Kind);

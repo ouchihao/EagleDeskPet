@@ -31,7 +31,7 @@ internal sealed class HungryScenePreviewWindow : Window
     {
         _requestedOutfit = outfitId; _requestedScene = selection;
         _preparePresentation = preparePresentation;
-        Title = "大头鹰 · 空碗小剧场"; Width = 420; Height = 510; MinWidth = 350; MinHeight = 390;
+        Title = "大头鹰 · 馋饭小剧场"; Width = 420; Height = 510; MinWidth = 350; MinHeight = 390;
         Background = PreviewStageChrome.Paper; Foreground = PreviewStageChrome.Ink; FontFamily = new("Microsoft YaHei UI");
         WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false;
         Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Themes/PetTheme.xaml") });
@@ -39,7 +39,7 @@ internal sealed class HungryScenePreviewWindow : Window
         root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         root.RowDefinitions.Add(new()); root.RowDefinitions.Add(new() { Height = GridLength.Auto });
         var header = new StackPanel();
-        header.Children.Add(PreviewStageChrome.Ticket("饭呢？我的饭呢？", "空碗小剧场 · 只看表演，不改变桌宠", "ACT 01"));
+        header.Children.Add(PreviewStageChrome.Ticket("饭呢？我的饭呢？", "馋饭小剧场 · 手动表演，不改变心情或工作", "ACT 01"));
         _warning = new() { TextWrapping = TextWrapping.Wrap, FontSize = 11, Foreground = Brush("#A47839"), Margin = new(0, 0, 0, 8) };
         header.Children.Add(_warning); root.Children.Add(header);
         var layers = new Grid { Width = 302, Height = 265, ClipToBounds = true, Background = Brushes.Transparent };

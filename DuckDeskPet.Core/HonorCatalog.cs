@@ -27,7 +27,7 @@ public static class HonorCatalog
         new HonorSeriesDefinition(HonorSeries.Meals, "干饭搭子", "每一顿好好吃的饭，都值得认真纪念。", "meals"),
         new HonorSeriesDefinition(HonorSeries.Affection, "摸头交情", "只记成功的温柔摸头，不记冷却中的连点。", "affection"),
         new HonorSeriesDefinition(HonorSeries.Growth, "成长足迹", "从初来乍到，到这个桌面的老熟鹰。", "growth"),
-        new HonorSeriesDefinition(HonorSeries.Work, "工位值班", "累计有效工作分钟；休息、饥饿停工不凑数。", "work"),
+        new HonorSeriesDefinition(HonorSeries.Work, "工位值班", "累计有效工作分钟；心情只影响工资，不影响工时。", "work"),
         new HonorSeriesDefinition(HonorSeries.Collection, "装扮收藏", "动作、桌子、电脑和服装；不含三件默认赠品。", "collection"),
         new HonorSeriesDefinition(HonorSeries.Bond, "朝夕搭档", "累计成功喂食与摸头次数，不推算在线时长。", "bond"),
     });

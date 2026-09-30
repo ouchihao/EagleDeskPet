@@ -22,7 +22,7 @@ public partial class PetWindow
         if (_behavior.IsHungrySceneActive || _behavior.IsHungryRequested)
         {
             _pendingFeed = true;
-            _behavior.CancelAutomaticEmotions();
+            _behavior.CancelHungryScene();
             Say("收到！先把空碗和桌子收好，马上开饭。");
             return;
         }

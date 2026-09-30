@@ -18,7 +18,6 @@ internal static class EquipmentPresentation
         var parts = new List<string>();
         if (bonus.WorkCoinBonus > 0) parts.Add($"赚钱 +{bonus.WorkCoinBonus:P0}");
         if (bonus.WorkExperienceBonus > 0) parts.Add($"工作经验 +{bonus.WorkExperienceBonus:P0}");
-        if (bonus.FullnessDecayReduction > 0) parts.Add($"饱食衰减 −{bonus.FullnessDecayReduction:P0}");
         if (bonus.MoodDecayReduction > 0) parts.Add($"心情衰减 −{bonus.MoodDecayReduction:P0}");
         return parts.Count == 0 ? "无额外属性加成" : string.Join(" · ", parts);
     }
@@ -32,7 +31,6 @@ internal static class EquipmentPresentation
         }
         Add("赚钱", bonus.WorkCoinBonus - current.WorkCoinBonus);
         Add("经验", bonus.WorkExperienceBonus - current.WorkExperienceBonus);
-        Add("省粮", bonus.FullnessDecayReduction - current.FullnessDecayReduction);
         Add("省心", bonus.MoodDecayReduction - current.MoodDecayReduction);
         return parts.Count == 0 ? "与此槽位已选装备属性相同。" : "对比此槽位已选装备：" + string.Join(" · ", parts);
     }

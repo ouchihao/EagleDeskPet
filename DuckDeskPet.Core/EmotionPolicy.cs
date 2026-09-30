@@ -1,9 +1,8 @@
 namespace DuckDeskPet.Core;
 
-public enum EmotionReaction { None, HungryScene, Annoyed }
+public enum EmotionReaction { None, Annoyed }
 
-public readonly record struct EmotionEvaluation(EmotionReaction Reaction,
-    bool IsHungry, bool IsLowMood, bool CancelHungryScene);
+public readonly record struct EmotionEvaluation(EmotionReaction Reaction, bool IsLowMood);
 
 public readonly record struct PettingDecision(bool AllowCareReward, EmotionReaction Reaction, bool IsFrequent);
 
@@ -15,8 +14,6 @@ public readonly record struct PettingDecision(bool AllowCareReward, EmotionReact
 /// </summary>
 public sealed class EmotionPolicy
 {
-    public const double HungerEnter = 25;
-    public const double HungerExit = 35;
     public const double LowMoodEnter = 25;
     public const double LowMoodExit = 40;
     public const double AutomaticCooldownSeconds = 300;
@@ -28,7 +25,6 @@ public sealed class EmotionPolicy
     private DateTimeOffset? _lastPetAttemptUtc;
     private bool _petBurstTriggered;
     public bool Enabled { get; set; }
-    public bool IsHungry { get; private set; }
     public bool IsLowMood { get; private set; }
     public DateTimeOffset? LastAutomaticReactionUtc { get; private set; }
 
@@ -36,19 +32,16 @@ public sealed class EmotionPolicy
     {
         ArgumentNullException.ThrowIfNull(state);
         now = Observe(now);
-        double fullness = double.IsFinite(state.Fullness) ? state.Fullness : 100;
         double mood = double.IsFinite(state.Mood) ? state.Mood : 100;
-        IsHungry = IsHungry ? fullness < HungerExit : fullness <= HungerEnter;
         IsLowMood = IsLowMood ? mood < LowMoodExit : mood <= LowMoodEnter;
-        bool cancelHungryScene = !Enabled || !IsHungry;
         EmotionReaction reaction = EmotionReaction.None;
-        if (Enabled && allowAutomaticReaction &&
+        if (Enabled && allowAutomaticReaction && !state.IsWorking &&
             (!LastAutomaticReactionUtc.HasValue || (now - LastAutomaticReactionUtc.Value).TotalSeconds >= AutomaticCooldownSeconds))
         {
-            reaction = IsHungry ? EmotionReaction.HungryScene : IsLowMood ? EmotionReaction.Annoyed : EmotionReaction.None;
+            reaction = IsLowMood ? EmotionReaction.Annoyed : EmotionReaction.None;
             if (reaction != EmotionReaction.None) LastAutomaticReactionUtc = now;
         }
-        return new(reaction, IsHungry, IsLowMood, cancelHungryScene);
+        return new(reaction, IsLowMood);
     }
 
     /// <summary>

@@ -38,10 +38,10 @@
                     <StackPanel Margin="7,13,7,8">
                         <Border Style="{StaticResource PetCard}" Padding="16,13">
                             <StackPanel>
-                                <DockPanel><TextBlock x:Name="FullnessText" DockPanel.Dock="Right" Foreground="#A26B24"/><TextBlock Text="饭吃饱了，才有力气可爱" FontSize="12"/></DockPanel>
-                                <ProgressBar x:Name="FullnessBar" Height="7" Maximum="100" Margin="0,8,0,14" Foreground="#E5B45D" Background="#F4ECD9" BorderThickness="0"/>
                                 <DockPanel><TextBlock x:Name="MoodText" DockPanel.Dock="Right" Foreground="#527B6E"/><TextBlock Text="今日心情" FontSize="12"/></DockPanel>
                                 <ProgressBar x:Name="MoodBar" Height="7" Maximum="100" Margin="0,8,0,2" Foreground="#8CAF9C" Background="#EAF0E8" BorderThickness="0"/>
+                                <TextBlock x:Name="MoodEfficiencyText" FontSize="11" Foreground="#527B6E" Margin="0,9,0,0"/>
+                                <TextBlock Text="好心情，多赚一点。低心情也不会自动收工。" FontSize="10" Foreground="#758080" Margin="0,5,0,0"/>
                             </StackPanel>
                         </Border>
                         <Grid Margin="0,12,0,7">
@@ -59,7 +59,7 @@
                                 </Grid>
                             </Button>
                         </Grid>
-                        <TextBlock Text="也可以把饭拖到小鹰身上。" FontSize="10" Foreground="#758080"/>
+                        <TextBlock Text="一份粮食 +20 心情（最多 100），不加经验。满心情不扣粮；也可以把饭拖到小鹰身上。" FontSize="10" Foreground="#758080"/>
                         <TextBlock x:Name="IncomeText" FontSize="10" Foreground="#758080" Margin="0,4,0,10"/>
                         <Border Background="#F3ECD9" CornerRadius="10" Padding="12,9" Margin="0,0,0,10">
                             <TextBlock x:Name="StatusText" FontSize="12" Foreground="#6E624C" AutomationProperties.LiveSetting="Polite"/>
@@ -75,6 +75,13 @@
             <TabItem Header="工位与钱包">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="7,13,7,8">
+                        <Border x:Name="MigrationBanner" Background="#E2ECE3" CornerRadius="10" Padding="12,9" Margin="0,0,0,12" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="工资规则已升级" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="旧鹰币已一次性清零，等级、装备和荣誉保留。旧档会在首次成功保存新档前备份；重启不会再次清零。" FontSize="10" Foreground="#527B6E" Margin="0,5,0,0"/>
+                                <TextBlock x:Name="MigrationBackupText" FontSize="10" Foreground="#527B6E" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
                         <Border Style="{StaticResource PetCard}" Background="#F5DFAB" Padding="19">
                             <StackPanel>
                                 <DockPanel><TextBlock Text="小鹰的工资袋" FontSize="11" Foreground="#847048"/><TextBlock Text="EAGLE COINS" FontSize="9" HorizontalAlignment="Right" Foreground="#847048"/></DockPanel>
@@ -89,10 +96,10 @@
                                 <TextBlock Text="工位值班表" Style="{StaticResource PetSectionTitle}"/>
                                 <TextBlock x:Name="WorkText" Text="工位空着" Margin="0,9,0,12" FontSize="12" Foreground="#6B7975"/>
                                 <Button x:Name="WorkButton" Content="开始工作" Background="#DDEBDE" HorizontalAlignment="Left" Click="Work_OnClick"/>
-                                <TextBlock Text="基础每分钟 +1 经验、+1 鹰币，装备可提高效率并减缓消耗；30 分钟后进入忙碌。饿到 0 自动收工，也可随时取消。" FontSize="10" Foreground="#7D8174" Margin="0,12,0,0"/>
+                                <TextBlock Text="满心情基础每分钟 +1 鹰币，零心情仍有 50% 工资；装备加成另乘。经验基础 +1/分钟，不受心情影响。工作满 30 分钟进入忙碌，可随时取消。" FontSize="10" Foreground="#7D8174" Margin="0,12,0,0"/>
                             </StackPanel>
                         </Border>
-                        <TextBlock Text="隐藏 / 锁屏仍计时，离线最多补算 2 小时。每小时工作消耗 12 饱食、10 心情。鹰币仅为本地游戏币，无充值；旧档不追发工资。" FontSize="10" Foreground="#8A8575" Margin="3,13,3,0"/>
+                        <TextBlock Text="隐藏 / 锁屏仍计时，离线最多补算 2 小时。基础心情消耗：工作每小时 10，闲置每小时 1；装备可减缓。鹰币仅为本地游戏币，无充值。" FontSize="10" Foreground="#8A8575" Margin="3,13,3,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

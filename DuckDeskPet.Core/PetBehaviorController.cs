@@ -80,7 +80,6 @@ public sealed class PetBehaviorController
 
     public PetBehaviorRequestResult QueueAutomaticEmotion(EmotionReaction reaction) => reaction switch
     {
-        EmotionReaction.HungryScene => RequestHungryScene(),
         EmotionReaction.Annoyed => Enqueue(new(PetBehaviorKind.AutomaticEmotion, ClipKind.Annoyed)),
         _ => throw new ArgumentOutOfRangeException(nameof(reaction)),
     };
@@ -89,7 +88,6 @@ public sealed class PetBehaviorController
     public void CancelAutomaticEmotions()
     {
         _pending.RemoveAll(x => x.Kind == PetBehaviorKind.AutomaticEmotion);
-        CancelHungryScene();
     }
 
     public void SetWorkState(bool working, bool busy)
