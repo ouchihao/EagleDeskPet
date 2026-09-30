@@ -41,6 +41,8 @@ dotnet run -c Release --no-build -- --sdk $sdkRoot --framework $frameworkBundle 
 5. 截图 neutral、闭眼、1/4 / 1/2 / 3/4 睁眼、呼吸、左右 / 上下摆头、左右歪头、两组 XYZ 组合极值与张嘴；记录 WebGL 错误与实际非空像素。共 15 个姿态固定使用中性取景，组合极值用于暴露头颈拉长或遮挡问题，不代表已批准作为待机动作幅度
 6. 连续驱动与错误监视；必须实际产生帧并完成至少请求时长 90% 的动画/墙钟采样才可能通过，运行时 error/rejection 导致不通过
 
+带全身动作参数的模型额外截图双翼上举、鸟喙张开以及哈欠、进食的肘部组合；带 `ParamBusyEyes` 的模型再截图黄色忙碌眼的全开、半闭与闭合。它们是原作者参数的固定姿态检查，不是完整动作播放器；生产 14 动作时序与场景层级由 `DuckDeskPet/Live2DStage` 和真实宿主 smoke 验证。
+
 `provenance.json` 为输入来源，`initial.json` 为加载/静态扫描结果（此时动画尚未验完，`passed` 为 false 正常），`report.json` 为最终结果。失败写 `failure.txt`，不会伪装成功。正常 exit 0 表示本工具限定检查通过，exit 1 表示运行/模型未通过，exit 2 表示参数/输入错误。
 
 `animation-30fps.webm` 是 **canvas 的 30 fps 编码预览**，只含模型本身，不抓桌面、其它窗口或用户数据。报告中的 `requestAnimationFrame` 是回调间隔，不是物理显示帧率测量，不证明生产 EXE 60 FPS。WebView 运行配置单独放证据目录。
@@ -57,4 +59,4 @@ dotnet build -c Release --no-restore
 dotnet run -c Release --no-build -- --self-test
 ```
 
-当前仅证明官方 Core 兼容、基本参数驱动和 WebGL 预览。没有实现/验收全部 19 动作、动作调度、物理、motion3 播放、服装/场景适配、桌宠窗口穿透、性能预算或 Cubism Editor 的 `.cmo3` 编辑体验。后者由独立 Editor 实测确认，不能由此工具推断。
+当前仅证明官方 Core 兼容、基本参数驱动和 WebGL 预览。没有实现/验收全部 14 动作、动作调度、物理、motion3 播放、服装/场景适配、桌宠窗口穿透、性能预算或 Cubism Editor 的 `.cmo3` 编辑体验。后者由独立 Editor 实测确认，不能由此工具推断。

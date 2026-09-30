@@ -208,8 +208,13 @@ internal sealed class ProbeWindow : Window
             JsonElement initial = await _ready.Task.WaitAsync(TimeSpan.FromSeconds(40));
             File.WriteAllText(Path.Combine(_options.Output, "initial.json"), await core.ExecuteScriptAsync("window.probe.report()"));
             if (!initial.GetProperty("loaded").GetBoolean()) throw new InvalidDataException(initial.GetProperty("error").GetString());
-            foreach (string pose in new[] { "neutral", "eyes-closed", "eyes-quarter", "eyes-half", "eyes-three-quarter", "breath-high",
-                "head-left", "head-right", "head-up", "head-down", "head-tilt-left", "head-tilt-right", "head-up-left", "head-down-right", "mouth-open" })
+            var poses = new List<string> { "neutral", "eyes-closed", "eyes-quarter", "eyes-half", "eyes-three-quarter", "breath-high",
+                "head-left", "head-right", "head-up", "head-down", "head-tilt-left", "head-tilt-right", "head-up-left", "head-down-right", "mouth-open" };
+            if (await core.ExecuteScriptAsync("window.probe.report().parameters.some(p=>p.id==='ParamWingLLift')") == "true")
+                poses.AddRange(["double-lift", "beak-open", "beak-start", "beak-quarter", "beak-half", "beak-full", "yawn-elbow", "eat-elbow", "brows-sad", "brows-low", "hungry-face"]);
+            if (await core.ExecuteScriptAsync("window.probe.report().parameters.some(p=>p.id==='ParamBusyEyes')") == "true")
+                poses.AddRange(["busy-eyes", "busy-eyes-half", "busy-eyes-closed"]);
+            foreach (string pose in poses)
             {
                 await core.ExecuteScriptAsync("window.probe.pose(" + JsonSerializer.Serialize(pose) + ")");
                 await Task.Delay(150);
@@ -241,7 +246,7 @@ internal sealed class ProbeWindow : Window
             using var report = JsonDocument.Parse(reportText);
             var result = new { browserRuntime = environment.BrowserVersionString, webViewSdk = "1.0.4191.47", blockedRequests = _blocked,
                 probe = report.RootElement.Clone(), wallClockSampleSeconds = _options.Seconds,
-                limitations = new[] { "Official Framework WebGL renderer with original local SDK shaders", "No physics/motion3 playback or 19-action/full-outfit acceptance", "Frame callbacks are not physical Present FPS", "No pet state, network or default browser profile used" } };
+                limitations = new[] { "Official Framework WebGL renderer with original local SDK shaders", "No physics/motion3 playback or full-action/full-outfit acceptance", "Frame callbacks are not physical Present FPS", "No pet state, network or default browser profile used" } };
             File.WriteAllText(Path.Combine(_options.Output, "report.json"), JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
             Environment.ExitCode = report.RootElement.GetProperty("passed").GetBoolean() ? 0 : 1;
             if (_options.StressPoses)

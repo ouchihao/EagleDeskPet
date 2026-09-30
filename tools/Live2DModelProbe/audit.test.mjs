@@ -19,6 +19,11 @@ test("eye intermediate QA poses use geometric quarter steps",()=>{
   for(const [name,value] of [["eyes-quarter",.25],["eyes-half",.5],["eyes-three-quarter",.75]])
     assert.deepEqual(poseSettings(name),[["ParamEyeLOpen",value],["ParamEyeROpen",value]]);
 });
+
+test("bird-beak QA inspects small openings as well as full open",()=>{
+  for(const [name,value] of [["beak-start",.1],["beak-quarter",.25],["beak-half",.5],["beak-full",1]])
+    assert.deepEqual(poseSettings(name),[["ParamBeakOpen",value]]);
+});
 test("combined head QA poses exercise all three angle limits",()=>{
   assert.deepEqual(poseSettings("head-up-left"),[["ParamAngleX","min"],["ParamAngleY","max"],["ParamAngleZ","max"]]);
   assert.deepEqual(poseSettings("head-down-right"),[["ParamAngleX","max"],["ParamAngleY","min"],["ParamAngleZ","min"]]);

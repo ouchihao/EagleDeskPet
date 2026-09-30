@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self'; img-src 'self' data:; media-src blob:; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    />
+    <title>大头鹰 Live2D 舞台</title>
+    <link rel="stylesheet" href="stage.css" />
+  </head>
+  <body>
+    <canvas id="stage" width="768" height="692" aria-label="大头鹰"></canvas>
+    <section id="qa" hidden>
+      <select id="actions"></select
+      ><button id="play">播放</button
+      ><input
+        id="progress"
+        type="range"
+        min="0"
+        max="1"
+        step="0.001"
+        value="0"
+      /><button id="record">录制本动作</button>
+      <p id="status"></p>
+    </section>
+    <script src="/runtime/core.js"></script>
+    <script src="/runtime/framework.js"></script>
+    <script src="actions.js"></script>
+    <script src="geometry.js"></script>
+    <script src="bridge.js"></script>
+    <script src="stage.js"></script>
+  </body>
+</html>

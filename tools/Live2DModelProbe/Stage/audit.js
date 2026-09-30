@@ -20,7 +20,21 @@
     "head-tilt-right": [["ParamAngleZ", "min"]],
     "head-up-left": [["ParamAngleX", "min"], ["ParamAngleY", "max"], ["ParamAngleZ", "max"]],
     "head-down-right": [["ParamAngleX", "max"], ["ParamAngleY", "min"], ["ParamAngleZ", "min"]],
-    "mouth-open": [["ParamMouthOpenY", "max"]]
+    "mouth-open": [["ParamMouthOpenY", "max"]],
+    "double-lift": [["ParamWingLLift",0.8],["ParamWingRLift",0.8]],
+    "beak-open": [["ParamBeakOpen",0.8]],
+    "beak-start": [["ParamBeakOpen",0.1]],
+    "beak-quarter": [["ParamBeakOpen",0.25]],
+    "beak-half": [["ParamBeakOpen",0.5]],
+    "beak-full": [["ParamBeakOpen",1]],
+    "yawn-elbow": [["ParamWingRLift",0.88],["ParamWingRFold",0.4],["ParamBeakOpen",1]],
+    "eat-elbow": [["ParamWingRLift",0.55],["ParamWingRFold",0.5]],
+    "brows-sad": [["ParamBrowLY",1],["ParamBrowRY",1]],
+    "brows-low": [["ParamBrowLY",-1],["ParamBrowRY",-1]],
+    "hungry-face": [["ParamBrowLY",0.8],["ParamBrowRY",0.8],["ParamEyeLOpen",0.78],["ParamEyeROpen",0.78],["ParamAngleY",-8]],
+    "busy-eyes": [["ParamBusyEyes",1]],
+    "busy-eyes-half": [["ParamBusyEyes",1],["ParamEyeLOpen",0.5],["ParamEyeROpen",0.5]],
+    "busy-eyes-closed": [["ParamBusyEyes",1],["ParamEyeLOpen",0],["ParamEyeROpen",0]]
   };
   function poseSettings(name) {
     if (!Object.hasOwn(poses, name)) throw new Error("Unknown QA pose: " + name);
