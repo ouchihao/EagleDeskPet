@@ -26,8 +26,18 @@ public partial class PetWindow
             if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") == "live2d-loafing")
                 ExpansionCheck(_live2D?.IsActive == true, "Expected official Live2D backend: " + PresentationWarning);
             await ExpansionIdleAsync(token);
+            CareState.Coins = 950000;
+            foreach (string id in new[] { ContentCatalog.OfficeOutfitId, ContentCatalog.MintDeskId, ContentCatalog.GoldComputerId })
+            {
+                ExpansionCheck(_contentTransactions!.Purchase(id).Success, "Isolated purchase failed: " + id);
+                ExpansionCheck((await EquipContentAsync(id)).Success, "Isolated equipment failed: " + id);
+            }
+            checks.Add("non-default costume, desk and computer prepared through real equipment flow");
             await StartWorkingAsync();
             await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, token, "office loop");
+            CareState.WorkSessionSeconds = 3601;
+            _behavior.SetWorkState(true, true);
+            await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.BusyLoop, token, "busy loop before loafing");
             var originalEquipment = RasterEquipment;
             foreach (var kind in new[] { LoafingKind.NosePicking, LoafingKind.WoodenFish })
             {
