@@ -7,6 +7,9 @@ import org.umamo.runtime.model.Deformer;
 import org.umamo.runtime.model.KeyformAxis;
 import org.umamo.runtime.model.KeyformGrid;
 import org.umamo.runtime.model.Parameter;
+import org.umamo.runtime.model.ParameterKind;
+import org.umamo.runtime.model.FormChannel;
+import org.umamo.runtime.model.ChannelValue;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +37,7 @@ public final class ExportPsdModel {
         System.out.println("Profile: " + profilePath);
 
         JsonObject profile = object(Json.Default.parseToJsonElement(Files.readString(profilePath)), "profile");
-        keys(profile, Set.of("schemaVersion", "psd2liveVersion", "expectedSourceLayers", "config", "layers", "requiredParameters", "headConnection"));
+        keys(profile, Set.of("schemaVersion", "psd2liveVersion", "expectedSourceLayers", "config", "layers", "requiredParameters", "headConnection", "fullBody", "calibrationLayers"));
         if (integer(profile.get("schemaVersion"), "schemaVersion") != 1 || !string(profile.get("psd2liveVersion"), "psd2liveVersion").equals("1.1.1"))
             throw new IllegalArgumentException("This adapter requires schemaVersion 1 and PSD2Live 1.1.1");
         var pipeline = new PSD2LivePipeline();
@@ -44,19 +47,28 @@ public final class ExportPsdModel {
             throw new IllegalArgumentException("Source layer count differs from reviewed profile");
 
         var overrides = new LinkedHashMap<String, LayerClassificationOverride>();
+        var meshes = new LinkedHashMap<String, MeshSettings>();
         var parents = new LinkedHashMap<String, String>();
+        var rootPinned = new HashSet<String>();
         var expectedEyeBindings = new LinkedHashMap<String, String>();
         var eyeClosures = new LinkedHashMap<String, JsonObject>();
         var names = new HashSet<String>();
         for (JsonElement item : array(profile.get("layers"), "layers")) {
             JsonObject rule = object(item, "layer rule");
-            keys(rule, Set.of("name", "semanticTag", "side", "parent", "requiredGeometryParameter", "closedEye"));
+            keys(rule, Set.of("name", "semanticTag", "side", "parent", "parentDeformer", "requiredGeometryParameter", "closedEye", "mesh"));
             String name = string(rule.get("name"), "layer name");
             if (!names.add(name)) throw new IllegalArgumentException("Duplicate profile layer: " + name);
             var matches = analysis.getSource().getLayers().stream().filter(layer -> layer.getName().equals(name)).toList();
             if (matches.size() != 1) throw new IllegalArgumentException("Expected exactly one source layer: " + name);
             SourceLayer source = matches.getFirst();
             String sourceId = mangledString(source, SourceLayer.class, "getId-");
+            if (rule.containsKey("mesh")) {
+                JsonObject mesh = object(rule.get("mesh"), "mesh");
+                keys(mesh, Set.of("maxEdgeDistance", "interiorDensity"));
+                meshes.put(sourceId, new MeshSettings(1f, false, 10f,
+                    boundedNumber(mesh.get("maxEdgeDistance"), "maxEdgeDistance", 1, 32),
+                    boundedNumber(mesh.get("interiorDensity"), "interiorDensity", 2, 64)));
+            }
             if (rule.containsKey("semanticTag")) {
                 SemanticTag tag = SemanticTag.valueOf(string(rule.get("semanticTag"), "semanticTag"));
                 Side side = Side.valueOf(string(rule.get("side"), "side"));
@@ -65,6 +77,14 @@ public final class ExportPsdModel {
             if (rule.containsKey("parent")) {
                 if (rule.get("parent") != JsonNull.INSTANCE) throw new IllegalArgumentException("Only explicit null/root parent is supported");
                 parents.put(sourceId, null);
+                rootPinned.add(sourceId);
+            }
+            if (rule.containsKey("parentDeformer")) {
+                if (rule.containsKey("parent")) throw new IllegalArgumentException("parent and parentDeformer are mutually exclusive");
+                String parent = string(rule.get("parentDeformer"), "parentDeformer");
+                if (!Set.of("DeformHeadContainer", "DeformFaceNinePose", "DeformBodyZBreath").contains(parent))
+                    throw new IllegalArgumentException("Unsupported explicit parent deformer: " + parent);
+                parents.put(sourceId, parent);
             }
             if (rule.containsKey("requiredGeometryParameter"))
                 expectedEyeBindings.put(sourceId, string(rule.get("requiredGeometryParameter"), "requiredGeometryParameter"));
@@ -79,9 +99,24 @@ public final class ExportPsdModel {
             System.out.println("Layer rule: " + name + " => " + sourceId + " " + rule);
         }
 
-        PipelineConfig config = configure(base, object(profile.get("config"), "config"), overrides, parents);
-        var preview = pipeline.buildPreview(input, config);
+        PipelineConfig config = configure(base, object(profile.get("config"), "config"), overrides, parents, meshes);
         RigEditOverlay edits = new RigEditOverlay();
+        if (profile.containsKey("calibrationLayers")) {
+            var calibration = new LinkedHashSet<String>();
+            for (JsonElement item : array(profile.get("calibrationLayers"), "calibrationLayers")) {
+                String name = string(item, "calibration layer");
+                var matches = analysis.getSource().getLayers().stream().filter(layer -> layer.getName().equals(name)).toList();
+                if (matches.size() != 1) throw new IllegalArgumentException("Expected exactly one calibration layer: " + name);
+                if (!calibration.add(mangledString(matches.getFirst(), SourceLayer.class, "getId-")))
+                    throw new IllegalArgumentException("Duplicate calibration layer: " + name);
+            }
+            if (calibration.isEmpty()) throw new IllegalArgumentException("calibrationLayers must not be empty");
+            edits = edits.copy(edits.getParameterEdits(), edits.getDeletedParameterIds(), edits.getKeyformSetEdits(),
+                edits.getKeyformDeleteEdits(), edits.getKeyformCopyEdits(), edits.getWarpEdits(), edits.getPhysicsEdits(),
+                edits.getAssetLayers(), calibration, edits.getStructureEdits(), edits.getAuthoringJournal());
+            config = withEdits(config, edits);
+        }
+        var preview = pipeline.buildPreview(input, config);
         if (!eyeClosures.isEmpty()) {
             for (Drawable drawable : preview.getRig().getPuppet().getDrawables()) {
                 String drawableId = mangledString(drawable, Drawable.class, "getId-");
@@ -128,6 +163,10 @@ public final class ExportPsdModel {
                 preview.getAnalysis().getAnchors().getCharacter(),
                 object(profile.get("headConnection"), "headConnection"),
                 analysis.getSource().getWidthPx(), analysis.getSource().getHeightPx());
+        var actionBindings = new LinkedHashMap<String, String>();
+        if (profile.containsKey("fullBody"))
+            edits = authorFullBody(edits, preview.getRig(), preview.getAnalysis(),
+                object(profile.get("fullBody"), "fullBody"), actionBindings);
         config = withEdits(config, edits);
         preview = pipeline.updateRigEdits(preview, config, "authoring-validation-preview");
         var rig = preview.getRig();
@@ -142,7 +181,7 @@ public final class ExportPsdModel {
         for (Drawable drawable : rig.getPuppet().getDrawables()) {
             String drawableId = mangledString(drawable, Drawable.class, "getId-");
             String sourceId = rig.getLayerIdByDrawableId().get(drawableId);
-            if (parents.containsKey(sourceId)) {
+            if (rootPinned.contains(sourceId)) {
                 if (mangledString(drawable, Drawable.class, "getParentDeformerId-") != null)
                     throw new IllegalStateException("Expected root-pinned mesh: " + drawableId);
                 if (drawable.getGeometryGrid() != null && !drawable.getGeometryGrid().getAxes().isEmpty())
@@ -161,12 +200,53 @@ public final class ExportPsdModel {
                 checkedEyes.add(sourceId);
             }
         }
-        if (!checkedFeet.equals(parents.keySet()) || !checkedEyes.equals(expectedEyeBindings.keySet()))
+        if (!checkedFeet.equals(rootPinned) || !checkedEyes.equals(expectedEyeBindings.keySet()))
             throw new IllegalStateException("Not every reviewed source binding survived generation");
+        if (profile.containsKey("fullBody")) validateFullBody(rig, object(profile.get("fullBody"), "fullBody"), actionBindings);
 
         var result = pipeline.run(input, output, config,
             (stage, fraction) -> System.out.printf("%3d%% %s%n", Math.round(fraction * 100f), stage));
         Files.copy(profilePath, output.resolve("authoring-profile.json"));
+        var mapping = new StringBuilder("{\n  \"schemaVersion\": 1,\n  \"drawables\": {");
+        boolean firstMapping = true;
+        for (var entry : actionBindings.entrySet()) {
+            if (!firstMapping) mapping.append(',');
+            firstMapping = false;
+            mapping.append("\n    ").append(quote(entry.getKey())).append(": ").append(quote(entry.getValue()));
+        }
+        mapping.append("\n  },\n  \"foregroundDrawableIds\": [");
+        firstMapping = true;
+        if (profile.containsKey("fullBody")) {
+            for (JsonElement item : array(object(profile.get("fullBody"), "fullBody").get("foregroundLayers"), "foregroundLayers")) {
+                if (!firstMapping) mapping.append(',');
+                firstMapping = false;
+                mapping.append(quote(actionBindings.get(string(item, "foreground layer"))));
+            }
+        }
+        mapping.append("],\n  \"handAttachments\": {");
+        if (profile.containsKey("fullBody")) {
+            JsonObject attachments = object(object(profile.get("fullBody"), "fullBody").get("handAttachments"), "handAttachments");
+            boolean firstAttachment = true;
+            for (var entry : attachments.entrySet()) {
+                JsonObject attachment = object(entry.getValue(), "attachment");
+                if (!firstAttachment) mapping.append(',');
+                firstAttachment = false;
+                mapping.append("\n    ").append(quote(entry.getKey())).append(": {\"drawableId\": ")
+                    .append(quote(actionBindings.get(string(attachment.get("layer"), "attachment layer"))))
+                    .append(", \"source\": ").append(attachment.get("source")).append('}');
+            }
+        }
+        mapping.append("\n  },\n  \"parameters\": [");
+        firstMapping = true;
+        for (Parameter parameter : rig.getPuppet().getParameters()) {
+            if (!firstMapping) mapping.append(',');
+            firstMapping = false;
+            mapping.append("\n    {\"id\": ").append(quote(mangledString(parameter, Parameter.class, "getId-")))
+                .append(", \"min\": ").append(parameter.getMin()).append(", \"max\": ").append(parameter.getMax())
+                .append(", \"default\": ").append(parameter.getDefault()).append('}');
+        }
+        mapping.append("\n  ]\n}\n");
+        if (!actionBindings.isEmpty()) Files.writeString(output.resolve("action-bindings.json"), mapping.toString());
         System.out.println("Authoring validation: root-pinned=" + checkedFeet.size() + ", moving eye bindings=" + checkedEyes.size());
         System.out.println("PSD SHA256: " + sha256(input));
         System.out.println("Profile SHA256: " + sha256(profilePath));
@@ -183,6 +263,8 @@ public final class ExportPsdModel {
             .append("\n  \"rootPinnedMeshes\": ").append(checkedFeet.size()).append(',')
             .append("\n  \"movingEyeBindings\": ").append(checkedEyes.size()).append(',')
             .append("\n  \"chestAnchoredHead\": ").append(profile.containsKey("headConnection")).append(',')
+            .append("\n  \"fullBodyRig\": ").append(profile.containsKey("fullBody")).append(',')
+            .append("\n  \"actionBoundMeshes\": ").append(profile.containsKey("fullBody") ? actionBindings.size() : 0).append(',')
             .append("\n  \"featherSurfaceAnchored\": ").append(profile.containsKey("headConnection") &&
                 object(profile.get("headConnection"), "headConnection").containsKey("pinFaceFeathers") &&
                 bool(object(profile.get("headConnection"), "headConnection").get("pinFaceFeathers"), "pinFaceFeathers")).append(',')
@@ -209,13 +291,14 @@ public final class ExportPsdModel {
     }
 
     private static PipelineConfig configure(PipelineConfig base, JsonObject settings,
-            Map<String, LayerClassificationOverride> layers, Map<String, String> parents) throws Exception {
+            Map<String, LayerClassificationOverride> layers, Map<String, String> parents, Map<String, MeshSettings> meshes) throws Exception {
         Set<String> supported = Set.of("atlasSize", "meshSpacing", "headTurnStrength", "bodyStrength", "featureDisplacementEnabled", "mouthOutlineEnabled", "generatePhysics");
         keys(settings, supported);
         Method copy = Arrays.stream(PipelineConfig.class.getMethods()).filter(method -> method.getName().equals("copy")).findFirst().orElseThrow();
         if (copy.getParameterCount() != CONFIG_COMPONENTS) throw new IllegalStateException("Unsupported PSD2Live PipelineConfig ABI");
         Object[] values = new Object[CONFIG_COMPONENTS];
         for (int i = 0; i < values.length; i++) values[i] = PipelineConfig.class.getMethod("component" + (i + 1)).invoke(base);
+        values[8] = meshes;
         if (settings.containsKey("atlasSize")) {
             int atlas = integer(settings.get("atlasSize"), "atlasSize");
             if (atlas < 256 || atlas > 4096 || (atlas & (atlas - 1)) != 0) throw new IllegalArgumentException("atlasSize must be a power of two in 256..4096");
@@ -234,6 +317,349 @@ public final class ExportPsdModel {
         values[40] = layers;
         values[43] = parents;
         return (PipelineConfig) copy.invoke(base, values);
+    }
+
+    private record MeshSpace(Drawable drawable, String id, float[] positions, float minX, float minY,
+            float scaleX, float scaleY, Bounds canvas) {
+        float x(int vertex) { return canvas.getLeft() + (positions[vertex] - minX) * scaleX; }
+        float y(int vertex) { return canvas.getTop() + (positions[vertex + 1] - minY) * scaleY; }
+    }
+
+    private static RigEditOverlay authorFullBody(RigEditOverlay edits, BuiltRig rig, PipelineAnalysis analysis,
+            JsonObject settings, Map<String, String> bindings) throws Exception {
+        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "hands", "busyEyes", "foregroundLayers", "handConnection", "handAttachments"));
+        int width = analysis.getSource().getWidthPx(), height = analysis.getSource().getHeightPx();
+        float rootY = boundedNumber(settings.get("wingRootY"), "wingRootY", 0, height);
+        float groundY = boundedNumber(settings.get("bodyGroundY"), "bodyGroundY", 1, height);
+        JsonObject connection = settings.containsKey("handConnection") ? object(settings.get("handConnection"), "handConnection") : null;
+        String morphForearm = null;
+        if (connection != null) {
+            keys(connection, Set.of("forearm", "wristX", "wristY", "tipY", "taperStartY", "wristFlexDegrees"));
+            morphForearm = string(connection.get("forearm"), "morph forearm");
+            float start = boundedNumber(connection.get("taperStartY"), "taperStartY", rootY + 1, height);
+            float wrist = boundedNumber(connection.get("wristY"), "wristY", start + 1, height);
+            boundedNumber(connection.get("wristX"), "wristX", 0, width);
+            boundedNumber(connection.get("tipY"), "tipY", wrist + 1, height);
+            boundedNumber(connection.get("wristFlexDegrees"), "wristFlexDegrees", 0, 75);
+            edits = parameter(edits, "ParamHandMorph", 0, 1);
+        }
+        for (String side : List.of("L", "R")) {
+            JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
+            keys(wing, Set.of("layers", "pivotX", "pivotY", "elbowX", "elbowY", "foldDegrees"));
+            float pivotX = boundedNumber(wing.get("pivotX"), "wing pivotX", 0, width);
+            float pivotY = boundedNumber(wing.get("pivotY"), "wing pivotY", rootY + 1, height);
+            float elbowX = boundedNumber(wing.get("elbowX"), "elbowX", 0, width);
+            float elbowY = boundedNumber(wing.get("elbowY"), "elbowY", pivotY + 4, height);
+            float foldDegrees = boundedNumber(wing.get("foldDegrees"), "foldDegrees", 10, 130);
+            for (String suffix : List.of("Lift", "Swing", "Fold"))
+                edits = parameter(edits, "ParamWing" + side + suffix, suffix.equals("Swing") ? -1 : 0, 1);
+            for (JsonElement item : array(wing.get("layers"), "wing layers")) {
+                String layer = string(item, "wing layer");
+                MeshSpace mesh = meshSpace(layer, rig, analysis, bindings);
+                edits = wingKeys(edits, mesh, side, pivotX, pivotY, rootY, false, 0, 0, null,
+                    layer.equals(morphForearm) ? connection : null, elbowX, elbowY, foldDegrees);
+            }
+        }
+        edits = parameter(edits, "ParamBodySquash", -1, 1);
+        Deformer.Warp body = null;
+        for (Deformer deformer : rig.getPuppet().getDeformers())
+            if (deformer instanceof Deformer.Warp warp && "DeformBodyXY".equals(mangledString(deformer, Deformer.class, "getId-"))) body = warp;
+        if (body == null || body.getGeometryGrid() == null) throw new IllegalStateException("Missing body warp");
+        var bodyGrid = body.getGeometryGrid();
+        float centerX = analysis.getAnchors().getCharacter().getCenterX();
+        for (float squash : new float[] {-1, -0.5f, 0, 0.5f, 1}) for (var cell : bodyGrid.getCells()) {
+            var points = new ArrayList<Float>();
+            float[] current = cell.getForm().getControlPoints();
+            for (int i = 0; i < current.length; i += 2) {
+                points.add(squash == 0 ? current[i] : centerX + (current[i] - centerX) * (1 + 0.055f * squash));
+                points.add(squash == 0 ? current[i + 1] : groundY + (current[i + 1] - groundY) * (1 - (squash > 0 ? 0.08f : 0.06f) * squash));
+            }
+            var pose = coordinate(bodyGrid, cell.getCoordinate()); pose.put("ParamBodySquash", squash);
+            edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.WARP_DEFORMER, "DeformBodyXY", null), pose,
+                new RigKeyformGeometryEdit(points, null, null, null, null, null), null));
+        }
+        if (settings.containsKey("beak")) edits = authorBeak(edits, rig, analysis, object(settings.get("beak"), "beak"), bindings);
+        if (settings.containsKey("hands")) {
+            JsonObject wing = object(settings.get("rightWing"), "rightWing");
+            float pivotX = boundedNumber(wing.get("pivotX"), "wing pivotX", 0, width);
+            float pivotY = boundedNumber(wing.get("pivotY"), "wing pivotY", rootY + 1, height);
+            float elbowX = boundedNumber(wing.get("elbowX"), "elbowX", 0, width);
+            float elbowY = boundedNumber(wing.get("elbowY"), "elbowY", pivotY + 4, height);
+            float foldDegrees = boundedNumber(wing.get("foldDegrees"), "foldDegrees", 10, 130);
+            for (JsonElement item : array(settings.get("hands"), "hands")) {
+                JsonObject hand = object(item, "hand");
+                keys(hand, Set.of("layer", "parameter", "wristX", "wristY"));
+                String layer = string(hand.get("layer"), "hand layer"), parameter = string(hand.get("parameter"), "hand parameter");
+                float wristX = boundedNumber(hand.get("wristX"), "wristX", 0, width);
+                float wristY = boundedNumber(hand.get("wristY"), "wristY", pivotY, height);
+                MeshSpace mesh = meshSpace(layer, rig, analysis, bindings);
+                edits = parameter(edits, parameter, 0, 1);
+                edits = wingKeys(edits, mesh, "R", pivotX, pivotY, rootY, true, wristX, wristY, parameter, connection, elbowX, elbowY, foldDegrees);
+                for (float value : new float[] {0, 0.15f, 0.35f, 1})
+                    edits = opacity(edits, mesh.id(), parameter, value, Math.max(0, Math.min(1, (value - 0.15f) / 0.20f)));
+            }
+        }
+        if (settings.containsKey("busyEyes")) {
+            edits = parameter(edits, "ParamBusyEyes", 0, 1);
+            for (JsonElement item : array(settings.get("busyEyes"), "busyEyes")) {
+                JsonObject eye = object(item, "busy eye");
+                keys(eye, Set.of("layer", "normal", "eyeParameter", "heightPx", "curveDepthPx"));
+                MeshSpace busy = meshSpace(string(eye.get("layer"), "busy eye layer"), rig, analysis, bindings);
+                MeshSpace normal = meshSpace(string(eye.get("normal"), "normal eye layer"), rig, analysis, bindings);
+                String parameter = string(eye.get("eyeParameter"), "eyeParameter");
+                if (!Set.of("ParamEyeLOpen", "ParamEyeROpen").contains(parameter))
+                    throw new IllegalArgumentException("Busy eye must bind to a real left/right eye parameter");
+                float heightPx = positivePixel(eye.get("heightPx"), "heightPx");
+                float curve = positivePixel(eye.get("curveDepthPx"), "curveDepthPx");
+                for (float open : new float[] {0, 0.5f, 1}) {
+                    var delta = new ArrayList<Float>(busy.positions().length);
+                    for (int i = 0; i < busy.positions().length; i += 2) {
+                        float x = busy.x(i), y = busy.y(i);
+                        float u = 2f * (x - busy.canvas().getLeft()) / busy.canvas().getWidth() - 1f;
+                        float closedY = busy.canvas().getCenterY() + curve * (1f - u * u) +
+                            (y - busy.canvas().getCenterY()) * heightPx / busy.canvas().getHeight();
+                        delta.add(0f); delta.add((closedY - y) * (1 - open) / busy.scaleY());
+                    }
+                    edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, busy.id(), null),
+                        Map.of(parameter, open), new RigKeyformGeometryEdit(null, null, null, null, null, delta), null));
+                }
+                for (float key : new float[] {0, 1}) {
+                    edits = opacity(edits, busy.id(), "ParamBusyEyes", key, key);
+                    edits = opacity(edits, normal.id(), "ParamBusyEyes", key, 1 - key);
+                }
+            }
+            System.out.println("Authored busy eyes: independent yellow eye rasters, geometric eyelid closure, blink-masked binary selection");
+        }
+        System.out.println("Authored full-body motion: independent wing Lift/Swing/Fold, five body squash keys, fixed foot meshes retained");
+        return edits;
+    }
+
+    private static RigEditOverlay parameter(RigEditOverlay edits, String id, float min, float max) {
+        return edits.upsert(new RigParameterEdit(id, id, min, max, 0f, ParameterKind.NORMAL, false, true));
+    }
+
+    private static void validateFullBody(BuiltRig rig, JsonObject settings, Map<String, String> bindings) throws Exception {
+        var meshes = new HashMap<String, Drawable>();
+        for (Drawable drawable : rig.getPuppet().getDrawables())
+            meshes.put(mangledString(drawable, Drawable.class, "getId-"), drawable);
+        var roles = new LinkedHashMap<String, String>();
+        var handParameters = new HashMap<String, String>();
+        for (String side : List.of("L", "R")) {
+            JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
+            if (array(wing.get("layers"), "wing layers").isEmpty()) throw new IllegalArgumentException("Wing layers must not be empty");
+            for (JsonElement layer : array(wing.get("layers"), "wing layers")) roles.put(string(layer, "wing layer"), side);
+        }
+        var foreground = new HashSet<String>();
+        for (JsonElement item : array(settings.get("foregroundLayers"), "foregroundLayers")) {
+            String layer = string(item, "foreground layer");
+            if (!bindings.containsKey(layer) || !foreground.add(layer))
+                throw new IllegalArgumentException("Foreground layer must resolve to one unique action mesh: " + layer);
+        }
+        JsonObject attachments = object(settings.get("handAttachments"), "handAttachments");
+        keys(attachments, Set.of("l", "r"));
+        for (var item : attachments.values()) {
+            JsonObject attachment = object(item, "attachment");
+            keys(attachment, Set.of("layer", "source"));
+            if (!bindings.containsKey(string(attachment.get("layer"), "attachment layer")))
+                throw new IllegalArgumentException("Attachment layer is not an authored action mesh");
+            JsonArray source = array(attachment.get("source"), "attachment source");
+            if (source.size() != 2) throw new IllegalArgumentException("Attachment source must contain x/y");
+            for (var coordinate : source) boundedNumber(coordinate, "attachment coordinate", 0, 10000);
+        }
+        if (settings.containsKey("hands")) for (JsonElement item : array(settings.get("hands"), "hands")) {
+            JsonObject hand = object(item, "hand");
+            String layer = string(hand.get("layer"), "hand layer");
+            roles.put(layer, "R");
+            handParameters.put(layer, string(hand.get("parameter"), "hand parameter"));
+            Drawable mesh = meshes.get(bindings.get(layer));
+            var opacity = mesh.getChannelGrids().get(FormChannel.OPACITY);
+            if (opacity == null) throw new IllegalStateException("Hand is missing opacity keyforms: " + layer);
+            requireAxes(opacity, Set.of(string(hand.get("parameter"), "hand parameter")));
+            for (var cell : opacity.getCells()) {
+                float key = opacity.getAxes().getFirst().getKeys()[cell.getCoordinate()[0]];
+                float expected = Math.max(0, Math.min(1, (key - 0.15f) / 0.20f));
+                if (!(cell.getForm() instanceof ChannelValue.Scalar value) || Math.abs(value.getValue() - expected) > 0.0001f)
+                    throw new IllegalStateException("Hand opacity must follow its authored parameter: " + layer);
+            }
+        }
+        for (var role : roles.entrySet()) {
+            Drawable mesh = meshes.get(bindings.get(role.getKey()));
+            var grid = mesh.getGeometryGrid();
+            if (!"DeformBodyZBreath".equals(mangledString(mesh, Drawable.class, "getParentDeformerId-")))
+                throw new IllegalStateException("Action wing must share the body coordinate frame: " + role.getKey());
+            if (grid == null) throw new IllegalStateException("Missing wing geometry keyforms: " + role.getKey());
+            var axes = new HashSet<>(Set.of("ParamWing" + role.getValue() + "Lift", "ParamWing" + role.getValue() + "Swing", "ParamWing" + role.getValue() + "Fold"));
+            boolean hand = handParameters.containsKey(role.getKey());
+            if (hand) axes.add(handParameters.get(role.getKey()));
+            boolean morph = settings.containsKey("handConnection") && role.getKey().equals(string(object(settings.get("handConnection"), "handConnection").get("forearm"), "morph forearm"));
+            if (morph) axes.add("ParamHandMorph");
+            requireAxes(grid, axes);
+            if (grid.getCells().size() != (hand || morph ? 270 : 45) || grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
+                throw new IllegalStateException("Wing must retain its complete moving keyform grid: " + role.getKey());
+            var rest = grid.getCells().stream().filter(cell -> neutral(grid, cell.getCoordinate())).findFirst().orElseThrow();
+            if (!allZero(rest.getForm().getPositionDeltas())) throw new IllegalStateException("Wing neutral geometry changed: " + role.getKey());
+        }
+        if (settings.containsKey("beak")) {
+            JsonObject beak = object(settings.get("beak"), "beak");
+            for (String role : List.of("upper", "lower", "inner")) {
+                Drawable mesh = meshes.get(bindings.get(string(beak.get(role), role)));
+                var grid = mesh.getGeometryGrid();
+                if (grid == null || grid.getCells().size() != 7 || grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
+                    throw new IllegalStateException("Beak part lacks seven geometric keyforms: " + role);
+                requireAxes(grid, Set.of("ParamBeakOpen"));
+            }
+        }
+        if (settings.containsKey("busyEyes")) for (JsonElement item : array(settings.get("busyEyes"), "busyEyes")) {
+            JsonObject eye = object(item, "busy eye");
+            Drawable mesh = meshes.get(bindings.get(string(eye.get("layer"), "busy eye layer")));
+            var grid = mesh.getGeometryGrid();
+            if (grid == null || grid.getCells().size() != 3 || grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
+                throw new IllegalStateException("Busy eye requires moving open/half/closed geometry");
+            requireAxes(grid, Set.of(string(eye.get("eyeParameter"), "eyeParameter")));
+            requireAxes(mesh.getChannelGrids().get(FormChannel.OPACITY), Set.of("ParamBusyEyes"));
+            for (String role : List.of("layer", "normal")) {
+                Drawable drawable = meshes.get(bindings.get(string(eye.get(role), role)));
+                var opacity = drawable.getChannelGrids().get(FormChannel.OPACITY);
+                requireAxes(opacity, Set.of("ParamBusyEyes"));
+                for (var cell : opacity.getCells()) {
+                    float key = opacity.getAxes().getFirst().getKeys()[cell.getCoordinate()[0]];
+                    float expected = role.equals("normal") ? 1 - key : key;
+                    if (!(cell.getForm() instanceof ChannelValue.Scalar value) || Math.abs(value.getValue() - expected) > 0.0001f)
+                        throw new IllegalStateException("Normal and busy eye opacity must be complementary");
+                }
+            }
+        }
+        System.out.println("Full-body verification: seven moving wing/hand meshes, neutral geometry unchanged, real jaw geometry and hand opacity tracks");
+    }
+
+    private static MeshSpace meshSpace(String name, BuiltRig rig, PipelineAnalysis analysis, Map<String, String> bindings) throws Exception {
+        var sourceMatches = analysis.getSource().getLayers().stream().filter(layer -> layer.getName().equals(name)).toList();
+        if (sourceMatches.size() != 1) throw new IllegalArgumentException("Full-body rig requires exactly one layer: " + name);
+        String sourceId = mangledString(sourceMatches.getFirst(), SourceLayer.class, "getId-");
+        Drawable found = null; String id = null;
+        for (Drawable drawable : rig.getPuppet().getDrawables()) {
+            String currentId = mangledString(drawable, Drawable.class, "getId-");
+            if (!sourceId.equals(rig.getLayerIdByDrawableId().get(currentId))) continue;
+            if (found != null) throw new IllegalStateException("Action layer must be one connected mesh: " + name);
+            found = drawable; id = currentId;
+        }
+        if (found == null) throw new IllegalStateException("No drawable for action layer: " + name);
+        float[] positions = found.getMesh().getPositions();
+        float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY, maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
+        for (int i = 0; i < positions.length; i += 2) {
+            minX = Math.min(minX, positions[i]); maxX = Math.max(maxX, positions[i]);
+            minY = Math.min(minY, positions[i + 1]); maxY = Math.max(maxY, positions[i + 1]);
+        }
+        Bounds bounds = rig.getSourceBoundsByDrawableId().get(id);
+        if (bounds == null || !(maxX > minX && maxY > minY)) throw new IllegalStateException("Action mesh lacks usable source coordinates: " + name);
+        bindings.put(name, id);
+        return new MeshSpace(found, id, positions, minX, minY, bounds.getWidth() / (maxX - minX), bounds.getHeight() / (maxY - minY), bounds);
+    }
+
+    private static float[] wingPoint(float x, float y, String side, float pivotX, float pivotY, float rootY,
+            float lift, float swing, float fold, float elbowX, float elbowY, float foldDegrees) {
+        float sign = side.equals("L") ? 1 : -1;
+        float influence = smoothStep((y - rootY) / (pivotY - rootY));
+        float band = Math.min(12f, (elbowY - pivotY) * 0.45f);
+        float distal = smoothStep((y - elbowY + band) / (2 * band));
+        double bend = Math.toRadians(sign * foldDegrees * fold * distal);
+        float radial = 1 - 0.08f * fold * distal;
+        float dx = (x - elbowX) * radial, dy = (y - elbowY) * radial;
+        float bentX = elbowX + (float) (dx * Math.cos(bend) - dy * Math.sin(bend)) - pivotX;
+        float bentY = elbowY + (float) (dx * Math.sin(bend) + dy * Math.cos(bend)) - pivotY;
+        double angle = Math.toRadians(sign * (105f * lift + 25f * swing));
+        float targetX = pivotX + (float) (bentX * Math.cos(angle) - bentY * Math.sin(angle));
+        float targetY = pivotY + (float) (bentX * Math.sin(angle) + bentY * Math.cos(angle));
+        return new float[] {x + (targetX - x) * influence, y + (targetY - y) * influence};
+    }
+
+    private static RigEditOverlay wingKeys(RigEditOverlay edits, MeshSpace mesh, String side, float pivotX, float pivotY,
+            float rootY, boolean hand, float wristX, float wristY, String handParameter, JsonObject connection,
+            float elbowX, float elbowY, float foldDegrees) {
+        float maxMotion = 0;
+        boolean morph = !hand && connection != null;
+        float jointX = connection == null ? wristX : boundedNumber(connection.get("wristX"), "wristX", 0, 10000);
+        float jointY = connection == null ? wristY : boundedNumber(connection.get("wristY"), "wristY", 0, 10000);
+        float tipY = connection == null ? wristY : boundedNumber(connection.get("tipY"), "tipY", 0, 10000);
+        float taperStart = connection == null ? wristY : boundedNumber(connection.get("taperStartY"), "taperStartY", 0, 10000);
+        float flex = connection == null ? 0 : boundedNumber(connection.get("wristFlexDegrees"), "wristFlexDegrees", 0, 75);
+        for (float spread : hand || morph ? new float[] {0, 0.15f, 0.25f, 0.35f, 0.65f, 1} : new float[] {0})
+        for (float lift : new float[] {0, 0.25f, 0.5f, 0.75f, 1})
+            for (float swing : new float[] {-1, 0, 1}) for (float fold : new float[] {0, 0.5f, 1}) {
+                var delta = new ArrayList<Float>(mesh.positions().length);
+                float wristMorph = smoothStep(spread / 0.35f);
+                float targetWristY = hand && connection != null && spread != 0 ? tipY + (jointY - tipY) * wristMorph - 4f : wristY;
+                float[] wrist = wingPoint(wristX, targetWristY, side, pivotX, pivotY, rootY, lift, swing, fold, elbowX, elbowY, foldDegrees);
+                double wristAngle = Math.toRadians(connection == null ? (side.equals("L") ? 1 : -1) * (15 * lift + 6 * swing) :
+                    180 + (side.equals("L") ? 1 : -1) * (105 * lift + 25 * swing + foldDegrees * fold + flex * spread));
+                float width = spread == 0 ? 1 : 0.18f + 0.82f * smoothStep(spread);
+                float height = spread == 0 ? 1 : 0.86f + 0.14f * smoothStep(spread);
+                for (int i = 0; i < mesh.positions().length; i += 2) {
+                    float x = mesh.x(i), y = mesh.y(i);
+                    float taper = morph ? smoothStep((y - taperStart) / (tipY - taperStart)) * wristMorph : 0;
+                    float armX = jointX + (x - jointX) * (1 - 0.90f * taper);
+                    float armY = y + (jointY - tipY) * taper;
+                    float[] target = hand ? new float[] {
+                        wrist[0] + (float) ((x - wristX) * width * Math.cos(wristAngle) - (y - wristY) * height * Math.sin(wristAngle)),
+                        wrist[1] + (float) ((x - wristX) * width * Math.sin(wristAngle) + (y - wristY) * height * Math.cos(wristAngle))
+                    } : wingPoint(morph ? armX : x, morph ? armY : y, side, pivotX, pivotY, rootY, lift, swing, fold, elbowX, elbowY, foldDegrees);
+                    boolean rest = lift == 0 && swing == 0 && fold == 0 && (!(hand || morph) || spread == 0);
+                    float dx = rest ? 0 : (target[0] - x) / mesh.scaleX();
+                    float dy = rest ? 0 : (target[1] - y) / mesh.scaleY();
+                    delta.add(dx); delta.add(dy);
+                    maxMotion = Math.max(maxMotion, (float) Math.hypot(target[0] - x, target[1] - y));
+                }
+                var pose = new LinkedHashMap<String, Float>();
+                pose.put("ParamWing" + side + "Lift", lift);
+                pose.put("ParamWing" + side + "Swing", swing);
+                pose.put("ParamWing" + side + "Fold", fold);
+                if (hand) pose.put(handParameter, spread);
+                if (morph) pose.put("ParamHandMorph", spread);
+                edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, mesh.id(), null), pose,
+                    new RigKeyformGeometryEdit(null, null, null, null, null, delta), null));
+            }
+        if (maxMotion < 5) throw new IllegalStateException("Wing binding has no usable movement: " + mesh.id());
+        System.out.printf(Locale.ROOT, "Authored wing mesh: %s side=%s hand=%s morph=%s keyforms=%d max-motion=%.2f px%n", mesh.id(), side, hand, morph, hand || morph ? 270 : 45, maxMotion);
+        return edits;
+    }
+
+    private static RigEditOverlay opacity(RigEditOverlay edits, String id, String parameter, float key, float value) {
+        return edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, id, null), Map.of(parameter, key),
+            null, new RigKeyformChannelsEdit(value, null, null, null, null, null, null)));
+    }
+
+    private static RigEditOverlay authorBeak(RigEditOverlay edits, BuiltRig rig, PipelineAnalysis analysis, JsonObject settings,
+            Map<String, String> bindings) throws Exception {
+        keys(settings, Set.of("closed", "upper", "lower", "inner", "legacyHidden", "hingeY", "gapPx"));
+        float hingeY = boundedNumber(settings.get("hingeY"), "beak hingeY", 0, analysis.getSource().getHeightPx());
+        float gap = boundedNumber(settings.get("gapPx"), "beak gapPx", 2, 30);
+        edits = parameter(edits, "ParamBeakOpen", 0, 1);
+        for (String role : List.of("closed", "upper", "lower", "inner")) {
+            MeshSpace mesh = meshSpace(string(settings.get(role), role), rig, analysis, bindings);
+            for (float open : new float[] {0, 0.05f, 0.1f, 0.25f, 0.5f, 0.75f, 1}) {
+                float reveal = Math.max(0, Math.min(1, (open - 0.05f) / 0.05f));
+                float alpha = role.equals("closed") ? 1 - reveal : reveal;
+                var delta = new ArrayList<Float>(mesh.positions().length);
+                for (int i = 0; i < mesh.positions().length; i += 2) {
+                    float y = mesh.y(i), targetY = switch (role) {
+                        case "upper" -> y - gap * 0.22f * open;
+                        case "lower" -> y + gap * 0.78f * open;
+                        case "inner" -> open == 0 ? y : hingeY + (y - hingeY) * (0.05f + 0.70f * open);
+                        default -> y;
+                    };
+                    delta.add(0f); delta.add((targetY - y) / mesh.scaleY());
+                }
+                edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, mesh.id(), null),
+                    Map.of("ParamBeakOpen", open), new RigKeyformGeometryEdit(null, null, null, null, null, delta),
+                    new RigKeyformChannelsEdit(alpha, null, null, null, null, null, null)));
+            }
+        }
+        for (JsonElement item : array(settings.get("legacyHidden"), "legacyHidden")) {
+            MeshSpace mesh = meshSpace(string(item, "legacy mouth layer"), rig, analysis, bindings);
+            for (float key : new float[] {0, 1}) edits = opacity(edits, mesh.id(), "ParamBeakOpen", key, 0);
+        }
+        System.out.println("Authored bird beak: separate upper/lower jaws and inner mouth, seven geometry keys, no human mouth stretch");
+        return edits;
     }
 
     // The lower head blends into the chest instead of rotating as a detached plate around its beak

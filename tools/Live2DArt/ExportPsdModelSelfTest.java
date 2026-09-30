@@ -45,7 +45,7 @@ public final class ExportPsdModelSelfTest {
         int sourceLayers = Integer.parseInt(((JsonPrimitive) parsedProfile.get("expectedSourceLayers")).getContent());
         reject(input, evidence, "source-count", change(validProfile, null, "expectedSourceLayers", Integer.toString(sourceLayers + 1)), "Source layer count differs");
         reject(input, evidence, "unknown-setting", rename(validProfile, "config", "meshSpacing", "notASetting"), "Unknown configuration key");
-        reject(input, evidence, "missing-layer", replace(validProfile, "\"irides-l\"", "\"absent-layer\""), "Expected exactly one source layer");
+        reject(input, evidence, "missing-layer", replace(validProfile, "\"name\": \"irides-l\"", "\"name\": \"absent-layer\""), "Expected exactly one source layer");
         reject(input, evidence, "invalid-atlas", change(validProfile, "config", "atlasSize", "777"), "atlasSize must be a power of two");
         reject(input, evidence, "wrong-eye-parameter", replace(validProfile, "\"requiredGeometryParameter\": \"ParamEyeLOpen\"", "\"requiredGeometryParameter\": \"ParamBreath\""), "Eye mesh is not bound");
         reject(input, evidence, "unsupported-parent", replace(validProfile, "\"name\": \"footwear-l\", \"parent\": null", "\"name\": \"footwear-l\", \"parent\": \"../../escape\""), "Only explicit null/root parent");
@@ -66,6 +66,33 @@ public final class ExportPsdModelSelfTest {
                 mark("local feather anchoring preserves neutral and upper facial controls");
                 reject(input, evidence, "invalid-feather-anchor-flag", change(validProfile, "headConnection", "pinFaceFeathers", "\"true\""), "pinFaceFeathers must be boolean");
             }
+        }
+        if (parsedProfile.containsKey("fullBody")) {
+            int actionMeshes = ((JsonObject) parsedProfile.get("fullBody")).containsKey("busyEyes") ? 17 : 13;
+            if (!validation.contains("\"fullBodyRig\": true") || !validation.contains("\"actionBoundMeshes\": " + actionMeshes))
+                throw new AssertionError("Missing full-body mesh authoring assertions");
+            JsonObject bindings = (JsonObject) Json.Default.parseToJsonElement(Files.readString(validOutput.resolve("action-bindings.json")));
+            if (((JsonArray) bindings.get("foregroundDrawableIds")).size() != 5)
+                throw new AssertionError("Desk foreground must name the two forearms and three hand shapes");
+            mark("full-body mesh movement, rest geometry, jaw shapes, hand opacity and foreground bindings verified");
+            reject(input, evidence, "wing-empty-layers", change(validProfile, "fullBody.leftWing", "layers", "[]"), "Wing layers must not be empty");
+            reject(input, evidence, "wing-pivot-above-root", change(validProfile, "fullBody.leftWing", "pivotY", "190"), "wing pivotY must be in");
+            reject(input, evidence, "elbow-above-shoulder", change(validProfile, "fullBody.leftWing", "elbowY", "210"), "elbowY must be in");
+            reject(input, evidence, "beak-gap-disabled", change(validProfile, "fullBody.beak", "gapPx", "0"), "beak gapPx must be in");
+            reject(input, evidence, "foreground-missing", change(validProfile, "fullBody", "foregroundLayers", "[\"absent-part\"]"), "Foreground layer must resolve");
+            reject(input, evidence, "wrist-taper-inverted", change(validProfile, "fullBody.handConnection", "taperStartY", "280"), "wristY must be in");
+            reject(input, evidence, "attachment-missing", change(validProfile, "fullBody", "handAttachments", "{\"r\":{\"layer\":\"absent-part\",\"source\":[140,286]}}"), "Attachment layer is not an authored action mesh");
+            reject(input, evidence, "unbound-forearm", replace(validProfile,
+                "\"name\": \"forearm-r\", \"semanticTag\": \"HANDWEAR\", \"side\": \"RIGHT\", \"parentDeformer\": \"DeformBodyZBreath\"",
+                "\"name\": \"forearm-r\", \"semanticTag\": \"HANDWEAR\", \"side\": \"RIGHT\", \"parentDeformer\": \"DeformHeadContainer\""),
+                "Action wing must share the body coordinate frame");
+            if (((JsonObject) parsedProfile.get("fullBody")).containsKey("busyEyes"))
+                reject(input, evidence, "busy-eye-wrong-axis", replace(validProfile, "\"eyeParameter\": \"ParamEyeLOpen\"",
+                    "\"eyeParameter\": \"ParamBreath\""), "Busy eye must bind to a real left/right eye parameter");
+        }
+        if (parsedProfile.containsKey("calibrationLayers")) {
+            reject(input, evidence, "calibration-empty", change(validProfile, null, "calibrationLayers", "[]"), "calibrationLayers must not be empty");
+            reject(input, evidence, "calibration-missing", change(validProfile, null, "calibrationLayers", "[\"absent-source\"]"), "Expected exactly one calibration layer");
         }
         if (!Arrays.equals(sourceBefore, digest(input))) throw new AssertionError("Authoring source was modified");
         mark("input PSD hash unchanged across valid and rejected exports");
@@ -93,14 +120,17 @@ public final class ExportPsdModelSelfTest {
     }
     private static String change(String input, String section, String key, String value) {
         JsonObject root = (JsonObject) Json.Default.parseToJsonElement(input);
-        var object = section == null ? root : (JsonObject) root.get(section);
+        if (section != null) {
+            String[] path = section.split("\\.", 2);
+            var result = new LinkedHashMap<String, JsonElement>(root);
+            result.put(path[0], Json.Default.parseToJsonElement(change(root.get(path[0]).toString(), path.length > 1 ? path[1] : null, key, value)));
+            return new JsonObject(result).toString();
+        }
+        var object = root;
         if (!object.containsKey(key)) throw new IllegalStateException("Missing fixture property: " + key);
         var changed = new LinkedHashMap<String, JsonElement>(object);
         changed.put(key, Json.Default.parseToJsonElement(value));
-        if (section == null) return new JsonObject(changed).toString();
-        var result = new LinkedHashMap<String, JsonElement>(root);
-        result.put(section, new JsonObject(changed));
-        return new JsonObject(result).toString();
+        return new JsonObject(changed).toString();
     }
     private static String rename(String input, String section, String oldKey, String newKey) {
         JsonObject root = (JsonObject) Json.Default.parseToJsonElement(input);

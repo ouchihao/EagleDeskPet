@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "psd2liveVersion": "1.1.1",
+  "expectedSourceLayers": 25,
+  "calibrationLayers": [
+    "footwear-r", "footwear-l", "topwear", "handwear-r", "handwear-l", "face",
+    "facedetail-r", "facedetail-l", "eyebrow-r", "eyebrow-l", "irides-r", "irides-l",
+    "mouth", "mouth lower", "mouth close", "forearm-r", "forearm-l"
+  ],
+  "config": {
+    "atlasSize": 2048,
+    "meshSpacing": 16,
+    "headTurnStrength": 0.4,
+    "bodyStrength": 0.55,
+    "featureDisplacementEnabled": false,
+    "mouthOutlineEnabled": false,
+    "generatePhysics": false
+  },
+  "headConnection": {
+    "pivotX": 193,
+    "pivotY": 215,
+    "softAnchorStartY": 187,
+    "softAnchorEndY": 219,
+    "maxTiltDegrees": 10,
+    "pinFaceFeathers": true
+  },
+  "layers": [
+    { "name": "irides-l", "semanticTag": "EYELASH", "side": "LEFT", "requiredGeometryParameter": "ParamEyeLOpen", "closedEye": { "heightPx": 0.75, "curveDepthPx": 0.8 } },
+    { "name": "irides-r", "semanticTag": "EYELASH", "side": "RIGHT", "requiredGeometryParameter": "ParamEyeROpen", "closedEye": { "heightPx": 0.75, "curveDepthPx": 0.8 } },
+    { "name": "footwear-l", "parent": null },
+    { "name": "footwear-r", "parent": null },
+    { "name": "handwear-l", "semanticTag": "HANDWEAR", "side": "LEFT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "handwear-r", "semanticTag": "HANDWEAR", "side": "RIGHT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "forearm-l", "semanticTag": "HANDWEAR", "side": "LEFT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "forearm-r", "semanticTag": "HANDWEAR", "side": "RIGHT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "beak-upper", "semanticTag": "FACE_DETAIL", "side": "NONE", "parentDeformer": "DeformFaceNinePose" },
+    { "name": "beak-lower", "semanticTag": "FACE_DETAIL", "side": "NONE", "parentDeformer": "DeformFaceNinePose" },
+    { "name": "beak-inner", "semanticTag": "FACE_DETAIL", "side": "NONE", "parentDeformer": "DeformFaceNinePose" },
+    { "name": "rps-rock", "semanticTag": "HANDWEAR", "side": "RIGHT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "rps-paper", "semanticTag": "HANDWEAR", "side": "RIGHT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "rps-scissors", "semanticTag": "HANDWEAR", "side": "RIGHT", "parentDeformer": "DeformBodyZBreath", "mesh": { "maxEdgeDistance": 3, "interiorDensity": 8 } },
+    { "name": "busy-eye-l", "semanticTag": "FACE_DETAIL", "side": "LEFT", "parentDeformer": "DeformFaceNinePose" },
+    { "name": "busy-eye-r", "semanticTag": "FACE_DETAIL", "side": "RIGHT", "parentDeformer": "DeformFaceNinePose" }
+  ],
+  "fullBody": {
+    "foregroundLayers": ["forearm-l", "forearm-r", "rps-rock", "rps-paper", "rps-scissors"],
+    "handAttachments": { "l": { "layer": "forearm-l", "source": [244, 286] }, "r": { "layer": "forearm-r", "source": [140, 286] } },
+    "wingRootY": 197,
+    "bodyGroundY": 309,
+    "handConnection": { "forearm": "forearm-r", "wristX": 140, "wristY": 276, "tipY": 295, "taperStartY": 247, "wristFlexDegrees": 65 },
+    "leftWing": { "layers": ["handwear-l", "forearm-l"], "pivotX": 246, "pivotY": 221, "elbowX": 244, "elbowY": 247, "foldDegrees": 110 },
+    "rightWing": { "layers": ["handwear-r", "forearm-r"], "pivotX": 134, "pivotY": 221, "elbowX": 138, "elbowY": 247, "foldDegrees": 110 },
+    "beak": { "closed": "mouth close", "upper": "beak-upper", "lower": "beak-lower", "inner": "beak-inner", "legacyHidden": ["mouth", "mouth lower"], "hingeY": 171, "gapPx": 16 },
+    "hands": [
+      { "layer": "rps-rock", "parameter": "ParamHandRock", "wristX": 140, "wristY": 272 },
+      { "layer": "rps-paper", "parameter": "ParamHandPaper", "wristX": 140, "wristY": 272 },
+      { "layer": "rps-scissors", "parameter": "ParamHandScissors", "wristX": 140, "wristY": 272 }
+    ],
+    "busyEyes": [
+      { "layer": "busy-eye-l", "normal": "irides-l", "eyeParameter": "ParamEyeLOpen", "heightPx": 0.75, "curveDepthPx": 0.8 },
+      { "layer": "busy-eye-r", "normal": "irides-r", "eyeParameter": "ParamEyeROpen", "heightPx": 0.75, "curveDepthPx": 0.8 }
+    ]
+  },
+  "requiredParameters": [
+    "ParamAngleX", "ParamAngleY", "ParamAngleZ", "ParamEyeLOpen", "ParamEyeROpen", "ParamBreath",
+    "ParamWingLLift", "ParamWingLSwing", "ParamWingLFold", "ParamWingRLift", "ParamWingRSwing", "ParamWingRFold",
+    "ParamBodySquash", "ParamBeakOpen", "ParamHandRock", "ParamHandPaper", "ParamHandScissors", "ParamBusyEyes", "ParamHandMorph"
+  ]
+}
