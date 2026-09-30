@@ -24,31 +24,31 @@ internal static class Program
         Directory.CreateDirectory(root);
         var cases = new (string Name, Action Test)[]
         {
-            ("new-wallet-zero", () => { var c = Care(); Equal(3, c.State.Version); Equal(0, c.State.Coins); }),
+            ("new-wallet-zero", () => { var c = Care(); Equal(4, c.State.Version); Equal(0, c.State.Coins); }),
             ("run-income-is-independent-of-shopping", () => {
                 var c = Care(); c.StartWork(Start); c.Advance(Start.AddMinutes(3));
-                Equal(3, (int)c.EarnedCoinsThisRun); c.State.Coins -= 2;
-                Equal(3, (int)c.EarnedCoinsThisRun); c.StopWork(Start.AddMinutes(3));
-                c.Advance(Start.AddMinutes(4)); Equal(3, (int)c.EarnedCoinsThisRun);
+                Equal(2.54m, c.EarnedCoinsThisRun); c.State.Coins -= 2;
+                Equal(2.54m, c.EarnedCoinsThisRun); c.StopWork(Start.AddMinutes(3));
+                c.Advance(Start.AddMinutes(4)); Equal(2.54m, c.EarnedCoinsThisRun);
                 var restarted = new PetCareService(c.State.CreateSnapshot(), Start.AddMinutes(4));
-                Equal(0, (int)restarted.EarnedCoinsThisRun); Equal(1, restarted.State.Coins);
+                Equal(0, (int)restarted.EarnedCoinsThisRun); Equal(0.54m, restarted.State.Coins);
             }),
             ("idle-does-not-earn", () => { var c = Care(); c.Advance(Start.AddHours(2)); Equal(0, c.State.Coins); }),
             ("whole-minute-boundary", MinuteBoundary),
             ("tick-cadence-independent", TickCadence),
             ("cancel-retains-fraction", CancelRetainsFraction),
-            ("hunger-cuts-off-fraction", HungerCutoff),
-            ("hunger-exact-minute", () => { var c = Working(0.2); c.Advance(Start.AddHours(2)); Equal(1, c.State.Coins); Near(0, c.State.WageProgressSeconds); Check(!c.State.IsWorking); }),
-            ("empty-stomach-no-wage", () => { var c = Working(0); c.Advance(Start.AddHours(1)); Equal(0, c.State.Coins); }),
+            ("mood-zero-crossing-is-piecewise", MoodZeroCrossing),
+            ("low-mood-keeps-working", () => { var c = Working(0.2); c.Advance(Start.AddHours(2)); Equal(60, c.State.Coins); Check(c.State.IsWorking); }),
+            ("zero-mood-earns-half-rate", () => { var c = Working(0); c.Advance(Start.AddHours(1)); Equal(30, c.State.Coins); }),
             ("offline-two-hour-cap", OfflineCap),
             ("offline-idle-no-wage", () => { var c = new PetCareService(new PetState { LastUpdatedUtc = Start }, Start.AddDays(7)); Equal(0, c.State.Coins); }),
             ("repeated-timestamp-no-double", RepeatedTimestamp),
             ("work-cursor-no-double", WorkCursor),
             ("clock-rollback-in-process", ClockRollback),
             ("clock-rollback-restart", ClockRollbackRestart),
-            ("clock-rollback-hunger-overlap", ClockRollbackHunger),
+            ("clock-rollback-does-not-repeat-mood-decay", ClockRollbackMood),
             ("v1-no-retroactive-wages", Migration),
-            ("v1-ignores-wallet-fields", MigrationInjectedWallet),
+            ("v1-clears-wallet-preserves-ledger", MigrationInjectedWallet),
             ("v1-future-clock-no-retro", MigrationFutureClock),
             ("cap-consumes-excess-work", WageCap),
             ("wallet-values-normalized", NormalizeWallet),
@@ -81,9 +81,11 @@ internal static class Program
             ("ownership-pending-preview-and-fallback-no-boost", InactiveEquipment),
             ("mid-minute-equip-settles-old-rate", MidMinuteEquipment),
             ("weighted-money-and-xp-split-restart-invariant", WeightedCadence),
+            ("geared-zero-crossing-and-equipment-change-cadence", GearedZeroCrossing),
             ("equipment-reduces-both-idle-and-work-decay", EquipmentDecay),
             ("equipment-offline-cap-still-two-hours", EquipmentOffline),
-            ("v2-migration-retains-money-receipts-ownership-and-honors", VersionTwoMigration),
+            ("v2-migration-clears-money-preserves-receipts-ownership-and-honors", VersionTwoMigration),
+            ("v3-clears-once-and-v4-reopen-keeps-new-money", VersionThreeMigration),
             ("fractional-debit-exact-and-idempotent", DecimalDebit),
             ("overprecision-debit-and-save-rejected", OverPrecision),
             ("catalog-prices-are-exponential", CatalogPrices),
@@ -113,9 +115,9 @@ internal static class Program
     }
 
     private static PetCareService Care() => new(null, Start);
-    private static PetCareService Working(double fullness = 75)
+    private static PetCareService Working(double mood = 70)
     {
-        var c = new PetCareService(new PetState { Fullness = fullness, LastUpdatedUtc = Start }, Start);
+        var c = new PetCareService(new PetState { Mood = mood, LastUpdatedUtc = Start }, Start);
         c.StartWork(Start);
         return c;
     }
@@ -125,39 +127,44 @@ internal static class Program
 
     private static void MinuteBoundary()
     {
-        var c = Working(); c.Advance(Start.AddMilliseconds(59900)); Equal(0.99m, c.State.Coins); Near(0.5, c.State.WageProgressSeconds);
-        c.Advance(Start.AddSeconds(60)); Equal(1, c.State.Coins); Near(0, c.State.WageProgressSeconds);
-        c.Advance(Start.AddSeconds(121)); Equal(2.01m, c.State.Coins); Near(0.4, c.State.WageProgressSeconds);
+        var c = Working(); c.Advance(Start.AddMilliseconds(59900)); Equal(0.84m, c.State.Coins);
+        c.Advance(Start.AddSeconds(60)); Equal(0.84m, c.State.Coins);
+        c.Advance(Start.AddSeconds(121)); Equal(1.71m, c.State.Coins);
     }
     private static void TickCadence()
     {
         var slow = Working(); var fast = Working(); slow.Advance(Start.AddSeconds(600));
         for (int i = 1; i <= 6000; i++) fast.Advance(Start.AddMilliseconds(i * 100));
-        Equal(10, slow.State.Coins); Equal(slow.State.Coins, fast.State.Coins); Near(0, fast.State.WageProgressSeconds, 1e-6);
+        Equal(8.45m, slow.State.Coins); Equal(slow.State.Coins, fast.State.Coins);
+        Equal(slow.State.MoodUnits, fast.State.MoodUnits); Equal(slow.State.WageRemainderScaledUnits, fast.State.WageRemainderScaledUnits);
     }
     private static void CancelRetainsFraction()
     {
-        var c = Working(); c.StopWork(Start.AddSeconds(40)); Near(0.4, c.State.WageProgressSeconds);
-        c.Advance(Start.AddMinutes(5)); Equal(0.66m, c.State.Coins);
-        c.StartWork(Start.AddMinutes(5)); c.Advance(Start.AddSeconds(320)); Equal(1, c.State.Coins); Near(0, c.State.WageProgressSeconds);
+        var c = Working(); c.StopWork(Start.AddSeconds(40)); decimal fraction = c.State.WageRemainderScaledUnits;
+        c.Advance(Start.AddMinutes(5)); Equal(0.56m, c.State.Coins); Equal(fraction, c.State.WageRemainderScaledUnits);
+        c.StartWork(Start.AddMinutes(5)); c.Advance(Start.AddSeconds(320)); Equal(0.84m, c.State.Coins);
     }
-    private static void HungerCutoff()
+    private static void MoodZeroCrossing()
     {
-        var c = Working(0.3); c.Advance(Start.AddHours(2)); Equal(1.50m, c.State.Coins); Near(0, c.State.WageProgressSeconds);
-        Near(90, c.State.TotalWorkSeconds); Check(!c.State.IsWorking); c.Advance(Start.AddHours(3)); Equal(1.50m, c.State.Coins);
+        var slow = Working(5); var fast = Working(5);
+        slow.Advance(Start.AddHours(1));
+        for (int i = 1; i <= 3600; i++) fast.Advance(Start.AddSeconds(i));
+        Equal(30.37m, slow.State.Coins); Equal(slow.State.Coins, fast.State.Coins);
+        Equal(slow.State.WageRemainderScaledUnits, fast.State.WageRemainderScaledUnits);
+        Near(3600, slow.State.TotalWorkSeconds); Check(slow.State.IsWorking); Near(0, slow.State.Mood);
     }
     private static void OfflineCap()
     {
         var before = Working(); var c = new PetCareService(before.State, Start.AddDays(7));
-        Equal(120, c.State.Coins); Near(7200, c.State.TotalWorkSeconds); Near(51, c.State.Fullness);
-        var reopened = new PetCareService(c.State, Start.AddDays(7)); Equal(120, reopened.State.Coins);
-        reopened.Advance(Start.AddDays(7).AddMinutes(1)); Equal(121, reopened.State.Coins);
+        Equal(96, c.State.Coins); Near(7200, c.State.TotalWorkSeconds); Near(50, c.State.Mood);
+        var reopened = new PetCareService(c.State, Start.AddDays(7)); Equal(96, reopened.State.Coins);
+        reopened.Advance(Start.AddDays(7).AddMinutes(1)); Equal(96.74m, reopened.State.Coins);
     }
     private static void RepeatedTimestamp()
     {
         var c = Working(); c.Advance(Start.AddMinutes(1));
         for (int i = 0; i < 100; i++) Check(!c.Advance(Start.AddMinutes(1)));
-        Equal(1, c.State.Coins);
+        Equal(0.84m, c.State.Coins);
     }
     private static void WorkCursor()
     {
@@ -170,48 +177,50 @@ internal static class Program
     private static void ClockRollback()
     {
         var c = Working(); c.Advance(Start.AddMinutes(2)); c.Advance(Start.AddMinutes(-10));
-        c.Advance(Start.AddMinutes(2)); Equal(2, c.State.Coins); c.Advance(Start.AddMinutes(3)); Equal(3, c.State.Coins);
+        c.Advance(Start.AddMinutes(2)); Equal(1.69m, c.State.Coins); c.Advance(Start.AddMinutes(3)); Equal(2.54m, c.State.Coins);
     }
     private static void ClockRollbackRestart()
     {
-        var before = Working(); before.Advance(Start.AddMinutes(10)); Equal(10, before.State.Coins);
-        var c = new PetCareService(before.State, Start); c.Advance(Start.AddMinutes(5)); Equal(10, c.State.Coins);
-        var reopened = new PetCareService(c.State, Start.AddMinutes(5)); reopened.Advance(Start.AddMinutes(10)); Equal(10, reopened.State.Coins);
-        reopened.Advance(Start.AddMinutes(11)); Equal(11, reopened.State.Coins);
+        var before = Working(); before.Advance(Start.AddMinutes(10)); Equal(8.45m, before.State.Coins);
+        var c = new PetCareService(before.State, Start); c.Advance(Start.AddMinutes(5)); Equal(8.45m, c.State.Coins);
+        var reopened = new PetCareService(c.State, Start.AddMinutes(5)); reopened.Advance(Start.AddMinutes(10)); Equal(8.45m, reopened.State.Coins);
+        reopened.Advance(Start.AddMinutes(11)); Equal(9.29m, reopened.State.Coins);
+        before.Advance(Start.AddMinutes(11)); Equal(before.State.Coins, reopened.State.Coins); Equal(before.State.MoodUnits, reopened.State.MoodUnits);
     }
-    private static void ClockRollbackHunger()
+    private static void ClockRollbackMood()
     {
-        var state = Wallet(); state.IsWorking = true; state.Fullness = 0.1;
+        var state = Wallet(); state.IsWorking = true; state.Mood = 0.1;
         state.LastUpdatedUtc = Start.AddMinutes(5); state.WageLastUpdatedUtc = state.LastUpdatedUtc;
-        var c = new PetCareService(state, Start); c.Advance(Start.AddMinutes(10)); Equal(10, c.State.Coins); Check(!c.State.IsWorking);
+        var c = new PetCareService(state, Start); c.Advance(Start.AddMinutes(5)); Near(0.1, c.State.Mood); Equal(10m, c.State.Coins);
+        c.Advance(Start.AddMinutes(10)); Equal(12.50m, c.State.Coins); Check(c.State.IsWorking);
     }
     private static void Migration()
     {
         var v1 = new PetState { Version = 1, IsWorking = true, LastUpdatedUtc = Start, TotalWorkSeconds = 3600,
             WorkExperienceProgressSeconds = 59, Food = 7, Experience = 100, TotalMeals = 3, TotalPets = 12, Achievements = new() { "first-meal" } };
-        var c = new PetCareService(v1, Start.AddHours(1)); Equal(3, c.State.Version); Equal(0, c.State.Coins);
+        var c = new PetCareService(v1, Start.AddHours(1)); Equal(4, c.State.Version); Equal(0, c.State.Coins);
         Near(7200, c.State.WageSettledWorkSeconds); Near(0, c.State.WageProgressSeconds); Equal(3, c.State.TotalMeals); Equal(12, c.State.TotalPets);
         Check(c.State.Achievements.Contains("first-meal")); Equal(1, v1.Version);
-        c.Advance(Start.AddHours(1).AddSeconds(59)); Equal(0.98m, c.State.Coins);
-        c.Advance(Start.AddHours(1).AddMinutes(1)); Equal(1, c.State.Coins);
+        c.Advance(Start.AddHours(1).AddSeconds(59)); Equal(0.78m, c.State.Coins);
+        c.Advance(Start.AddHours(1).AddMinutes(1)); Equal(0.79m, c.State.Coins);
     }
     private static void MigrationInjectedWallet()
     {
         var c = new PetCareService(new PetState { Version = 1, LastUpdatedUtc = Start, TotalWorkSeconds = 90000,
             Coins = 9999, WageProgressSeconds = 59, AppliedWalletDebits = new() { ["old"] = 5 } }, Start);
-        Equal(0, c.State.Coins); Near(0, c.State.WageProgressSeconds); Near(90000, c.State.WageSettledWorkSeconds); Equal(0, c.State.AppliedWalletDebits.Count);
+        Equal(0, c.State.Coins); Near(0, c.State.WageProgressSeconds); Near(90000, c.State.WageSettledWorkSeconds); Equal(5m, c.State.AppliedWalletDebits["old"]);
     }
     private static void MigrationFutureClock()
     {
         var c = new PetCareService(new PetState { Version = 1, LastUpdatedUtc = Start.AddYears(1), TotalWorkSeconds = 500, IsWorking = true }, Start);
-        Equal(0, c.State.Coins); c.Advance(Start.AddMinutes(1)); Equal(1, c.State.Coins);
+        Equal(0, c.State.Coins); c.Advance(Start.AddMinutes(1)); Equal(0.84m, c.State.Coins);
     }
     private static void WageCap()
     {
         var c = Working(); c.State.Coins = EconomyPolicy.MaximumCoins - 1;
         c.Advance(Start.AddSeconds(135)); Equal(EconomyPolicy.MaximumCoins, c.State.Coins); Near(0, c.State.WageProgressSeconds);
         c.State.Coins -= 5; c.Advance(Start.AddSeconds(135)); Equal(EconomyPolicy.MaximumCoins - 5, c.State.Coins);
-        c.Advance(Start.AddSeconds(180)); Equal(EconomyPolicy.MaximumCoins - 4.25m, c.State.Coins); Near(0, c.State.WageProgressSeconds);
+        c.Advance(Start.AddSeconds(180)); Equal(EconomyPolicy.MaximumCoins - 4.37m, c.State.Coins);
     }
     private static void NormalizeWallet()
     {
@@ -229,15 +238,15 @@ internal static class Program
     private static void SaveFraction()
     {
         var c = Working(); c.Advance(Start.AddSeconds(45.25)); Check(Store().Save(c.State));
-        var c2 = new PetCareService(Store().Load(), Start.AddSeconds(45.25)); Near(0.25, c2.State.WageProgressSeconds); Equal(0.75m, c2.State.Coins);
-        c2.Advance(Start.AddMinutes(1)); Equal(1, c2.State.Coins); Near(60, c2.State.WageSettledWorkSeconds);
+        var c2 = new PetCareService(Store().Load(), Start.AddSeconds(45.25)); Equal(c.State.WageRemainderScaledUnits, c2.State.WageRemainderScaledUnits); Equal(0.64m, c2.State.Coins);
+        c2.Advance(Start.AddMinutes(1)); Equal(0.84m, c2.State.Coins); Near(60, c2.State.WageSettledWorkSeconds);
     }
     private static void MigrationStore()
     {
         string original = "{\"Version\":1,\"LastUpdatedUtc\":\"2026-09-19T00:00:00+00:00\",\"Food\":9,\"Experience\":120,\"TotalWorkSeconds\":1200}";
         File.WriteAllText(SavePath, original); var store = Store(); var saved = store.Load(); Equal(1, saved!.Version);
         Equal(original, File.ReadAllText(SavePath)); var c = new PetCareService(saved, Start); Check(store.Save(c.State));
-        Equal(original, File.ReadAllText(SavePath + ".bak")); Equal(3, Store().Load()!.Version); Equal(9, c.State.Food); Equal(130, c.State.Experience); Equal(0, c.State.Coins);
+        Equal(original, File.ReadAllText(store.MigrationBackupPath!)); Equal(4, Store().Load()!.Version); Equal(9, c.State.Food); Equal(130, c.State.Experience); Equal(0, c.State.Coins);
     }
     private static void RejectFile(string text)
     {
@@ -320,7 +329,7 @@ internal static class Program
     {
         var first = Store(); var second = Store(); var c1 = new PetCareService(first.Load(), Start); var c2 = new PetCareService(second.Load(), Start);
         c1.StartWork(Start); c2.StartWork(Start); c1.Advance(Start.AddMinutes(1)); c2.Advance(Start.AddMinutes(1));
-        Check(first.Save(c1.State)); Check(!second.Save(c2.State)); Check(!second.CanSave); Equal(1, Store().Load()!.Coins);
+        Check(first.Save(c1.State)); Check(!second.Save(c2.State)); Check(!second.CanSave); Equal(0.84m, Store().Load()!.Coins);
     }
     private static void UnreadExisting()
     {
@@ -336,7 +345,7 @@ internal static class Program
             File.WriteAllText(Path.Combine(_directory, "go"), "go");
             Check(a.WaitForExit(10000) && b.WaitForExit(10000)); Equal(0, a.ExitCode); Equal(0, b.ExitCode);
             var results = new[] { File.ReadAllText(Path.Combine(_directory, "a.result")), File.ReadAllText(Path.Combine(_directory, "b.result")) };
-            Equal(1, results.Count(x => x == "saved")); Equal(1, results.Count(x => x == "conflict")); Equal(1, Store().Load()!.Coins);
+            Equal(1, results.Count(x => x == "saved")); Equal(1, results.Count(x => x == "conflict")); Equal(0.84m, Store().Load()!.Coins);
         }
         finally { if (!a.HasExited) a.Kill(); if (!b.HasExited) b.Kill(); }
     }
@@ -372,28 +381,28 @@ internal static class Program
     {
         var care = new PetCareService(Geared(ContentCatalog.OfficeOutfitId, ContentCatalog.BoardroomDeskId,
             ContentCatalog.UltrabookComputerId), Start);
-        Equal(new EquipmentBonuses(0.5m, 0.5m, 2m, 1.6m), care.CurrentBonuses);
-        Equal(3m, care.MoneyPerWorkMinute); Equal(2.6m, care.WorkExperiencePerMinute);
-        Equal(new EquipmentBonuses(0.5m, 0.5m, 2.5m, 2m), EquipmentPolicy.Clamp(new(9m, 9m, 9m, 9m)));
-        Equal(EquipmentBonuses.None, EquipmentPolicy.Clamp(new(-1m, -1m, -1m, -1m)));
+        Equal(new EquipmentBonuses(0.5m, 2m, 1.6m), care.CurrentBonuses);
+        Equal(2.55m, care.MoneyPerWorkMinute); Equal(2.6m, care.WorkExperiencePerMinute);
+        Equal(new EquipmentBonuses(0.5m, 2.5m, 2m), EquipmentPolicy.Clamp(new(9m, 9m, 9m)));
+        Equal(EquipmentBonuses.None, EquipmentPolicy.Clamp(new(-1m, -1m, -1m)));
     }
     private static void InactiveEquipment()
     {
         var state = Wallet(0);
         state.Content.Equipped[ContentSlot.Outfit] = ContentCatalog.OfficeOutfitId;
-        var unowned = new PetCareService(state, Start); Equal(1m, unowned.MoneyPerWorkMinute);
+        var unowned = new PetCareService(state, Start); Equal(0.85m, unowned.MoneyPerWorkMinute);
         unowned.SetEffectiveEquipment(Start, new Dictionary<ContentSlot, string> { [ContentSlot.Outfit] = ContentCatalog.OfficeOutfitId });
         unowned.State.Content.OwnedContentIds.Add(ContentCatalog.OfficeOutfitId);
-        Equal(1m, unowned.MoneyPerWorkMinute); // acquiring later cannot activate a rejected selection
+        Equal(0.85m, unowned.MoneyPerWorkMinute); // acquiring later cannot activate a rejected selection
         state.Content.OwnedContentIds.Add(ContentCatalog.OfficeOutfitId);
-        var absent = new PetCareService(state, Start, x => x.IsDefault); Equal(1m, absent.MoneyPerWorkMinute);
+        var absent = new PetCareService(state, Start, x => x.IsDefault); Equal(0.85m, absent.MoneyPerWorkMinute);
         state.Content.Equipped[ContentSlot.Outfit] = ContentCatalog.DefaultOutfitId;
         state.Content.PendingEquipment[ContentSlot.Outfit] = ContentCatalog.OfficeOutfitId;
         var pending = new PetCareService(state, Start); pending.StartWork(Start); pending.Advance(Start.AddMinutes(1));
-        Equal(1m, pending.State.Coins); Equal(1m, pending.MoneyPerWorkMinute);
+        Equal(0.84m, pending.State.Coins); Equal(EquipmentBonuses.None, pending.CurrentBonuses);
         // Even changing a preview/candidate's selection cannot mutate the active snapshot.
         pending.State.Content.Equipped[ContentSlot.Outfit] = ContentCatalog.OfficeOutfitId;
-        pending.Advance(Start.AddMinutes(2)); Equal(2m, pending.State.Coins);
+        pending.Advance(Start.AddMinutes(2)); Equal(1.69m, pending.State.Coins);
         pending.SetEffectiveEquipment(Start.AddMinutes(2), new Dictionary<ContentSlot, string>
             { [ContentSlot.Desk] = ContentCatalog.OfficeOutfitId });
         Equal(EquipmentBonuses.None, pending.CurrentBonuses); // wrong-slot injection
@@ -404,12 +413,12 @@ internal static class Program
         care.State.Content.OwnedContentIds.Add(ContentCatalog.OfficeOutfitId);
         care.State.Content.Equipped[ContentSlot.Outfit] = ContentCatalog.OfficeOutfitId;
         care.SetEffectiveEquipment(Start.AddSeconds(20), care.State.Content.Equipped);
-        Equal(0.33m, care.State.Coins); Equal(0.2m, care.State.WageRemainderUnits);
-        care.Advance(Start.AddSeconds(40)); Equal(1m, care.State.Coins); Equal(0m, care.State.WageRemainderUnits);
+        Equal(0.28m, care.State.Coins);
+        care.Advance(Start.AddSeconds(40)); Equal(0.84m, care.State.Coins);
         Equal(0, care.State.Experience); Equal(56m, care.State.WorkExperienceRemainderUnits);
         care.State.Content.Equipped[ContentSlot.Outfit] = ContentCatalog.DefaultOutfitId;
         care.SetEffectiveEquipment(Start.AddSeconds(50), care.State.Content.Equipped);
-        care.Advance(Start.AddSeconds(60)); Equal(1.5m, care.State.Coins);
+        care.Advance(Start.AddSeconds(60)); Equal(1.27m, care.State.Coins);
         Equal(1, care.State.Experience); Equal(24m, care.State.WorkExperienceRemainderUnits);
     }
     private static void WeightedCadence()
@@ -441,22 +450,50 @@ internal static class Program
     {
         var state = Geared(ContentCatalog.OfficeOutfitId, ContentCatalog.BoardroomDeskId);
         var working = new PetCareService(state.CreateSnapshot(), Start); working.StartWork(Start);
-        working.Advance(Start.AddHours(1)); Near(69, working.State.Fullness); Near(65, working.State.Mood);
+        working.Advance(Start.AddHours(1)); Near(65, working.State.Mood);
         var idle = new PetCareService(state.CreateSnapshot(), Start); idle.Advance(Start.AddHours(1));
-        Near(73, idle.State.Fullness); Near(69.5, idle.State.Mood); Equal(0m, idle.State.Coins);
-        state.Fullness = 0.1; var starving = new PetCareService(state, Start); starving.StartWork(Start);
-        starving.Advance(Start.AddHours(1)); Near(60, starving.State.TotalWorkSeconds);
-        Equal(2.4m, starving.State.Coins); Check(!starving.State.IsWorking);
+        Near(69.5, idle.State.Mood); Equal(0m, idle.State.Coins);
+        state.Mood = 0; var tired = new PetCareService(state, Start); tired.StartWork(Start);
+        tired.Advance(Start.AddHours(1)); Near(3600, tired.State.TotalWorkSeconds);
+        Equal(72m, tired.State.Coins); Check(tired.State.IsWorking);
+    }
+    private static void GearedZeroCrossing()
+    {
+        var initial = Geared(ContentCatalog.MintDeskId, ContentCatalog.HoodieOutfitId);
+        initial.Mood = .527123;
+        var slow = new PetCareService(initial.CreateSnapshot(), Start); slow.StartWork(Start);
+        var fast = new PetCareService(initial.CreateSnapshot(), Start); fast.StartWork(Start);
+        var plain = new Dictionary<ContentSlot, string>();
+        slow.State.Content.Equipped.Clear();
+        slow.SetEffectiveEquipment(Start.AddSeconds(120.1234567), plain);
+        slow.Advance(Start.AddHours(1));
+        var random = new Random(775); long ticks = 0; const long switchTicks = 1_201_234567;
+        while (ticks < TimeSpan.TicksPerHour)
+        {
+            long next = Math.Min(TimeSpan.TicksPerHour, ticks + random.NextInt64(1, 10_000_000));
+            if (ticks < switchTicks && next >= switchTicks)
+            {
+                fast.State.Content.Equipped.Clear();
+                fast.SetEffectiveEquipment(Start.AddTicks(switchTicks), plain);
+                next = switchTicks;
+            }
+            else fast.Advance(Start.AddTicks(next));
+            ticks = next;
+            if (ticks % 17 == 0) fast = new PetCareService(JsonSerializer.Deserialize<PetState>(JsonSerializer.Serialize(fast.State)), Start.AddTicks(ticks));
+        }
+        Equal(slow.State.Coins, fast.State.Coins); Equal(slow.State.MoodUnits, fast.State.MoodUnits);
+        Equal(slow.State.WageRemainderScaledUnits, fast.State.WageRemainderScaledUnits);
+        Equal(slow.State.WorkExperienceRemainderUnits, fast.State.WorkExperienceRemainderUnits);
     }
     private static void EquipmentOffline()
     {
         var state = Geared(ContentCatalog.OfficeOutfitId, ContentCatalog.BoardroomDeskId, ContentCatalog.UltrabookComputerId);
         state.IsWorking = true;
-        var care = new PetCareService(state, Start.AddDays(3)); Equal(360m, care.State.Coins);
+        var care = new PetCareService(state, Start.AddDays(3)); Equal(297m, care.State.Coins);
         Near(7200, care.State.TotalWorkSeconds); Equal(312, care.State.Experience);
-        var sameTime = new PetCareService(care.State.CreateSnapshot(), Start.AddDays(3)); Equal(360m, sameTime.State.Coins);
+        var sameTime = new PetCareService(care.State.CreateSnapshot(), Start.AddDays(3)); Equal(297m, sameTime.State.Coins);
         var rollback = new PetCareService(sameTime.State.CreateSnapshot(), Start);
-        rollback.Advance(Start.AddMinutes(1)); Equal(360m, rollback.State.Coins);
+        rollback.Advance(Start.AddMinutes(1)); Equal(297m, rollback.State.Coins);
     }
     private static void VersionTwoMigration()
     {
@@ -465,15 +502,13 @@ internal static class Program
             "\"AppliedWalletDebits\":{\"purchase:outfit.office\":40},\"Content\":{\"OwnedContentIds\":[\"outfit.office\"]}," +
             "\"Achievements\":[\"meals-gold\",\"growth-gold\"]}";
         File.WriteAllText(SavePath, old); var store = Store(); var care = new PetCareService(store.Load(), Start);
-        Equal(3, care.State.Version); Equal(123m, care.State.Coins); Equal(30m, care.State.WageRemainderUnits);
+        Equal(4, care.State.Version); Equal(0m, care.State.Coins); Equal(0m, care.State.WageRemainderUnits);
         Equal(40m, care.State.AppliedWalletDebits["purchase:outfit.office"]);
         Check(care.State.Content.OwnedContentIds.Contains(ContentCatalog.OfficeOutfitId));
         Check(care.State.Achievements.Contains("meals-gold") && care.State.Achievements.Contains("growth-gold"));
         Check(store.Save(care.State)); Equal(old, File.ReadAllText(SavePath + ".bak"));
-        var again = new PetCareService(Store().Load(), Start); Equal(123m, again.State.Coins);
-        again.StartWork(Start); again.Advance(Start.AddSeconds(0.6)); Equal(123.51m, again.State.Coins);
-        // The old balance, receipt, and 30 s legitimately carried from v2 survive;
-        // the other 90,000 historical work seconds never become back-pay.
+        var again = new PetCareService(Store().Load(), Start); Equal(0m, again.State.Coins);
+        again.StartWork(Start); again.Advance(Start.AddMinutes(1)); Equal(0.84m, again.State.Coins);
     }
     private static void DecimalDebit()
     {
@@ -493,12 +528,12 @@ internal static class Program
     private static void CatalogPrices()
     {
         Check(ContentCatalog.Definitions.Where(x => x.Type == ContentType.Computer && !x.IsDefault).Select(x => x.Price).Order()
-            .SequenceEqual(new decimal[] { 120, 240, 480, 960, 1920, 3840 }));
+            .SequenceEqual(new decimal[] { 5100, 10200, 20400, 40800, 81600, 163200 }));
         Check(ContentCatalog.Definitions.Where(x => x.Type == ContentType.Desk && !x.IsDefault).Select(x => x.Price).Order()
-            .SequenceEqual(new decimal[] { 150, 300, 600, 1200, 2400, 4800 }));
+            .SequenceEqual(new decimal[] { 6375, 12750, 25500, 51000, 102000, 204000 }));
         Check(ContentCatalog.Definitions.Where(x => x.Type == ContentType.Outfit && !x.IsDefault).Select(x => x.Price).Order()
-            .SequenceEqual(new decimal[] { 600, 1200, 2400, 4800, 10000 }));
-        Equal(10000m, ContentCatalog.Get(ContentCatalog.OfficeOutfitId).Price);
+            .SequenceEqual(new decimal[] { 25500, 51000, 102000, 204000, 408000 }));
+        Equal(408000m, ContentCatalog.Get(ContentCatalog.OfficeOutfitId).Price);
         Check(ContentCatalog.Definitions.Where(x => x.IsDefault).All(x => x.Price == 0 && x.Bonuses == EquipmentBonuses.None));
     }
     private static void GrowthCurve()
@@ -531,7 +566,7 @@ internal static class Program
             Equal(GrowthPolicy.MigrateLegacyExperience(xp), care.State.Experience);
             if (!care.State.IsMaximumLevel)
                 Near((clampedOld % 100) / 100.0, care.State.LevelProgress, 1.0 / care.State.NextLevelRequirement);
-            Equal(version == 1 ? 0m : 123m, care.State.Coins);
+            Equal(0m, care.State.Coins);
             Check(care.State.Achievements.Contains("growth-gold"));
             Check(care.State.Content.OwnedContentIds.Contains(ContentCatalog.OfficeOutfitId));
             var restarted = new PetCareService(JsonSerializer.Deserialize<PetState>(JsonSerializer.Serialize(care.State)), Start);
@@ -543,27 +578,11 @@ internal static class Program
     }
     private static void ShoppingRouteHours()
     {
-        (double Hours, double Experience) Route(params string[] ids)
-        {
-            var care = new PetCareService(Geared(), Start); double minutes = 0, experience = 0;
-            foreach (string id in ids)
-            {
-                var item = ContentCatalog.Get(id);
-                double interval = (double)(item.Price / care.MoneyPerWorkMinute);
-                minutes += interval; experience += interval * (double)care.WorkExperiencePerMinute;
-                care.State.Content.OwnedContentIds.Add(id); care.State.Content.Equipped[item.Slot!.Value] = id;
-                care.SetEffectiveEquipment(Start, care.State.Content.Equipped);
-            }
-            return (minutes / 60, experience);
-        }
-        Near(166.6666666667, Route("outfit.office").Hours, 0.000001);
-        var focused = Route("computer.server", "desk.arcade", "outfit.hoodie", "outfit.office");
-        Near(137.8308408520, focused.Hours, 0.000001);
-        Near(176.2368906583, focused.Hours + (16200 - focused.Experience) / 2.13 / 60, 0.000001);
-        var collection = Route("computer.retro", "desk.mint", "computer.midnight", "desk.walnut", "computer.arcade",
-            "outfit.hoodie", "desk.arcade", "computer.server", "outfit.ox", "desk.noodle", "computer.gold", "outfit.hero",
-            "desk.cloud", "computer.ultrabook", "desk.boardroom", "outfit.astronaut", "outfit.office");
-        Near(296.8305895223, collection.Hours, 0.000001);
+        var care = Working();
+        for (int minute = 1; minute <= 7 * 24 * 60; minute++) care.Advance(Start.AddMinutes(minute));
+        Equal(5113.50m, care.State.Coins); Check(care.State.IsWorking); Near(0, care.State.Mood);
+        decimal cheapest = ContentCatalog.Definitions.Where(x => !x.IsDefault).Min(x => x.Price);
+        Equal(5100m, cheapest); Check(care.State.Coins >= cheapest && care.State.Coins < cheapest + 30m);
     }
     private static void DeferredCatchUp()
     {
@@ -583,25 +602,40 @@ internal static class Program
         catch (InvalidOperationException) { rejected = true; }
         Check(rejected); Equal(before, JsonSerializer.Serialize(care.State));
         Check(care.BeginCatchUp(Start.AddHours(3), state.Content.Equipped));
-        Check(!care.IsCatchUpPending); Equal(360m, care.State.Coins); Equal(312, care.State.Experience);
+        Check(!care.IsCatchUpPending); Equal(297m, care.State.Coins); Equal(312, care.State.Experience);
         Near(7200, care.State.TotalWorkSeconds);
         before = JsonSerializer.Serialize(care.State);
         Check(!care.BeginCatchUp(Start.AddHours(4), new Dictionary<ContentSlot, string>()));
-        Equal(before, JsonSerializer.Serialize(care.State)); Equal(3m, care.MoneyPerWorkMinute);
+        Equal(before, JsonSerializer.Serialize(care.State)); Equal(2.4m, care.MoneyPerWorkMinute);
     }
     private static void DeferredFallback()
     {
         var state = Geared(ContentCatalog.OfficeOutfitId); state.IsWorking = true;
         var absent = new PetCareService(state, Start.AddHours(1), deferInitialAdvance: true);
         absent.BeginCatchUp(Start.AddHours(1), new Dictionary<ContentSlot, string>());
-        Equal(60m, absent.State.Coins); Equal(1m, absent.MoneyPerWorkMinute);
+        Equal(49.5m, absent.State.Coins); Equal(0.8m, absent.MoneyPerWorkMinute);
         Check(absent.State.Content.OwnedContentIds.Contains(ContentCatalog.OfficeOutfitId));
         Equal(ContentCatalog.OfficeOutfitId, absent.State.Content.Equipped[ContentSlot.Outfit]);
         var rollback = new PetCareService(absent.State.CreateSnapshot(), Start, deferInitialAdvance: true);
         rollback.BeginCatchUp(Start.AddMinutes(30), state.Content.Equipped);
-        Equal(60m, rollback.State.Coins); Equal(Start.AddHours(1), rollback.State.WageLastUpdatedUtc);
-        rollback.Advance(Start.AddHours(1)); Equal(60m, rollback.State.Coins);
-        rollback.Advance(Start.AddHours(1).AddMinutes(1)); Equal(62m, rollback.State.Coins);
+        Equal(49.5m, rollback.State.Coins); Equal(Start.AddHours(1), rollback.State.WageLastUpdatedUtc);
+        rollback.Advance(Start.AddHours(1)); Equal(49.5m, rollback.State.Coins);
+        rollback.Advance(Start.AddHours(1).AddMinutes(1)); Equal(51.09m, rollback.State.Coins);
+    }
+    private static void VersionThreeMigration()
+    {
+        var old = Wallet(321); old.Version = 3; old.WageRemainderUnits = .59m; old.WageProgressSeconds = 59;
+        old.IsWorking = true; old.Experience = 1234; old.TotalWorkSeconds = 90000; old.WageSettledWorkSeconds = 1;
+        old.AppliedWalletDebits.Add("already-paid", 3m);
+        var migrated = new PetCareService(old, Start.AddHours(1));
+        Check(migrated.MigrationWasApplied); Equal(0m, migrated.State.Coins); Equal(0m, migrated.State.WageRemainderUnits);
+        Equal(migrated.State.TotalWorkSeconds, migrated.State.WageSettledWorkSeconds);
+        Equal(Start.AddHours(1), migrated.State.WageLastUpdatedUtc); Equal(1234 + 72, migrated.State.Experience);
+        migrated.Advance(Start.AddHours(1).AddMinutes(1)); Equal(.79m, migrated.State.Coins);
+        var again = new PetCareService(JsonSerializer.Deserialize<PetState>(JsonSerializer.Serialize(migrated.State)), Start.AddHours(1).AddMinutes(1));
+        Check(!again.MigrationWasApplied); Equal(migrated.State.Coins, again.State.Coins);
+        Equal(migrated.State.WageRemainderScaledUnits, again.State.WageRemainderScaledUnits);
+        Equal(3m, again.State.AppliedWalletDebits["already-paid"]);
     }
     private static void Check(bool condition) { if (!condition) throw new InvalidOperationException("Assertion failed."); }
     private static void Equal<T>(T expected, T actual) { if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new InvalidOperationException($"Expected {expected}, actual {actual}."); }

@@ -5,14 +5,13 @@ public enum PetCareStatus
     Fed,
     Petted,
     NoFood,
-    Full,
+    MoodFull,
     Cooldown,
     Working,
     WorkStarted,
     WorkStopped,
     AlreadyWorking,
     NotWorking,
-    TooHungryToWork,
     Initializing,
 }
 
@@ -31,13 +30,12 @@ public sealed class PetCareService
     public const double FoodIntervalSeconds = 300.0;
     public const int MaximumFood = 99;
     public const double MaximumCatchUpSeconds = 7200.0;
-    public const double FullnessLossPerHour = 4.0;
     public const double PetCooldownSeconds = 10.0;
     public const double FeedCooldownSeconds = 2.0;
     public const int MaximumExperience = GrowthPolicy.MaximumExperience;
     public const double BusyAfterSeconds = 1800.0;
-    public const double WorkFullnessLossPerHour = 12.0;
     public const double WorkMoodLossPerHour = 10.0;
+    public const double IdleMoodLossPerHour = 1.0;
     public const double WorkExperienceIntervalSeconds = 60.0;
 
     private static readonly HashSet<string> KnownAchievements =
@@ -45,10 +43,12 @@ public sealed class PetCareService
 
     private Dictionary<ContentSlot, string> _effectiveEquipment;
     public bool IsCatchUpPending { get; private set; }
+    public bool MigrationWasApplied { get; }
 
     public PetCareService(PetState? saved, DateTimeOffset now,
         Func<ContentDefinition, bool>? isEquipmentAvailable = null, bool deferInitialAdvance = false)
     {
+        MigrationWasApplied = saved is not null && saved.Version < PetState.CurrentVersion;
         State = Normalize(saved, now.ToUniversalTime());
         // The host probes installed resources before offline settlement. A saved
         // request whose resources fell back must not retain its better statistics.
@@ -65,7 +65,8 @@ public sealed class PetCareService
     public decimal EarnedCoinsThisRun { get; private set; }
     public EquipmentBonuses CurrentBonuses => IsCatchUpPending ? EquipmentBonuses.None
         : EquipmentPolicy.Resolve(State.Content, _effectiveEquipment);
-    public decimal MoneyPerWorkMinute => EconomyPolicy.CoinsPerWorkMinute * (1m + CurrentBonuses.WorkCoinBonus);
+    public decimal MoneyPerWorkMinute => EconomyPolicy.CoinsPerWorkMinute *
+        EconomyPolicy.MoodWageFactor(State.MoodUnits) * (1m + CurrentBonuses.WorkCoinBonus);
     public decimal WorkExperiencePerMinute => 1m + CurrentBonuses.WorkExperienceBonus;
 
     /// <summary>
@@ -108,7 +109,7 @@ public sealed class PetCareService
 
     /// <summary>
     /// Returns whether game progress or its saved timestamp changed. A backwards
-    /// clock does not earn food, undo hunger, or bypass interaction cooldowns.
+    /// clock does not earn food or bypass interaction cooldowns
     /// </summary>
     public bool Advance(DateTimeOffset now)
     {
@@ -123,16 +124,11 @@ public sealed class PetCareService
         double seconds = Math.Min((now - previousUpdate).TotalSeconds, MaximumCatchUpSeconds);
         State.LastUpdatedUtc = now;
         var bonuses = CurrentBonuses;
-        double fullnessMultiplier = (double)(1m - bonuses.FullnessDecayReduction);
-        double moodMultiplier = (double)(1m - bonuses.MoodDecayReduction);
-        double workSeconds = State.IsWorking
-            ? Math.Min(seconds, State.Fullness * 3600.0 / (WorkFullnessLossPerHour * fullnessMultiplier))
-            : 0.0;
-        double idleSeconds = seconds - workSeconds;
-        State.Fullness = Math.Max(0.0, State.Fullness -
-            (workSeconds * WorkFullnessLossPerHour + idleSeconds * FullnessLossPerHour) * fullnessMultiplier / 3600.0);
-        State.Mood = Math.Max(0.0, State.Mood -
-            (workSeconds * WorkMoodLossPerHour + idleSeconds) * moodMultiplier / 3600.0);
+        decimal initialMoodUnits = State.MoodUnits;
+        decimal moodLoss = (State.IsWorking ? (decimal)WorkMoodLossPerHour : (decimal)IdleMoodLossPerHour) *
+            (1m - bonuses.MoodDecayReduction);
+        double workSeconds = State.IsWorking ? seconds : 0.0;
+        State.MoodUnits = Math.Max(0m, initialMoodUnits - EconomyPolicy.ExactSeconds(seconds) * moodLoss);
         if (workSeconds > 0.0)
         {
             State.WorkSessionSeconds = Math.Min(1e12, State.WorkSessionSeconds + workSeconds);
@@ -145,19 +141,15 @@ public sealed class PetCareService
             AddExperience(workExperience);
             // The effective work interval starts at the prior simulation timestamp.
             // Keeping a separate wage high-water mark prevents clock rollback plus
-            // a restart from paying that same wall-clock interval again. A v1
-            // migration starts this mark at 'now', so old catch-up earns no wages.
+            // a restart from paying that same wall-clock interval again; legacy
+            // migrations start this mark at 'now', so old catch-up earns no wages
             double unpaidPrefix = Math.Max(0, (State.WageLastUpdatedUtc - previousUpdate).TotalSeconds);
+            decimal eligibleInitialMood = Math.Max(0m, initialMoodUnits -
+                EconomyPolicy.ExactSeconds(Math.Min(workSeconds, unpaidPrefix)) * moodLoss);
             EarnedCoinsThisRun += EconomyPolicy.SettleWages(State, Math.Max(0, workSeconds - unpaidPrefix),
-                1m + bonuses.WorkCoinBonus);
+                1m + bonuses.WorkCoinBonus, eligibleInitialMood, moodLoss);
         }
         if (now > State.WageLastUpdatedUtc) State.WageLastUpdatedUtc = now;
-
-        if (State.Fullness <= 1e-9)
-        {
-            State.Fullness = 0.0;
-            State.IsWorking = false;
-        }
 
         if (State.Food >= MaximumFood)
         {
@@ -193,9 +185,9 @@ public sealed class PetCareService
             return new(PetCareStatus.Cooldown, "嚼着呢，别急着续碗。");
         }
 
-        if (State.Fullness >= 95.0)
+        if (State.MoodUnits >= 360_000m)
         {
-            return new(PetCareStatus.Full, "已经吃撑啦，先陪我玩一会儿。");
+            return new(PetCareStatus.MoodFull, "心情已经拉满啦，这碗先留着。");
         }
 
         if (State.Food <= 0)
@@ -204,12 +196,12 @@ public sealed class PetCareService
         }
 
         State.Food--;
-        State.Fullness = Math.Min(100.0, State.Fullness + 25.0);
-        State.Mood = Math.Min(100.0, State.Mood + 8.0);
+        State.MoodUnits = Math.Min(360_000m, State.MoodUnits + 20m * 3600m);
         State.LastFedUtc = InteractionTime(now);
         State.TotalMeals = Math.Min(1_000_000, State.TotalMeals + 1);
-        AddExperience(5);
         Unlock("first-meal");
+        ContentOwnershipService.GrantEligibleRewards(State.Content, State);
+        HonorCatalog.RecordEarned(State);
         return new(PetCareStatus.Fed, "嘴上说不要，饭一口没少。");
     }
 
@@ -227,7 +219,7 @@ public sealed class PetCareService
             return new(PetCareStatus.Cooldown, "知道你喜欢我，毛都快搓秃了。");
         }
 
-        State.Mood = Math.Min(100.0, State.Mood + 3.0);
+        State.MoodUnits = Math.Min(360_000m, State.MoodUnits + 3m * 3600m);
         State.LastPettedUtc = InteractionTime(now);
         State.TotalPets = Math.Min(1_000_000, State.TotalPets + 1);
         AddExperience(1);
@@ -246,11 +238,6 @@ public sealed class PetCareService
         if (State.IsWorking)
         {
             return new(PetCareStatus.AlreadyWorking, "已经在工位上了，别催啦。");
-        }
-
-        if (State.Fullness <= 0.0)
-        {
-            return new(PetCareStatus.TooHungryToWork, "空着肚子开不了工，先喂我一口。");
         }
 
         State.IsWorking = true;
@@ -303,46 +290,40 @@ public sealed class PetCareService
             return new PetState { LastUpdatedUtc = now, WageLastUpdatedUtc = now };
         }
 
-        if (saved.Version is not 1 and not 2 && saved.Version != PetState.CurrentVersion)
+        if (saved.Version is < 1 or > PetState.CurrentVersion)
         {
             throw new NotSupportedException($"Unsupported pet save version: {saved.Version}.");
         }
 
         DateTimeOffset lastUpdated = saved.LastUpdatedUtc == default ? now : saved.LastUpdatedUtc.ToUniversalTime();
-        // On a new process, a save from a future system clock is rebased without
-        // awarding anything. Within a process Advance retains a UTC high-water mark.
+        // Preserve the simulation high-water mark across restarts after clock rollback
         bool futureSave = lastUpdated > now;
-        bool migrating = saved.Version == 1;
+        bool migrating = saved.Version < PetState.CurrentVersion;
         bool legacyPrecision = saved.Version < 3;
         EconomyPolicy.ValidateWalletLedger(saved);
         double totalWorkSeconds = FiniteClamp(saved.TotalWorkSeconds, 0.0, 1e12, 0.0);
         var state = new PetState
         {
-            Fullness = FiniteClamp(saved.Fullness, 0.0, 100.0, 75.0),
-            Mood = FiniteClamp(saved.Mood, 0.0, 100.0, 70.0),
+            MoodUnits = saved.MoodUnits,
             Food = Math.Clamp(saved.Food, 0, MaximumFood),
             Experience = legacyPrecision ? GrowthPolicy.MigrateLegacyExperience(saved.Experience)
                 : Math.Clamp(saved.Experience, 0, MaximumExperience),
             FoodProgressSeconds = FiniteClamp(saved.FoodProgressSeconds, 0.0, FoodIntervalSeconds - 0.001, 0.0),
-            LastUpdatedUtc = futureSave ? now : lastUpdated,
+            LastUpdatedUtc = migrating && futureSave ? now : lastUpdated,
             LastFedUtc = NormalizeInteraction(saved.LastFedUtc, futureSave, now),
             LastPettedUtc = NormalizeInteraction(saved.LastPettedUtc, futureSave, now),
             // Preserve legacy profile metadata without reviving the retired minigame
             LastGameRewardUtc = saved.LastGameRewardUtc?.ToUniversalTime(),
             TotalMeals = Math.Clamp(saved.TotalMeals, 0, 1_000_000),
             TotalPets = Math.Clamp(saved.TotalPets, 0, 1_000_000),
-            IsWorking = saved.IsWorking && FiniteClamp(saved.Fullness, 0.0, 100.0, 75.0) > 0.0,
+            IsWorking = saved.IsWorking,
             WorkSessionSeconds = FiniteClamp(saved.WorkSessionSeconds, 0.0, 1e12, 0.0),
             WorkExperienceProgressSeconds = FiniteClamp(saved.WorkExperienceProgressSeconds,
                 0.0, WorkExperienceIntervalSeconds - 0.001, 0.0),
             TotalWorkSeconds = totalWorkSeconds,
             Coins = migrating ? 0 : decimal.Truncate(Math.Clamp(saved.Coins, 0, EconomyPolicy.MaximumCoins) * 100m) / 100m,
-            // Preserve previously earned fractional work at its OLD base rate.
-            // It is not multiplied by newly equipped gear or reconstructed from
-            // lifetime work. The next eligible settlement converts it to cents.
-            WageRemainderUnits = migrating ? 0 : legacyPrecision
-                ? EconomyPolicy.ExactSeconds(FiniteClamp(saved.WageProgressSeconds, 0, 59.9999999, 0))
-                : Math.Clamp(saved.WageRemainderUnits, 0, 59.9999999m),
+            WageRemainderScaledUnits = migrating ? 0 :
+                Math.Clamp(saved.WageRemainderScaledUnits, 0, 59.9999999m * EconomyPolicy.WageMoodScale),
             WorkExperienceRemainderUnits = legacyPrecision
                 ? EconomyPolicy.ExactSeconds(FiniteClamp(saved.WorkExperienceProgressSeconds, 0, 59.9999999, 0))
                 : Math.Clamp(saved.WorkExperienceRemainderUnits, 0, 59.9999999m),
@@ -350,8 +331,7 @@ public sealed class PetCareService
                 FiniteClamp(saved.WageSettledWorkSeconds, 0, 1e12, totalWorkSeconds),
             WageLastUpdatedUtc = migrating ? now :
                 (saved.WageLastUpdatedUtc == default ? lastUpdated : saved.WageLastUpdatedUtc.ToUniversalTime()),
-            AppliedWalletDebits = migrating ? new(StringComparer.Ordinal) :
-                new(saved.AppliedWalletDebits, StringComparer.Ordinal),
+            AppliedWalletDebits = new(saved.AppliedWalletDebits, StringComparer.Ordinal),
             Content = ContentOwnershipService.Normalize(saved.Content),
             Achievements = (saved.Achievements ?? new()).Where(KnownAchievements.Contains).Distinct(StringComparer.Ordinal).ToList(),
         };

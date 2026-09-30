@@ -23,6 +23,8 @@ internal sealed class PetStore
     private bool _observed;
     public string? Warning { get; private set; }
     public bool CanSave { get; private set; } = true;
+    public bool MigrationWasApplied { get; private set; }
+    public string? MigrationBackupPath { get; private set; }
 
     public PetStore(string? dataDirectory = null)
     {
@@ -48,6 +50,8 @@ internal sealed class PetStore
                     _observed = true;
                     CanSave = true;
                     Warning = null;
+                    MigrationWasApplied = state is not null && state.Version < PetState.CurrentVersion;
+                    MigrationBackupPath = null;
                     return state;
                 }
                 finally { mutex.ReleaseMutex(); }
@@ -73,7 +77,7 @@ internal sealed class PetStore
                     throw new InvalidDataException("Only current, migrated states can be saved.");
                 EconomyPolicy.ValidateWalletLedger(state);
                 if (state.Coins < 0 || state.Coins > EconomyPolicy.MaximumCoins || !EconomyPolicy.HasCentPrecision(state.Coins) ||
-                    state.WageRemainderUnits < 0 || state.WageRemainderUnits >= 60m ||
+                    state.WageRemainderScaledUnits < 0 || state.WageRemainderScaledUnits >= 60m * EconomyPolicy.WageMoodScale ||
                     state.WorkExperienceRemainderUnits < 0 || state.WorkExperienceRemainderUnits >= 60m)
                     throw new InvalidDataException("Invalid precise economy state.");
                 ContentOwnershipService.ValidateForSave(state.Content);
@@ -95,6 +99,13 @@ internal sealed class PetStore
                         return false;
                     }
                     Directory.CreateDirectory(_directory);
+                    if (current is not null && ReadState(current).Version < PetState.CurrentVersion)
+                    {
+                        string legacyBackup = LegacyBackupPath(current);
+                        PreserveLegacyBackup(legacyBackup, current);
+                        MigrationBackupPath = legacyBackup;
+                        MigrationWasApplied = true;
+                    }
                     temporary = _path + "." + Guid.NewGuid().ToString("N") + ".tmp";
                     using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write,
                         FileShare.None, 4096, FileOptions.WriteThrough))
@@ -149,7 +160,7 @@ internal sealed class PetStore
             { return new(WalletTransactionStatus.InvalidRequest, "本地交易记录异常，未扣除鹰币。"); }
             if (!result.Changed) return result;
             decimal expectedCoins = candidate!.Coins;
-            decimal expectedWageRemainder = candidate.WageRemainderUnits;
+            decimal expectedWageRemainder = candidate.WageRemainderScaledUnits;
             double expectedWageCursor = candidate.WageSettledWorkSeconds;
             DateTimeOffset expectedWageTime = candidate.WageLastUpdatedUtc;
             var expectedLedger = new Dictionary<string, decimal>(candidate.AppliedWalletDebits, StringComparer.Ordinal);
@@ -157,7 +168,7 @@ internal sealed class PetStore
             {
                 if (!mutate(candidate) || candidate.Version != PetState.CurrentVersion ||
                     candidate.Coins != expectedCoins || candidate.AppliedWalletDebits is null ||
-                    candidate.WageRemainderUnits != expectedWageRemainder ||
+                    candidate.WageRemainderScaledUnits != expectedWageRemainder ||
                     candidate.WageSettledWorkSeconds != expectedWageCursor || candidate.WageLastUpdatedUtc != expectedWageTime ||
                     candidate.AppliedWalletDebits.Count != expectedLedger.Count ||
                     expectedLedger.Any(x => !candidate.AppliedWalletDebits.TryGetValue(x.Key, out decimal value) || value != x.Value))
@@ -187,11 +198,28 @@ internal sealed class PetStore
         // fingerprinting and backups still use the exact original bytes.
         using var text = new StreamReader(new MemoryStream(bytes), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         var state = JsonSerializer.Deserialize<PetState>(text.ReadToEnd()) ?? throw new InvalidDataException("Empty save.");
-        if (state.Version is not 1 and not 2 && state.Version != PetState.CurrentVersion)
+        if (state.Version is < 1 or > PetState.CurrentVersion)
             throw new InvalidDataException("Unsupported save version.");
         EconomyPolicy.ValidateWalletLedger(state);
         if (state.Version >= 2) ContentOwnershipService.ValidateForSave(state.Content);
         return state;
+    }
+
+    private string LegacyBackupPath(byte[] bytes) =>
+        Path.Combine(_directory, "pet-state.pre-v4-" + Fingerprint(bytes)!.ToLowerInvariant() + ".json");
+
+    private static void PreserveLegacyBackup(string path, byte[] bytes)
+    {
+        if (File.Exists(path))
+        {
+            if (!File.ReadAllBytes(path).AsSpan().SequenceEqual(bytes))
+                throw new InvalidDataException("The protected migration backup does not match the original save.");
+            return;
+        }
+        using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write,
+            FileShare.None, 4096, FileOptions.WriteThrough);
+        stream.Write(bytes);
+        stream.Flush(flushToDisk: true);
     }
 
     private static string? Fingerprint(byte[]? bytes) => bytes is null ? null : Convert.ToHexString(SHA256.HashData(bytes));

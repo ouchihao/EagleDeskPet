@@ -48,6 +48,9 @@ internal static class Program
         {
             Run("missing-default", MissingDefaults);
             Run("atomic-backup-roundtrip", AtomicBackupRoundTrip);
+            Run("v1-v2-v3-protected-backups-survive-daily-saves", LegacyMigrationBackups);
+            Run("migration-competing-reader-cannot-overwrite", ConcurrentMigration);
+            Run("failed-migration-backup-prevents-replacement", FailedMigrationBackup);
             Run("malformed-preserved", () => RejectedSavePreservesBytes(Encoding.UTF8.GetBytes("{ definitely not JSON")));
             Run("null-preserved", () => RejectedSavePreservesBytes(Encoding.UTF8.GetBytes("null")));
             Run("future-version-preserved", () => RejectedSavePreservesBytes(Encoding.UTF8.GetBytes("{\"Version\":999,\"Food\":40}")));
@@ -113,7 +116,7 @@ internal static class Program
         Check(saved is null, "Missing file did not return null.");
         Check(store.CanSave && store.Warning is null, "Missing file disabled saving.");
         var care = new PetCareService(saved, TestTime);
-        Check(care.State.Food == 5 && care.State.Fullness == 75 && care.State.Level == 1, "Default game state changed.");
+        Check(care.State.Food == 5 && care.State.Mood == 70 && care.State.Level == 1, "Default game state changed.");
         Check(!File.Exists(StatePath), "Read-only load created a save file.");
     }
 
@@ -129,11 +132,70 @@ internal static class Program
         Check(File.ReadAllBytes(StatePath + ".bak").SequenceEqual(firstBytes), "Backup does not match the complete prior save.");
         Check(!File.Exists(StatePath + ".tmp"), "Replace left its temp file behind.");
         PetState current = new PetStore().Load() ?? throw new InvalidOperationException("Round-trip returned null.");
-        Check(current.Version == PetState.CurrentVersion && current.Food == 4 && current.Fullness == 100 && current.Experience == 5,
+        Check(current.Version == PetState.CurrentVersion && current.Food == 4 && current.Mood == 90 && current.Experience == 0,
             "Current save fields did not round-trip.");
         Check(current.TotalMeals == 1 && current.Achievements.SequenceEqual(new[] { "first-meal" }), "Meal and achievement were lost.");
         PetState previous = JsonSerializer.Deserialize<PetState>(File.ReadAllBytes(StatePath + ".bak"))!;
         Check(previous.Food == 5 && previous.TotalMeals == 0 && previous.Experience == 0, "Backup is not the pre-feed state.");
+    }
+
+    private static void LegacyMigrationBackups()
+    {
+        foreach (int version in new[] { 1, 2, 3 })
+        {
+            string directory = Path.Combine(AppPaths.DataDirectory, "v" + version);
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "pet-state.json");
+            byte[] original = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(
+                "{\"Version\":" + version + ",\"Fullness\":7,\"Mood\":70,\"Coins\":123.45,\"WageRemainderUnits\":0.59," +
+                "\"Experience\":120,\"TotalWorkSeconds\":3600,\"AppliedWalletDebits\":{\"old-purchase\":5}," +
+                "\"LastUpdatedUtc\":\"2026-09-05T00:00:00Z\"}")).ToArray();
+            File.WriteAllBytes(path, original);
+            var store = new PetStore(directory); var saved = store.Load();
+            Check(saved?.Version == version && store.MigrationWasApplied, "Legacy version was not detected");
+            Check(store.MigrationBackupPath is null && Directory.GetFiles(directory, "pet-state.pre-v4-*.json").Length == 0,
+                "Read-only load claimed or created a migration backup");
+            var care = new PetCareService(saved, TestTime);
+            Check(care.MigrationWasApplied && care.State.Coins == 0m && care.State.WageRemainderUnits == 0m, "Wallet was not reset once");
+            Check(care.State.AppliedWalletDebits["old-purchase"] == 5m, "Migration lost a transaction receipt");
+            Check(store.Save(care.State), "Migration save failed");
+            string backup = store.MigrationBackupPath!;
+            Check(File.ReadAllBytes(backup).SequenceEqual(original), "Dedicated backup did not preserve exact BOM and original bytes");
+            care.StartWork(TestTime); care.Advance(TestTime.AddMinutes(1));
+            Check(store.Save(care.State) && store.Save(care.State), "Daily saves failed after migration");
+            Check(File.ReadAllBytes(backup).SequenceEqual(original), "Daily .bak rotation overwrote the migration source");
+            var reopenedStore = new PetStore(directory); var reopened = new PetCareService(reopenedStore.Load(), TestTime.AddMinutes(1));
+            Check(!reopened.MigrationWasApplied && !reopenedStore.MigrationWasApplied, "v4 was migrated twice");
+            Check(reopened.State.Coins == .84m && reopened.State.WageRemainderScaledUnits == care.State.WageRemainderScaledUnits, "New earnings were reset or rounded on reopen");
+            Check(!File.ReadAllText(path).Contains("Fullness", StringComparison.Ordinal), "Removed fullness field survived serialization");
+        }
+    }
+
+    private static void ConcurrentMigration()
+    {
+        byte[] original = Encoding.UTF8.GetBytes("{\"Version\":3,\"Coins\":50}");
+        File.WriteAllBytes(StatePath, original);
+        var first = new PetStore(); var stale = new PetStore();
+        var state = new PetCareService(first.Load(), TestTime).State;
+        var other = new PetCareService(stale.Load(), TestTime).State;
+        Check(first.Save(state), "First migration did not commit");
+        state.Coins = 7m; Check(first.Save(state), "Fresh earnings did not save");
+        Check(!stale.Save(other) && !stale.CanSave, "Stale migrating writer erased new earnings");
+        Check(new PetStore().Load()!.Coins == 7m, "Competing migration changed the wallet");
+        Check(File.ReadAllBytes(first.MigrationBackupPath!).SequenceEqual(original), "Competing migration changed the protected backup");
+    }
+
+    private static void FailedMigrationBackup()
+    {
+        byte[] original = Encoding.UTF8.GetBytes("{\"Version\":3,\"Coins\":50}");
+        File.WriteAllBytes(StatePath, original);
+        var store = new PetStore(); var care = new PetCareService(store.Load(), TestTime);
+        string expectedBackup = Path.Combine(AppPaths.DataDirectory, "pet-state.pre-v4-" +
+            Convert.ToHexString(SHA256.HashData(original)).ToLowerInvariant() + ".json");
+        Directory.CreateDirectory(expectedBackup);
+        Check(!store.Save(care.State), "Save overwrote the old wallet without a protected backup");
+        Check(File.ReadAllBytes(StatePath).SequenceEqual(original), "Failed backup changed original bytes");
+        Check(!File.Exists(StatePath + ".bak"), "Failed backup attempted daily replacement");
     }
 
     private static void RejectedSavePreservesBytes(byte[] original)

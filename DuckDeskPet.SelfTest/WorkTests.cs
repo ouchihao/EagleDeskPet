@@ -18,7 +18,7 @@ internal static class WorkTests
         ("Work pause holds its scene and rejects unrelated reactions", WorkPause),
         ("Work economy uses wall time and becomes busy at thirty minutes", WorkEconomy),
         ("Work accounting is invariant to tick rate", WorkTickRate),
-        ("Work hunger exhaustion splits catch-up at the exact stop time", HungerStop),
+        ("Work continues at zero mood without a hunger gate", ZeroMoodWork),
         ("Work cancellation and restart preserve partial XP without duplicate credit", CancelAccounting),
         ("Work saves resume with bounded catch-up and normalize invalid state", WorkPersistence),
         ("Work interactions reject without spending food or rewards", WorkInteractions),
@@ -178,7 +178,6 @@ internal static class WorkTests
         Check(care.State.IsBusy, "Busy did not begin at thirty minutes.");
         Near(1800, care.State.WorkSessionSeconds);
         Near(1800, care.State.TotalWorkSeconds);
-        Near(69, care.State.Fullness);
         Near(65, care.State.Mood);
         Equal(36, care.State.Experience); // 30 work XP + 6 ambient food XP.
         Equal(11, care.State.Food);
@@ -196,7 +195,6 @@ internal static class WorkTests
         fast.StartWork(Start);
         slow.Advance(Start.AddHours(1));
         for (int i = 1; i <= 36000; i++) fast.Advance(Start.AddMilliseconds(i * 100));
-        Near(slow.State.Fullness, fast.State.Fullness, 1e-7);
         Near(slow.State.Mood, fast.State.Mood, 1e-7);
         Near(slow.State.WorkSessionSeconds, fast.State.WorkSessionSeconds, 1e-7);
         Equal(slow.State.Experience, fast.State.Experience);
@@ -204,22 +202,21 @@ internal static class WorkTests
         Check(fast.State.IsBusy, "Frequent ticks prevented the busy threshold.");
     }
 
-    private static void HungerStop()
+    private static void ZeroMoodWork()
     {
-        var care = new PetCareService(new PetState { Fullness = 0.5, LastUpdatedUtc = Start }, Start);
+        var care = new PetCareService(new PetState { Mood = 0.5, LastUpdatedUtc = Start }, Start);
         care.StartWork(Start);
         care.Advance(Start.AddHours(1));
-        Check(!care.State.IsWorking, "Empty fullness did not stop work.");
-        Near(150, care.State.WorkSessionSeconds);
-        Near(150, care.State.TotalWorkSeconds);
-        Near(30, care.State.WorkExperienceProgressSeconds);
-        Near(0, care.State.Fullness);
-        Near(70 - 150 * 10.0 / 3600.0 - 3450.0 / 3600.0, care.State.Mood);
-        Equal(14, care.State.Experience); // Two work minutes, twelve ambient food credits.
-        Equal(PetCareStatus.TooHungryToWork, care.StartWork(Start.AddHours(1)).Status);
+        Check(care.State.IsWorking, "Zero mood incorrectly stopped work");
+        Near(3600, care.State.WorkSessionSeconds);
+        Near(3600, care.State.TotalWorkSeconds);
+        Near(0, care.State.WorkExperienceProgressSeconds);
+        Near(0, care.State.Mood);
+        Equal(72, care.State.Experience);
+        Equal(PetCareStatus.AlreadyWorking, care.StartWork(Start.AddHours(1)).Status);
         care.Advance(Start.AddHours(2));
-        Near(150, care.State.TotalWorkSeconds);
-        Equal(26, care.State.Experience);
+        Near(7200, care.State.TotalWorkSeconds);
+        Equal(144, care.State.Experience);
     }
 
     private static void CancelAccounting()
@@ -249,7 +246,7 @@ internal static class WorkTests
         var reopened = new PetCareService(saved, reopenedAt);
         Check(reopened.State.IsWorking && reopened.State.IsBusy, "Persisted work did not resume.");
         Near(7800, reopened.State.WorkSessionSeconds);
-        Near(49, reopened.State.Fullness);
+        Near(70 - 7800 * 10.0 / 3600, reopened.State.Mood);
         int experience = reopened.State.Experience;
         var twice = new PetCareService(reopened.State, reopenedAt);
         Equal(experience, twice.State.Experience);
@@ -257,11 +254,11 @@ internal static class WorkTests
 
         var malformed = new PetCareService(new PetState
         {
-            IsWorking = true, Fullness = 0, WorkSessionSeconds = double.NaN,
+            IsWorking = true, Mood = 0, WorkSessionSeconds = double.NaN,
             WorkExperienceProgressSeconds = double.PositiveInfinity,
             TotalWorkSeconds = -1, LastUpdatedUtc = Start,
         }, Start);
-        Check(!malformed.State.IsWorking, "An empty saved pet resumed work.");
+        Check(malformed.State.IsWorking, "A zero-mood saved pet could not resume work");
         Near(0, malformed.State.WorkSessionSeconds);
         Near(0, malformed.State.WorkExperienceProgressSeconds);
         Near(0, malformed.State.TotalWorkSeconds);

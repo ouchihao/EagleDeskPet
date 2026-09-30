@@ -24,6 +24,9 @@ public static class EconomyPolicy
     public const decimal MaximumCoins = 999_999m;
     public const double WageIntervalSeconds = 60.0;
     public const int CoinsPerWorkMinute = 1;
+    // Mood is stored as mood × 3600; this denominator avoids recurring
+    // division on every tick while integrating 0.5 + mood / 200
+    public const decimal WageMoodScale = 720_000m;
     // Never evict receipts: eviction would allow an old request to debit twice.
     public const int MaximumWalletTransactions = 4096;
     public const int MaximumTransactionIdLength = 80;
@@ -32,31 +35,39 @@ public static class EconomyPolicy
     /// Consume newly observed work once, crediting only the eligible portion.
     /// Time at the wallet cap is consumed too; it cannot be banked for later.
     /// </summary>
-    public static decimal SettleWages(PetState state, double eligibleWorkSeconds, decimal coinMultiplier = 1m)
+    public static decimal SettleWages(PetState state, double eligibleWorkSeconds, decimal coinMultiplier = 1m,
+        decimal initialMoodUnits = 360_000m, decimal moodUnitsLossPerSecond = 0m)
     {
         if (!double.IsFinite(eligibleWorkSeconds) || eligibleWorkSeconds < 0 ||
-            coinMultiplier < 1m || coinMultiplier > 1m + EquipmentPolicy.MaximumCoinBonus)
+            coinMultiplier < 1m || coinMultiplier > 1m + EquipmentPolicy.MaximumCoinBonus ||
+            initialMoodUnits < 0m || initialMoodUnits > 360_000m || moodUnitsLossPerSecond < 0m || moodUnitsLossPerSecond > 10m)
             throw new ArgumentOutOfRangeException(nameof(eligibleWorkSeconds));
         if (state.Coins < 0 || state.Coins > MaximumCoins || !HasCentPrecision(state.Coins) ||
             !double.IsFinite(state.TotalWorkSeconds) || state.TotalWorkSeconds < 0 ||
             !double.IsFinite(state.WageSettledWorkSeconds) || state.WageSettledWorkSeconds < 0 ||
-            state.WageRemainderUnits < 0 || state.WageRemainderUnits >= 60m)
+            state.WageRemainderScaledUnits < 0 || state.WageRemainderScaledUnits >= 60m * WageMoodScale)
             throw new ArgumentException("Wages require a normalized state.", nameof(state));
         double newlyObserved = Math.Max(0.0, state.TotalWorkSeconds - state.WageSettledWorkSeconds);
         state.WageSettledWorkSeconds = Math.Max(state.WageSettledWorkSeconds, state.TotalWorkSeconds);
         decimal seconds = ExactSeconds(Math.Min(newlyObserved, eligibleWorkSeconds));
         if (seconds <= 0m) return 0m;
-        // One cent costs 0.6 base coin-seconds. Both operands remain terminating
-        // decimals, so splitting Advance or serializing between ticks is neutral.
-        decimal accumulated = state.WageRemainderUnits + seconds * coinMultiplier;
-        decimal earned = decimal.Floor(accumulated / 0.6m) / 100m;
-        state.WageRemainderUnits = accumulated - earned * 60m;
+        decimal endMood = Math.Max(0m, initialMoodUnits - seconds * moodUnitsLossPerSecond);
+        decimal moodArea = endMood > 0m || moodUnitsLossPerSecond == 0m
+            ? seconds * (initialMoodUnits + endMood) / 2m
+            : initialMoodUnits * initialMoodUnits / (2m * moodUnitsLossPerSecond);
+        decimal accumulated = state.WageRemainderScaledUnits +
+            (seconds * WageMoodScale / 2m + moodArea) * coinMultiplier;
+        decimal earned = decimal.Floor(accumulated / (0.6m * WageMoodScale)) / 100m;
+        state.WageRemainderScaledUnits = accumulated - earned * 60m * WageMoodScale;
         decimal credited = Math.Min(earned, MaximumCoins - state.Coins);
         state.Coins += credited;
         if (state.Coins == MaximumCoins) state.WageRemainderUnits = 0m;
         state.WageProgressSeconds = (double)state.WageRemainderUnits;
         return credited;
     }
+
+    public static decimal MoodWageFactor(decimal moodUnits) =>
+        0.5m + Math.Clamp(moodUnits, 0m, 360_000m) / WageMoodScale;
 
     /// <summary>Prepare a detached debit; the caller must durably save before exposing it.</summary>
     public static WalletTransactionResult PrepareDebit(PetState state, string transactionId, decimal amount,
@@ -83,7 +94,6 @@ public static class EconomyPolicy
 
     public static void ValidateWalletLedger(PetState state)
     {
-        if (state.Version == 1) return; // v1 has no wallet; migration ignores added fields.
         if (state.AppliedWalletDebits is null || state.AppliedWalletDebits.Count > MaximumWalletTransactions ||
             state.AppliedWalletDebits.Any(x => !IsValidTransactionId(x.Key) || x.Value <= 0 || x.Value > MaximumCoins || !HasCentPrecision(x.Value)))
             throw new InvalidDataException("Invalid wallet transaction ledger.");

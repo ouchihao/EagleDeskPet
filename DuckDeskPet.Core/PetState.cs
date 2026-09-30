@@ -5,11 +5,23 @@ namespace DuckDeskPet.Core;
 /// <summary>Local game progress only; no conversations or AI memory are stored.</summary>
 public sealed class PetState
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     public int Version { get; set; } = CurrentVersion;
-    public double Fullness { get; set; } = 75.0;
-    public double Mood { get; set; } = 70.0;
+    private decimal _moodUnits = 70m * 3600m;
+    private decimal _wageRemainderScaledUnits;
+    public double Mood
+    {
+        get => (double)(_moodUnits / 3600m);
+        set => _moodUnits = (double.IsFinite(value) ? (decimal)Math.Clamp(value, 0, 100) : 70m) * 3600m;
+    }
+    // Serialize exact units after the compatible display value to retain sub-tick precision
+    [JsonPropertyOrder(1)]
+    public decimal MoodUnits
+    {
+        get => _moodUnits;
+        set => _moodUnits = Math.Clamp(value, 0m, 360_000m);
+    }
     public int Food { get; set; } = 5;
     public int Experience { get; set; }
     public double FoodProgressSeconds { get; set; }
@@ -25,9 +37,18 @@ public sealed class PetState
     public double WorkExperienceProgressSeconds { get; set; }
     public double TotalWorkSeconds { get; set; }
     public decimal Coins { get; set; }
-    // Exact numerator in coin-seconds, carried across payments and saves. Divide
-    // by 60 only after whole cents have been removed; no repeating decimals accrue.
-    public decimal WageRemainderUnits { get; set; }
+    // Compatibility view in coin-seconds; the scaled numerator below is authoritative
+    public decimal WageRemainderUnits
+    {
+        get => _wageRemainderScaledUnits / EconomyPolicy.WageMoodScale;
+        set => _wageRemainderScaledUnits = Math.Clamp(value, -60m, 60m) * EconomyPolicy.WageMoodScale;
+    }
+    [JsonPropertyOrder(1)]
+    public decimal WageRemainderScaledUnits
+    {
+        get => _wageRemainderScaledUnits;
+        set => _wageRemainderScaledUnits = value;
+    }
     public decimal WorkExperienceRemainderUnits { get; set; }
     public double WageProgressSeconds { get; set; }
     public double WageSettledWorkSeconds { get; set; }
@@ -50,8 +71,7 @@ public sealed class PetState
     public void ApplySnapshot(PetState committed)
     {
         Version = committed.Version;
-        Fullness = committed.Fullness;
-        Mood = committed.Mood;
+        MoodUnits = committed.MoodUnits;
         Food = committed.Food;
         Experience = committed.Experience;
         FoodProgressSeconds = committed.FoodProgressSeconds;
@@ -66,7 +86,7 @@ public sealed class PetState
         WorkExperienceProgressSeconds = committed.WorkExperienceProgressSeconds;
         TotalWorkSeconds = committed.TotalWorkSeconds;
         Coins = committed.Coins;
-        WageRemainderUnits = committed.WageRemainderUnits;
+        WageRemainderScaledUnits = committed.WageRemainderScaledUnits;
         WorkExperienceRemainderUnits = committed.WorkExperienceRemainderUnits;
         WageProgressSeconds = committed.WageProgressSeconds;
         WageSettledWorkSeconds = committed.WageSettledWorkSeconds;
@@ -93,9 +113,6 @@ public sealed class PetState
 
     [JsonIgnore]
     public double LevelProgress => IsMaximumLevel ? 1 : Math.Clamp((double)ExperienceIntoLevel / NextLevelRequirement, 0, 1);
-
-    [JsonIgnore]
-    public bool IsHungry => Fullness < 30.0;
 
     [JsonIgnore]
     public bool IsBusy => IsWorking && WorkSessionSeconds >= PetCareService.BusyAfterSeconds - 1e-7;

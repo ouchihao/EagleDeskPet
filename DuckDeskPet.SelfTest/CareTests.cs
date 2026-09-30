@@ -50,10 +50,9 @@ internal static class CareTests
     {
         var care = new PetCareService(null, Start);
         Equal(5, care.State.Food);
-        Near(75.0, care.State.Fullness);
+        Near(70.0, care.State.Mood);
         Equal(1, care.State.Level);
         Equal(Start, care.State.LastUpdatedUtc);
-        Check(!care.State.IsHungry, "A new pet unexpectedly starts hungry.");
         Check(!care.Advance(Start), "An identical clock reading changed progress.");
     }
 
@@ -70,7 +69,7 @@ internal static class CareTests
         Equal(8, slow.State.Food);
         Equal(slow.State.Food, fast.State.Food);
         Equal(3, fast.State.Experience);
-        Near(slow.State.Fullness, fast.State.Fullness, 1e-8);
+        Near(slow.State.Mood, fast.State.Mood, 1e-8);
         Near(0.0, fast.State.FoodProgressSeconds, 1e-6);
         fast.Advance(Start.AddSeconds(1199));
         Equal(8, fast.State.Food);
@@ -84,7 +83,7 @@ internal static class CareTests
         DateTimeOffset afterAbsence = Start.AddDays(7);
         var care = new PetCareService(saved, afterAbsence);
         Equal(29, care.State.Food);
-        Near(67.0, care.State.Fullness);
+        Near(68.0, care.State.Mood);
         Equal(afterAbsence, care.State.LastUpdatedUtc);
         var reopened = new PetCareService(care.State, afterAbsence);
         Equal(29, reopened.State.Food);
@@ -97,7 +96,7 @@ internal static class CareTests
     {
         var care = new PetCareService(new PetState
         {
-            Food = 98, Fullness = 40.0, FoodProgressSeconds = 299.0, LastUpdatedUtc = Start,
+            Food = 98, Mood = 40.0, FoodProgressSeconds = 299.0, LastUpdatedUtc = Start,
         }, Start);
         care.Advance(Start.AddHours(2));
         Equal(99, care.State.Food);
@@ -115,16 +114,19 @@ internal static class CareTests
         PetCareResult result = care.Feed(Start);
         Equal(PetCareStatus.Fed, result.Status);
         Equal(4, care.State.Food);
-        Near(100.0, care.State.Fullness);
-        Near(78.0, care.State.Mood);
-        Equal(5, care.State.Experience);
+        Near(90.0, care.State.Mood);
+        Equal(0, care.State.Experience);
         Equal(PetCareStatus.Cooldown, care.Feed(Start.AddSeconds(1)).Status);
-        Equal(PetCareStatus.Full, care.Feed(Start.AddSeconds(3)).Status);
-        Equal(4, care.State.Food);
-        var empty = new PetCareService(new PetState { Food = 0, Fullness = 0, LastUpdatedUtc = Start }, Start);
+        Equal(PetCareStatus.Fed, care.Feed(Start.AddSeconds(3)).Status);
+        Near(100, care.State.Mood);
+        Equal(3, care.State.Food);
+        care.State.LastFedUtc = null;
+        Equal(PetCareStatus.MoodFull, care.Feed(Start.AddSeconds(3)).Status);
+        Equal(3, care.State.Food);
+        var empty = new PetCareService(new PetState { Food = 0, Mood = 0, LastUpdatedUtc = Start }, Start);
         Equal(PetCareStatus.NoFood, empty.Feed(Start).Status);
         Equal(0, empty.State.Food);
-        Near(0.0, empty.State.Fullness);
+        Near(0.0, empty.State.Mood);
     }
 
     private static void Petting()
@@ -147,11 +149,11 @@ internal static class CareTests
         var care = new PetCareService(null, Start);
         care.Advance(Start.AddMinutes(5));
         Equal(6, care.State.Food);
-        double fullness = care.State.Fullness;
+        double mood = care.State.Mood;
         care.Advance(Start.AddHours(-2));
         care.Advance(Start.AddMinutes(5));
         Equal(6, care.State.Food);
-        Near(fullness, care.State.Fullness);
+        Near(mood, care.State.Mood);
         care.Pet(Start.AddMinutes(5));
         Equal(PetCareStatus.Cooldown, care.Pet(Start.AddHours(-1)).Status);
         care.Advance(Start.AddMinutes(10));
@@ -166,7 +168,7 @@ internal static class CareTests
         PetState restored = JsonSerializer.Deserialize<PetState>(json)!;
         var reopened = new PetCareService(restored, Start);
         Equal(4, reopened.State.Food);
-        Equal(5, reopened.State.Experience);
+        Equal(0, reopened.State.Experience);
         Check(reopened.State.Achievements.Contains("first-meal"), "Achievement was not persisted.");
         Check(!json.Contains("\"Level\"", StringComparison.Ordinal), "Derived level leaked into save data.");
         restored.Achievements.Clear();
@@ -174,16 +176,15 @@ internal static class CareTests
 
         var invalid = new PetCareService(new PetState
         {
-            Food = int.MaxValue, Experience = int.MaxValue, Fullness = double.NaN, Mood = -100,
+            Food = int.MaxValue, Experience = int.MaxValue, Mood = -100,
             FoodProgressSeconds = double.PositiveInfinity, LastUpdatedUtc = Start.AddYears(5),
             Achievements = new() { "first-meal", "first-meal", "arbitrary-data" },
         }, Start);
         Equal(99, invalid.State.Food);
         Equal(1000, invalid.State.Level);
-        Near(75, invalid.State.Fullness);
         Near(0, invalid.State.Mood);
         Near(0, invalid.State.FoodProgressSeconds);
-        Equal(Start, invalid.State.LastUpdatedUtc);
+        Equal(Start.AddYears(5), invalid.State.LastUpdatedUtc);
         // Normalization records every milestone proven by the bounded counters;
         // maximum XP proves the three growth tiers, but no arbitrary or duplicate flag.
         var expectedHonors = new[] { "first-meal", "level-2", "growth-silver", "growth-gold" };
