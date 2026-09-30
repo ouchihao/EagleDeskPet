@@ -25,7 +25,7 @@ dotnet run --project .\tools\CharacterPackSelfTest -c Release
 .\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.1\EagleDeskPet.exe
 ```
 
-这些测试创建隔离数据；主 EXE 联调的系统通知通道使用替身，不注册生产身份。真实 Windows 原生 API 的专用独立应用测试见 [NativeReminderSelfTest](../tools/NativeReminderSelfTest/README.md)，需显式操作并清理专用测试身份，不得改系统勿扰或生产资料来强求通过。角色包校验不等于通过真实 Cubism 模型加载；透明 WebGL 探针单独运行，详见 [Live2D P0](LIVE2D-P0-RESULTS.md)。本版证据与未测边界见[验证记录](VALIDATION-v1.12-preview.md)。
+这些测试创建隔离数据；主 EXE 联调的系统通知通道使用替身，不注册生产身份。真实 Windows 原生 API 的专用独立应用测试见 [NativeReminderSelfTest](../tools/NativeReminderSelfTest/README.md)，需显式操作并清理专用测试身份，不得改系统勿扰或生产资料来强求通过。角色包校验不等于通过真实 Cubism 模型加载；早期透明 WebGL 探针见 [Live2D P0](LIVE2D-P0-RESULTS.md)，当前真实主程序、六套模型和混合动画的入口与证据见 [动画验证](LIVE2D-FULL-ACTIONS.md)。便签 / 提醒的证据与未测边界见[预览版验证记录](VALIDATION-v1.12-preview.md)。
 
 ## 逻辑与文件测试
 
@@ -50,16 +50,16 @@ dotnet run --project .\tools\ContentSelfTest\ContentSelfTest.csproj -c Release -
 dotnet run --project .\tools\EmotionSelfTest\EmotionSelfTest.csproj -c Release
 dotnet run --project .\tools\SceneCatalogSelfTest\SceneCatalogSelfTest.csproj -c Release
 dotnet run --project .\tools\OutfitSelfTest\OutfitSelfTest.csproj -c Release -- --resources-root .\DuckDeskPet
-dotnet run --project .\tools\RpsSelfTest\RpsSelfTest.csproj -c Release
-dotnet run --project .\tools\PlayIntegrationSelfTest\PlayIntegrationSelfTest.csproj -c Release
 dotnet run --project .\tools\FeedingIntegrationSelfTest\FeedingIntegrationSelfTest.csproj -c Release -- "$((Get-Location).Path)"
 dotnet run --project .\tools\ShopSelfTest\ShopSelfTest.csproj -c Release
 dotnet run --project .\tools\TaskNotificationSelfTest\TaskNotificationSelfTest.csproj -c Release -- --mcp .\EagleDeskPet.Mcp\bin\Release\net8.0-windows\EagleDeskPet.Mcp.dll --dotnet dotnet
 ```
 
-任务测试前先构建 MCP。当前 `OutfitSelfTest --resources-root` 检查全部六套形象、19 个动作的 2491 帧及站姿；分层服装另验证 2492 张绑定映射及衣片，但不代替场景遮挡和美术复查。`PlayIntegrationSelfTest` 链接生产 Play partial、真实游戏窗口、时间线和存档，只有宿主外壳 / 位图解码器是测试替身。`FeedingIntegrationSelfTest` 链接生产 Feeding partial、Core 和 PetStore，使用可控时钟 / 渲染外壳，验证队列准入、连续喂食、完整新序列、关闭和保存失败；实际主窗口的工作 / 暂停交接仍由下方 smoke 验证。
+任务测试前先构建 MCP。当前 `OutfitSelfTest --resources-root` 检查全部六套形象、14 个动作的 1694 帧及站姿；分层服装另严格验证 1695 个绑定映射及衣片，但不代替场景遮挡和美术复查。猜拳窗口、状态机与专属测试已按用户决定移除；通用动作、喂饭和场景回归继续保留。`FeedingIntegrationSelfTest` 链接生产 Feeding partial、Core 和 PetStore，使用可控时钟 / 渲染外壳，验证队列准入、连续喂食、完整新序列、关闭和保存失败；实际主窗口的工作 / 暂停交接仍由下方 smoke 验证。
 
 ## 动画与 GUI 测试
+
+本机混合动画支持 `Assets/HybridActions/manifest.json` 的逐套能力路由，不把“缺少专用原帧”当成整个模型故障。本次没有晋级服装候选包：原味直接用已有两段帧，另外五套留在 Core。制作工具与全帧测试见 [混合动作制作](../tools/Live2DArt/HYBRID-ACTIONS.md)；运行 `node --test tools/Live2DArt/pack-hybrid-actions.test.mjs`，通过 `EAGLE_HYBRID_CANDIDATE` 指定实际完整候选后才会执行第 14 项全资源检查。没有候选时跳过项不应计为通过。
 
 Python 工具使用 Pillow、NumPy；动画生产可选使用 SciPy 加速。可在独立环境安装测试依赖：
 
@@ -92,7 +92,7 @@ MCP 实际协议测试的宿主构建及运行方式见 [MCP 文档](MCP.md#开�
 
 普通 Release build 也可测试，但没有系统 .NET 时需附 `-DotnetRoot <包含 dotnet.exe 的 SDK / 运行时目录>`。只有阶段性资源尚未齐全时才加 `-SkipOutfit`，报告会明确 skipped、`fullAcceptance=false`，不得当作完整验收通过。
 
-启动器只创建新的 `%TEMP%\EagleExpansionSmoke-<随机编号>\data` 和 `evidence`、隔离通信通道与标记文件；不允许传入或复用用户存档。测试在隔离状态中添加资金，再通过实际宿主验证菜单、独立预览、购买去重、任务乱序、三摸抗议、饥饿后只吃一份、收工后应用待装备、真实猜拳两局和服装切换。保存 `expansion-smoke.json` 与自己 WPF 窗口的 PNG，不截桌面。
+启动器只创建新的 `%TEMP%\EagleExpansionSmoke-<随机编号>\data` 和 `evidence`、隔离通信通道与标记文件；不允许传入或复用用户存档。测试在隔离状态中添加资金，再通过实际宿主验证菜单、独立预览、购买去重、任务乱序、三摸抗议、饥饿后只吃一份、收工后应用待装备、服装切换及猜拳入口 / 资源不再存在。保存 `expansion-smoke.json` 与自己 WPF 窗口的 PNG，不截桌面。
 
 内部 280 秒取消预算、正常收尾；启动器 295 秒请求关闭、300 秒硬限只结束本次子进程。失败会写报告，不伪装通过；截图、临时数据和未人工确认的边界保留给复查。工作时间自然增长或合法工资变化不能误判为预览 / 装备偷改状态；人工购买确认框仍不由 smoke 自动应答。
 

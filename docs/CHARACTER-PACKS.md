@@ -1,6 +1,6 @@
 # 角色包契约与制作工具（REQ-009 基础设施）
 
-状态：契约 v1、离线校验器、创作者模板和两套适配测试已实现。**没有交付可运行的大头鹰 Live2D 模型，也没有把模板接入生产宠物或商店。** 原 v1.11 PNG 资源、养成规则和存档保持不变。
+状态：契约 v1、离线校验器、创作者模板和两套适配测试已实现；首方六套大头鹰模型已接入本机主程序及预览，现按用户反馈使用 Live2D / 逐帧混合路线。模板本身不是可运行模型，任意第三方角色导入仍未开放。原养成规则、存档与完整 PNG 兼容资源继续保留。
 
 迁移阶段与真实模型验收见 [Live2D 重构计划](LIVE2D-REFACTOR-PLAN.md)。本文件说明已经能使用的包制作与验证接缝，不把离线检查等同于模型绑定、美术验收、SDK 授权或桌面 60 FPS 认证。
 
@@ -56,7 +56,7 @@ source/
 | `backend` | `live2D` 或 `raster`；选择适配器，不按角色名称写条件分支 |
 | `capabilities` | 眨眼、视线、呼吸、场景分层、换装、命中能力；声明的能力必须有对应参数/挂点 |
 | `models` | 模型 ID → 官方入口、`rigId`、SDK/导出版本说明；同包模型必须满足同一骨架参数契约 |
-| `actions` | `Idle` 与生产 19 动作的语义映射；缺能力显式标记 `unavailable` 或 `preview`，不能删掉条目假装完整 |
+| `actions` | `Idle` 与生产 14 动作的语义映射；缺能力显式标记 `unavailable` 或 `preview`，不能删掉条目假装完整 |
 | `parameters` | 语义名 → 模型参数 `target`、有限 min/max/default 与控制者；不同语义不能隐式争用同一 target |
 | `anchors` | `foot/head/body/bubble/mouth/leftHand/rightHand/bowl/keyboard/deskSurface` 必需；坐标为左上原点 `[0,1]`，不是 384×346 像素；可指定受模型驱动的 drawable target |
 | `hitAreas` | 归一化矩形；声明命中能力须提供 `head` 和 `body` |
@@ -69,13 +69,13 @@ source/
 
 ### 动作与六套服装
 
-固定语义为 Idle、Yawn、Shy、Eat、WorkEnter、WorkLoop、WorkToBusy、BusyLoop、WorkExit、BusyExit、HungryEnter、HungryLoop、HungryExit、Tea、RpsRock、RpsPaper、RpsScissors、RpsWin、RpsLose、Annoyed。Bomb 等旧枚举不属于这版迁移基线。
+固定语义为 Idle、Yawn、Shy、Eat、WorkEnter、WorkLoop、WorkToBusy、BusyLoop、WorkExit、BusyExit、HungryEnter、HungryLoop、HungryExit、Tea、Annoyed。Bomb 等旧枚举不属于这版迁移基线。
 
-时长与 `ClipCatalog` 一致，entry/exit pose 明确 standing/working/busy/hungry 的接口。三种猜拳完整动作还必须声明至少 0.86 秒的可辨认保持段。Idle 的业务时长为 0，呼吸/眨眼等连续效果由能力与参数控制，不强行伪造一个 PNG 帧数。
+时长与 `ClipCatalog` 一致，entry/exit pose 明确 standing/working/busy/hungry 的接口。猜拳语义已从当前必需能力中移除，不应作为新包的必需资源。Idle 的业务时长为 0，呼吸/眨眼等连续效果由能力与参数控制，不强行伪造一个 PNG 帧数。
 
 模板示范全部六个现有 `outfit.*` ID，显式提供互斥部件的 0/1 可见性。替换衣服不改变购买记录或收益；适配器确认实际生效前，准备中的选择不算已装备。
 
-完整共享骨架下优先复用同一组 19 动作曲线；衣服仍需真正绑定、补齐边缘并逐套验收。若某套需要 motion 覆盖，放在该 outfit 的 `actionOverrides`，继续满足原语义时长。不同体型不承诺能穿同一套衣服。契约不硬编码某个角色必须拥有六套衣服，但首方大头鹰发布验收仍要求当前六套兼容。
+完整共享骨架下优先复用同一组 14 动作曲线；衣服仍需真正绑定、补齐边缘并逐套验收。若某套需要 motion 覆盖，放在该 outfit 的 `actionOverrides`，继续满足原语义时长。不同体型不承诺能穿同一套衣服。契约不硬编码某个角色必须拥有六套衣服，但首方大头鹰发布验收仍要求当前六套兼容。
 
 ### 工位与挂点
 
@@ -106,10 +106,10 @@ probe 得到 `VerifiedResources` 的只读内容快照，不重开会被作者�
 
 1. 按原形象拆头、五官、上下喙/口腔、身体、左右臂与手型、脚、手持道具；补全原来被遮住的区域。
 2. 制作可编辑 Cubism 网格/变形器，定义全身动作参数、眼部与嘴部变化，再把服装绑定到相同骨架。
-3. 完成动作曲线、工作/饥饿循环接缝、猜拳保持、特殊眼睛切换；不要把整体淡化当作关嘴放手。
+3. 完成动作曲线、工作/饥饿循环接缝、吃饭握点、特殊眼睛切换；不要把整体淡化当作关嘴放手。
 4. 导出官方运行文件，填入清单中的实际资源、参数、部件和挂点，计算准确 hash/长度，运行离线检查。
-5. 在具有真实 SDK 的开发预览宿主中加载，验证动态挂点、手/桌遮挡、完整收尾与六套服装。当前工具只有契约适配预览，没有视觉 Live2D 预览窗。
-6. 按重构计划完成连续播放、114 动作/服装、294 工位与 42 饥饿场景、真实窗口和故障回退验收后，再决定生产启用。
+5. 在具有真实 SDK 的开发预览宿主中加载，验证动态挂点、手/桌遮挡、完整收尾与六套服装。离线契约工具不能替代主程序的真实模型预览。
+6. 按重构计划完成连续播放、84 个动作/服装组合、294 工位与 42 饥饿场景、真实窗口和故障回退验收后，再决定生产启用。
 
 原 PNG、GIF 和 22 个服装拆片可提供形象/节奏/纹理参考，旧逐帧 UV atlas 不能直接变成 Cubism 骨架。官方资料：[原画处理](https://docs.live2d.com/en/cubism-editor-tutorials/psd/)、[运行文件导出](https://docs.live2d.com/en/cubism-editor-manual/export-moc3-motion3-files/)、[绘制顺序](https://docs.live2d.com/en/cubism-editor-manual/draworder/)、[遮罩约束](https://docs.live2d.com/en/cubism-editor-manual/clipping-mask/)。
 
