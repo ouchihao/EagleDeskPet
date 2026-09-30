@@ -8,7 +8,8 @@ Write-Output "Isolated packaging fixtures: $petTestRoot"
 New-Item -ItemType Directory -Path $petTestRoot | Out-Null
 $petRuntimeNames = @('EagleDeskPet.exe', 'EagleDeskPet.Mcp.exe', 'THIRD-PARTY-NOTICES.md',
     'Live2DStage/index.html', 'Live2DStage/stage.css', 'Live2DStage/stage.js',
-    'Live2DStage/actions.js', 'Live2DStage/bridge.js', 'Live2DStage/geometry.js')
+    'Live2DStage/actions.js', 'Live2DStage/bridge.js', 'Live2DStage/geometry.js',
+    'Live2DStage/gaze.js', 'Live2DStage/loafing.js')
 $petChecks = 0
 function Assert-PetPackage([bool]$Condition, [string]$Message) {
     if (-not $Condition) { throw $Message }
@@ -42,9 +43,9 @@ $petArchive = Join-Path $petTestRoot 'valid.zip'
 $petZip = [IO.Compression.ZipFile]::OpenRead($petArchive)
 try {
     $expected = @($petRuntimeNames + 'README.md' + 'SHA256SUMS.txt')
-    Assert-PetPackage ($petZip.Entries.Count -eq 11) 'archive contains exactly eleven allowlisted files'
+    Assert-PetPackage ($petZip.Entries.Count -eq 13) 'archive contains exactly thirteen allowlisted files'
     Assert-PetPackage (@(Compare-Object $expected @($petZip.Entries.FullName) -CaseSensitive).Count -eq 0) 'tests, SDK-like files, secrets and unlisted scripts stay out'
-    Assert-PetPackage (@(Get-Content -LiteralPath (Join-Path $petRelease 'SHA256SUMS.txt')).Count -eq 10) 'hash manifest includes six runtime files and four distribution files'
+    Assert-PetPackage (@(Get-Content -LiteralPath (Join-Path $petRelease 'SHA256SUMS.txt')).Count -eq 12) 'hash manifest includes every runtime and distribution file except itself'
     foreach ($entry in $petZip.Entries) {
         $stream = $entry.Open()
         $sha = [Security.Cryptography.SHA256]::Create()
@@ -55,7 +56,7 @@ try {
     }
 } finally { $petZip.Dispose() }
 
-foreach ($missing in @('EagleDeskPet.exe', 'Live2DStage/geometry.js')) {
+foreach ($missing in @('EagleDeskPet.exe', 'Live2DStage/geometry.js', 'Live2DStage/gaze.js', 'Live2DStage/loafing.js')) {
     $name = [IO.Path]::GetFileNameWithoutExtension($missing)
     $directory = New-PetPackageFixture ('missing-' + $name) $missing
     $archive = Join-Path $petTestRoot ('missing-' + $name + '.zip')

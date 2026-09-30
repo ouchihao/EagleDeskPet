@@ -19,7 +19,8 @@ if ((Test-Path -LiteralPath $readmeTarget) -or (Test-Path -LiteralPath $hashTarg
 $requiredNames = @(
     "EagleDeskPet.exe", "EagleDeskPet.Mcp.exe", "THIRD-PARTY-NOTICES.md",
     "Live2DStage/index.html", "Live2DStage/stage.css", "Live2DStage/stage.js",
-    "Live2DStage/actions.js", "Live2DStage/bridge.js", "Live2DStage/geometry.js"
+    "Live2DStage/actions.js", "Live2DStage/bridge.js", "Live2DStage/geometry.js",
+    "Live2DStage/gaze.js", "Live2DStage/loafing.js"
 )
 foreach ($directory in @($releaseRoot, (Join-Path $releaseRoot "Live2DStage"))) {
     if (-not (Test-Path -LiteralPath $directory -PathType Container)) { throw "Missing published directory: $directory" }
