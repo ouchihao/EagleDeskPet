@@ -96,12 +96,14 @@ MCP **不是通用的聊天监听器**。客户端须主动调用 `pet_notify`�
 
 任务正文和状态 **仅驻留进程内存，不落盘、不写入 `pet_get_state`、不暴露给其他 MCP 客户端**。关闭程序清空；手动清空立即去除正文和可见项，但保留有界的 ID/版本标记，防止近期重试把已清消息恢复。来源必须最小化摘要，勿发送密钥或聊天全文。返回 `accepted` 仅表示 GUI 已处理该事件；旧版本、终态回退、历史过期或用户关闭任务接收时可能被安静忽略，不保证状态改变或用户已读。
 
-`state` 保留 `level`、`fullness`、`mood`、`food`、`paused`、`notificationsEnabled`、`pendingNotifications` 和 `currentAction` 等字段，v1.6 增加：
+`state` 保留 `level`、`mood`、`food`、`paused`、`notificationsEnabled`、`pendingNotifications` 和 `currentAction` 等字段；v1.12-preview.2 已移除 `fullness`，调用方不要把缺少饱食度当成异常。工作相关字段包括：
 
-- `isWorking`：是否正在累计本次工作时间和工作收益；取消或饿空后变为 `false`，此时收工动画仍可能在播放。
+- `isWorking`：是否正在累计本次工作时间和工作收益；取消后变为 `false`，此时收工动画仍可能在播放。心情为 0 只降低工资，不自动停工。
 - `isBusy`：本次工作持续到 30 分钟后为 `true`；忙碌动画在当前循环完整结束后接入，不截断帧。
 - `workSessionSeconds`：本次工作的累计秒数，返回值保留一位小数。
 - `activeBanterEnabled`：用户是否开启每分钟本地职场碎碎念；与 AI 通知开关相互独立。
+
+v1.12-preview.2 新增 `moodWageEfficiency`（0.50–1.00）与 `workCoinsPerMinute`（含当前生效装备的工作工资率）。未开工时这只是“工作时”的速率，不表示待机正在赚钱；金币迁移与计算规则见 [经济说明](ECONOMY-v1.12.md)。
 
 v1.7 另增加 `githubConnected` 和 `githubUnread`，仅表示连接状态和本地未读条数，不向 MCP 暴露 Token、GitHub 账号、通知标题或仓库名。GitHub 消息由主程序直接检查，不通过这两个 MCP 工具接入；设置见 [GitHub 指南](GITHUB-NOTIFICATIONS.md)。
 
@@ -159,6 +161,6 @@ python .\tools\test_work_gui_smoke.py --gui .\dist\v1.9.0\EagleDeskPet.exe --mcp
 python .\tools\test_features_gui_smoke.py --gui .\dist\v1.9.0\EagleDeskPet.exe
 ```
 
-前两个 GUI runner 为本次 GUI 和 MCP 同时配置随机 `EAGLE_PET_TEST_CHANNEL`，隔离单实例互斥锁和当前用户命名管道，并设置独立的测试存档目录；发送通知前还会比对精确 PID、测试标记和数据目录。普通运行不设置此变量，管道名称和单实例行为保持不变。测试通道只允许 1–64 个 ASCII 字母、数字或短横线，非法值拒绝运行，不回落到正常用户通道。工作联调用加速的测试状态覆盖进场、持续办公、30 分钟忙碌切换、取消和饿空收工；它不是长时间实机 60 FPS 或人工鼠标拖动验收。
+前两个 GUI runner 为本次 GUI 和 MCP 同时配置随机 `EAGLE_PET_TEST_CHANNEL`，隔离单实例互斥锁和当前用户命名管道，并设置独立的测试存档目录；发送通知前还会比对精确 PID、测试标记和数据目录。普通运行不设置此变量，管道名称和单实例行为保持不变。测试通道只允许 1–64 个 ASCII 字母、数字或短横线，非法值拒绝运行，不回落到正常用户通道。工作联调用加速的测试状态覆盖进场、持续办公、30 分钟忙碌切换、取消和低心情继续工作；它不是长时间实机 60 FPS 或人工鼠标拖动验收。
 
 第三个 runner 验证菜单、荣誉墙、GitHub 窗口和 v1.8 一键接入，同样使用独立数据和测试通道；以模拟 HTTP 响应和测试 Token 驱动真实通知服务与 Windows DPAPI，客户端安装只写注入的临时目录，不修改真实 AI 配置，不请求真实 GitHub、不启动浏览器。

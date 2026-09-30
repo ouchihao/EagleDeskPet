@@ -12,7 +12,7 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.1/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.1-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.2/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.2-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
 
 ## v1.12 便签、原生提醒和角色包测试
 
@@ -22,7 +22,7 @@ dotnet run --project .\tools\NativeReminderSelfTest -c Release
 dotnet run --project .\tools\ReminderSelfTest -c Release
 dotnet run --project .\tools\ReminderIntegrationSelfTest -c Release -- .codex-build/reminder-ui
 dotnet run --project .\tools\CharacterPackSelfTest -c Release
-.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.1\EagleDeskPet.exe
+.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.2\EagleDeskPet.exe
 ```
 
 这些测试创建隔离数据；主 EXE 联调的系统通知通道使用替身，不注册生产身份。真实 Windows 原生 API 的专用独立应用测试见 [NativeReminderSelfTest](../tools/NativeReminderSelfTest/README.md)，需显式操作并清理专用测试身份，不得改系统勿扰或生产资料来强求通过。角色包校验不等于通过真实 Cubism 模型加载；早期透明 WebGL 探针见 [Live2D P0](LIVE2D-P0-RESULTS.md)，当前真实主程序、六套模型和混合动画的入口与证据见 [动画验证](LIVE2D-FULL-ACTIONS.md)。便签 / 提醒的证据与未测边界见[预览版验证记录](VALIDATION-v1.12-preview.md)。
@@ -52,10 +52,13 @@ dotnet run --project .\tools\SceneCatalogSelfTest\SceneCatalogSelfTest.csproj -c
 dotnet run --project .\tools\OutfitSelfTest\OutfitSelfTest.csproj -c Release -- --resources-root .\DuckDeskPet
 dotnet run --project .\tools\FeedingIntegrationSelfTest\FeedingIntegrationSelfTest.csproj -c Release -- "$((Get-Location).Path)"
 dotnet run --project .\tools\ShopSelfTest\ShopSelfTest.csproj -c Release
+dotnet run --project .\tools\CareUiSelfTest\CareUiSelfTest.csproj -c Release -- .codex-build/care-v4-ui
 dotnet run --project .\tools\TaskNotificationSelfTest\TaskNotificationSelfTest.csproj -c Release -- --mcp .\EagleDeskPet.Mcp\bin\Release\net8.0-windows\EagleDeskPet.Mcp.dll --dotnet dotnet
 ```
 
 任务测试前先构建 MCP。当前 `OutfitSelfTest --resources-root` 检查全部六套形象、14 个动作的 1694 帧及站姿；分层服装另严格验证 1695 个绑定映射及衣片，但不代替场景遮挡和美术复查。猜拳窗口、状态机与专属测试已按用户决定移除；通用动作、喂饭和场景回归继续保留。`FeedingIntegrationSelfTest` 链接生产 Feeding partial、Core 和 PetStore，使用可控时钟 / 渲染外壳，验证队列准入、连续喂食、完整新序列、关闭和保存失败；实际主窗口的工作 / 暂停交接仍由下方 smoke 验证。
+
+`CareUiSelfTest` 使用真实 CarePanel XAML、核心工资计算和仅供测试的宿主适配器，检查心情效率、零心情开工、迁移提示及两种窗口宽度；它不操作真实鼠标或用户存档。preview.2 的经济、迁移和界面回归结果见[当前经济规则](ECONOMY-v1.12.md#验证边界)。
 
 ## 动画与 GUI 测试
 
@@ -92,7 +95,7 @@ MCP 实际协议测试的宿主构建及运行方式见 [MCP 文档](MCP.md#开�
 
 普通 Release build 也可测试，但没有系统 .NET 时需附 `-DotnetRoot <包含 dotnet.exe 的 SDK / 运行时目录>`。只有阶段性资源尚未齐全时才加 `-SkipOutfit`，报告会明确 skipped、`fullAcceptance=false`，不得当作完整验收通过。
 
-启动器只创建新的 `%TEMP%\EagleExpansionSmoke-<随机编号>\data` 和 `evidence`、隔离通信通道与标记文件；不允许传入或复用用户存档。测试在隔离状态中添加资金，再通过实际宿主验证菜单、独立预览、购买去重、任务乱序、三摸抗议、饥饿后只吃一份、收工后应用待装备、服装切换及猜拳入口 / 资源不再存在。保存 `expansion-smoke.json` 与自己 WPF 窗口的 PNG，不截桌面。
+启动器只创建新的 `%TEMP%\EagleExpansionSmoke-<随机编号>\data` 和 `evidence`、隔离通信通道与标记文件；不允许传入或复用用户存档。测试在隔离状态中添加资金，再通过实际宿主验证菜单、独立预览、购买去重、任务乱序、三摸抗议、手动空碗场景后只吃一份、收工后应用待装备、服装切换及猜拳入口 / 资源不再存在。preview.2 另验证低心情持续工作、心情工资和饱食度字段移除。保存 `expansion-smoke.json` 与自己 WPF 窗口的 PNG，不截桌面。
 
 内部 280 秒取消预算、正常收尾；启动器 295 秒请求关闭、300 秒硬限只结束本次子进程。失败会写报告，不伪装通过；截图、临时数据和未人工确认的边界保留给复查。工作时间自然增长或合法工资变化不能误判为预览 / 装备偷改状态；人工购买确认框仍不由 smoke 自动应答。
 
