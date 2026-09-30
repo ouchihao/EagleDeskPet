@@ -41,16 +41,18 @@ public partial class PetWindow
         _workStage.Apply(sample, deltaSeconds);
         ApplyPose(_live2D?.IsActive == true ? Pose.Neutral : _behavior.CurrentProceduralPose);
         TickGaze(sample);
-        _live2D?.Present(sample, _behavior.IsPaused, force);
+        _live2D?.Present(sample, _behavior.IsPaused || _loafingVisual.Active, force);
+        ApplyLoafingVisual();
     }
 
     private void OnPresentationChanged()
     {
         bool live = _live2D?.IsActive == true;
-        double opacity = live ? 0 : 1;
+        double opacity = live || _loafingVisual.Active ? 0 : 1;
         foreach (var image in new[] { PetImage, BusyFireImage, DeskBackImage, DeskFrontImage, LaptopImage, _workStage.ForegroundLayer })
             if (image is not null) image.Opacity = opacity;
-        ApplyPose(live ? Pose.Neutral : _behavior.CurrentProceduralPose);
+        ApplyPose(live || _loafingVisual.Active ? Pose.Neutral : _behavior.CurrentProceduralPose);
+        if (_loafingVisual.Active) ApplyLoafingVisual();
         RendererStatusMenuItem.Header = !live ? "动画 · 逐帧兼容模式" : _live2D!.UsesNativeAction(ClipKind.Eat)
             ? "动画 · Live2D + 原帧吃饭 / 哈欠" : "动画 · Live2D（当前装扮）";
         if (!live && _live2D?.Warning is { } warning)

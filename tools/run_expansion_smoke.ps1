@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [string]$DotnetRoot,
-    [ValidateSet('expansion', 'live2d', 'live2d-business', 'live2d-gallery', 'live2d-review')][string]$Mode = 'expansion',
+    [ValidateSet('expansion', 'live2d', 'live2d-business', 'live2d-gallery', 'live2d-review', 'loafing', 'live2d-loafing')][string]$Mode = 'expansion',
     [string]$Live2DConfig,
     [string]$HybridActionsDirectory,
     [string]$ReviewOutfit = 'outfit.default',
@@ -25,7 +25,7 @@ if ($HybridActionsDirectory) {
     if (-not (Test-Path -LiteralPath $petHybridDirectory -PathType Container)) { throw 'HybridActionsDirectory must be a prepared local directory.' }
 }
 $petHardLimit = $(if ($Mode -like 'live2d*') { 650 } else { 300 })
-$petReportName = $(if ($Mode -like 'live2d*') { 'live2d-smoke.json' } else { 'expansion-smoke.json' })
+$petReportName = $(if ($Mode -like '*loafing') { 'loafing-smoke.json' } elseif ($Mode -like 'live2d*') { 'live2d-smoke.json' } else { 'expansion-smoke.json' })
 
 # Always create a new temp root. There is intentionally no parameter for reusing
 # another data directory: seeding test currency must never touch an existing pet.
@@ -57,6 +57,7 @@ if ($Live2DConfig) { $petStart.EnvironmentVariables['EAGLE_PET_LIVE2D_CONFIG'] =
 $petStart.EnvironmentVariables.Remove('EAGLE_PET_HYBRID_ACTIONS_DIR')
 if ($HybridActionsDirectory) { $petStart.EnvironmentVariables['EAGLE_PET_HYBRID_ACTIONS_DIR'] = $petHybridDirectory }
 if ($Mode -like 'live2d*') { $petStart.EnvironmentVariables['EAGLE_PET_RENDERER'] = 'live2d' }
+if ($Mode -eq 'loafing') { $petStart.EnvironmentVariables['EAGLE_PET_RENDERER'] = 'png' }
 
 $petChild = [Diagnostics.Process]::Start($petStart)
 $petElapsed = [Diagnostics.Stopwatch]::StartNew()

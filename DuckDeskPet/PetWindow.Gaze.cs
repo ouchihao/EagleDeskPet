@@ -13,7 +13,7 @@ public partial class PetWindow
     {
         if (_live2D?.IsActive != true) return;
         bool allowed = _settings.FollowCursor && SystemParameters.ClientAreaAnimation &&
-            sample.Kind == ClipKind.Idle && !_behavior.IsPaused && !_nativeDragInProgress &&
+            sample.Kind == ClipKind.Idle && !_behavior.IsPaused && !_nativeDragInProgress && !_loafingVisual.Active &&
             !PetMenu.IsOpen && !InteractionsUnavailable && !_isClosing && IsVisible;
         long now = Stopwatch.GetTimestamp();
         if (allowed == _lastGazeAllowed && _lastGazeTick != 0 && Stopwatch.GetElapsedTime(_lastGazeTick, now).TotalMilliseconds < 50)

@@ -79,6 +79,7 @@ public partial class PetWindow : Window
             await _framePlayer.WarmAsync();
             await InitializeContentResourcesAsync();
             await InitializeContent();
+            await InitializeLoafingAsync();
             if (CareState.IsWorking)
             {
                 await _framePlayer.WarmWorkAsync();
@@ -177,7 +178,7 @@ public partial class PetWindow : Window
         }
 
         bool wasWorking = _behavior.IsWorkSceneActive;
-        ClipSample sample = _live2D?.CanAdvance(_behavior.CurrentSample) == false
+        ClipSample sample = TickLoafingVisual() || _live2D?.CanAdvance(_behavior.CurrentSample) == false
             ? _behavior.CurrentSample : _behavior.Advance(deltaSeconds);
         ApplyPresentation(sample, deltaSeconds);
         TickFeeding();

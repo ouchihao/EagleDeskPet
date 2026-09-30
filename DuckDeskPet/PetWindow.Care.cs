@@ -29,6 +29,7 @@ public partial class PetWindow
     private DateTimeOffset _bubbleUntil;
     private DateTimeOffset _lastSaved;
     private DateTimeOffset _lastBanterTick;
+    private long _lastLoafingSavedRevision = -1;
     private bool _bubbleIsBanter;
     private bool _preparingWork;
     private bool _assetsReady;
@@ -44,7 +45,9 @@ public partial class PetWindow
     internal bool WorkInProgress => CareState.IsWorking || _behavior.IsWorkSceneActive || _behavior.IsWorkRequested || _preparingWork;
     internal bool InteractionsUnavailable => !_assetsReady || _behavior.IsPaused || WorkInProgress || IsFeeding || _preparingReaction || _preparingOwnedAction || IsContentEquipmentApplying;
     internal bool CanStartWork => !InteractionsUnavailable;
-    internal string WorkStatus => _preparingWork ? "搬工位中…" : CareState.IsWorking
+    internal string WorkStatus => _preparingWork ? "搬工位中…" : CareState.IsLoafing
+        ? $"摸鱼 · {(CareState.Loafing == LoafingKind.WoodenFish ? "敲木鱼" : "抠鼻发呆")} · 还剩 {Math.Ceiling(CareState.LoafingRemainingSeconds / 60)} 分钟（金币 / 经验暂停）"
+        : CareState.IsWorking
         ? $"{(CareState.IsBusy ? "忙碌中" : "办公中")} · {(int)(CareState.WorkSessionSeconds / 60)} 分 {((int)CareState.WorkSessionSeconds % 60):00} 秒"
         : _behavior.IsWorkSceneActive ? "正在收工，等我收好电脑。" : "工位空着，随时开工。";
     internal string CareStatus { get; private set; } = "负责吃饭，顺便陪你上班。";
@@ -83,6 +86,8 @@ public partial class PetWindow
                 workCoinsPerMinute = MoneyPerWorkMinute,
                 paused = _behavior.IsPaused, notificationsEnabled = NotificationsEnabled,
                 isWorking = CareState.IsWorking, isBusy = CareState.IsBusy,
+                isLoafing = CareState.IsLoafing, loafingKind = CareState.Loafing.ToString(),
+                loafingRemainingSeconds = CareState.LoafingRemainingSeconds,
                 workSessionSeconds = Math.Round(CareState.WorkSessionSeconds, 1), activeBanterEnabled = ActiveBanterEnabled,
                 githubConnected = _github.IsConnected, githubUnread = _github.UnreadCount,
                 pendingNotifications = _notices.Count, taskUnread = TaskUnreadCount,
@@ -121,10 +126,11 @@ public partial class PetWindow
         var now = DateTimeOffset.UtcNow;
         _care.Advance(now);
         _behavior.SetWorkState(CareState.IsWorking, CareState.IsBusy);
-        if ((now - _lastSaved).TotalSeconds >= 30)
+        if ((now - _lastSaved).TotalSeconds >= 30 || _lastLoafingSavedRevision != _care.LoafingScheduleRevision)
         {
             _store.Save(CareState);
             _lastSaved = now;
+            if (_store.Warning is null) _lastLoafingSavedRevision = _care.LoafingScheduleRevision;
             if (_store.Warning is not null) CareStatus = _store.Warning;
         }
         _carePanel?.Refresh();

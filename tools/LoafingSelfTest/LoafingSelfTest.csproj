@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWPF>true</UseWPF><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../DuckDeskPet.Core/DuckDeskPet.Core.csproj" />
+    <Compile Include="../../DuckDeskPet/LoafingAssets.cs" Link="LoafingAssets.cs" />
+    <Compile Include="../../DuckDeskPet/LoafingSpriteLayer.cs" Link="LoafingSpriteLayer.cs" />
+  </ItemGroup>
+</Project>

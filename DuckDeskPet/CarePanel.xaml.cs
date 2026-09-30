@@ -25,7 +25,7 @@ public partial class CarePanel : Window
             $"Lv.{state.Level}  ·  经验 {state.ExperienceIntoLevel:N0}/{state.NextLevelRequirement:N0}";
         MoodBar.Value = state.Mood;
         MoodText.Text = $"{state.Mood:0} / 100";
-        MoodEfficiencyText.Text = $"心情工资效率 {0.5 + state.Mood / 200:P0} · 工作时 +{_pet.MoneyPerWorkMinute:N2} 鹰币 / 分钟";
+        MoodEfficiencyText.Text = state.IsLoafing ? "摸鱼休息中 · 金币和经验暂停增长" : $"心情工资效率 {0.5 + state.Mood / 200:P0} · 工作时 +{_pet.MoneyPerWorkMinute:N2} 鹰币 / 分钟";
         FoodText.Text = $"粮袋 {state.Food} / 99";
         var remaining = TimeSpan.FromSeconds(Math.Max(0, 300 - state.FoodProgressSeconds));
         IncomeText.Text = state.Food >= 99 ? "粮袋满啦，先吃一点再攒。" : $"下一份粮食 {remaining:mm\\:ss} · 离线最多积累 2 小时";
