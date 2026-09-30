@@ -44,6 +44,16 @@ async function partLayer(name, crop, placement) {
   return { name, left, top, opacity: 0, hidden: false, imageData: { width, height, data: new Uint8ClampedArray(rgba) } };
 }
 const actionLayers = await Promise.all(partsLayout.map(args => partLayer(...args)));
+for (const layer of actionLayers.filter(x => x.name.startsWith('rps-'))) {
+  const original = layer.imageData, height = 280 - layer.top;
+  const data = new Uint8ClampedArray(original.width * height * 4);
+  const openRow = 271 - layer.top;
+  data.set(original.data.subarray(0, (openRow + 1) * original.width * 4));
+  // Extend the existing wrist sides and interior as an open joint, not a closed icon attached to another palm
+  for (let y = openRow + 1; y < height; y++)
+    data.set(original.data.subarray(openRow * original.width * 4, (openRow + 1) * original.width * 4), y * original.width * 4);
+  layer.imageData = { width: original.width, height, data };
+}
 const busyReference = await sharp(await read('DuckDeskPet/Assets/Animations/BusyLoop/frame-0000.png')).ensureAlpha().raw().toBuffer();
 const busyEyes = [];
 for (const [name, sx, targetX, right] of [['busy-eye-r', 143, 152, false], ['busy-eye-l', 205, 215, true]]) {

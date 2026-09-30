@@ -61,6 +61,15 @@ test('the stationary torso does not retain the moving wing silhouette', () => {
     assert.ok(alpha(140, 212) >= 254);
   }
 });
+test('gesture palms have an open wrist with hidden overlap, not a sealed floating hand icon', () => {
+  const { psd } = variants.get('outfit.default');
+  for (const hand of psd.children.filter(x => x.name.startsWith('rps-'))) {
+    const { width, height, data } = hand.imageData;
+    assert.equal(hand.top + height, 280);
+    assert.deepEqual(data.subarray((271 - hand.top) * width * 4, (272 - hand.top) * width * 4), data.subarray((height - 1) * width * 4));
+    assert.ok(data[((height - 1) * width + 140 - hand.left) * 4 + 3] > 200);
+  }
+});
 test('default neutral preserves every visible original pixel after authoring', async () => {
   const expected = await sharp(before).ensureAlpha().raw().toBuffer();
   const actual = await sharp(path.join(output, 'default/neutral.png')).ensureAlpha().raw().toBuffer();
