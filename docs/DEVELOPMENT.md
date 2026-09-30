@@ -12,18 +12,20 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.3/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.3-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.4/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.4-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
 
 <a id="preview3-摸鱼与光标注视"></a>
-## preview.3 摸鱼与光标注视
+## preview.3–4 摸鱼与光标注视
 
 需求与验收清单见 [REQ-012](REQUIREMENTS.md#req-012) / [REQ-013](REQUIREMENTS.md#req-013)。本节记录当前接口和验证边界，不宣告新版本已发布。
 
 2026-09-30 本机 Demo 已完成：最终自包含 `dist/v1.12.0-preview.3-loafing/EagleDeskPet.exe` 的两种摸鱼后端与原业务联调通过，六套真实瞳孔 Stage 47 / 47。检查点、SHA256 和尚未验证的边界见 [本轮证据](VALIDATION-v1.12-preview.md#preview3)，不是远端 GitHub Release。
 
+同日 preview.4 提升注视可见度并开放办公跟随：六套 Stage 166 / 166、真实 WPF 输入链路 60 / 60；最终 `dist/v1.12.0-preview.4-gaze/EagleDeskPet.exe` 原业务 7 / 7 与摸鱼联调通过。新增暂停消息连续性检查；完整证据与未测边界见 [preview.4 记录](VALIDATION-v1.12-preview.md#preview4)。
+
 - `LoafingPolicy` 按有效工作区间和持久随机状态抽签；`PetCareService` 唯一结算金币、经验、食物与心情。休息固定半小时，无金币和任何自动经验，粮食仍积累；休息心情基础衰减为 1 / 小时。渲染模块不能补发奖励
 - `LoafingVisualTimeline` / `LoafingSpriteLayer` 管理原味表情叠层；`Live2DStage/loafing.js` 管理独立模型 / 电脑转场。`SendLoafing(phase, seconds, paused, kind)` 以最多 20 Hz 同步，阶段 / 暂停边界立即发送，使用独立 generation / revision 过滤旧消息；正常工作时间轴冻结到交接结束
-- `GazePolicy` 只使用本地鼠标坐标，宿主 `PointFromScreen` 转换、20 Hz 发送，`gaze.js` 在模型声明安全参数后平滑驱动。除站立之外禁用跟随，遵循用户开关与系统减弱动画设置；无能力的旧包不伪造眼球运动
+- `GazePolicy` 只使用本地鼠标坐标，宿主 `PointFromScreen` 转换、20 Hz 发送，`gaze.js` 在模型声明安全参数后平滑驱动。preview.4 开放站立与稳定办公 / 忙碌循环，其他动作禁用；遵循用户开关与系统减弱动画设置，无能力的旧包不伪造眼球运动
 - 存档仍为 v4，新摸鱼字段有兼容默认值；没有新的经济迁移，已有 v4 钱包不能再次清零。旧版本升 v4 的独立备份与一次性重置沿用原保护，测试只写隔离资料
 - 5,113.50 币 / 七天是关闭随机摸鱼的默认有效工作定标。`EconomySelfTest` 中该基线显式控制随机输入；不把它解释为新版实际挂机七天必得，价格本轮不再次调整
 
@@ -38,7 +40,7 @@ dotnet run --project .\tools\LoafingSelfTest -c Release -- "$((Get-Location).Pat
 .\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.3\EagleDeskPet.exe -Mode live2d-loafing
 ```
 
-最后两项为新联调入口，必须保留本次实际结果再判断通过；不要复用证据目录。PNG 兼容后端另运行 `-Mode loafing` 并显式选择 `EAGLE_PET_RENDERER=png`。真实 Core 注视验证用 [GazeStageSelfTest](../tools/GazeStageSelfTest/README.md)，只对本地模型 / 窗口画布操作，不注入系统鼠标、不读真实用户存档。
+最后两项为新联调入口，必须保留本次实际结果再判断通过；不要复用证据目录。PNG 兼容后端另运行 `-Mode loafing` 并显式选择 `EAGLE_PET_RENDERER=png`。真实 Core 注视验证用 [GazeStageSelfTest](../tools/GazeStageSelfTest/README.md)，只对本地模型 / 窗口画布操作，不注入系统鼠标、不读真实用户存档。preview.4 新增 [GazeHostSelfTest](../tools/GazeHostSelfTest/README.md)：移动自己的隔离透明窗口，实际经过 `GetCursorPos → PointFromScreen → TickGaze → WebView`，记录三种宠物尺寸及办公等状态，避免仅注入 JS 参数就认为真实宿主有效。
 
 已知素材边界：原抠鼻 / 袈裟 GIF 截为各 35 帧，40 ms / 帧（25 FPS），往返播放避免首末硬切；最高 60 Hz 仅指位置、转场及渲染调度，不声称有 60 张不同表情帧。摸鱼暂不换服装；真实手握木鱼、桌面遮挡、原图抠边、掉帧后双后端同步、取消 / 重启、跨 DPI 和长期性能均需另看画面和宿主报告。原有 14 段核心动作与六套衣装包不因新增叠层而重编号。
 

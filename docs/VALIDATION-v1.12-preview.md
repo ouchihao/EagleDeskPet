@@ -1,5 +1,34 @@
 # v1.12 预览版 · 实现与验证记录
 
+<a id="preview4"></a>
+## 2026-09-30 · preview.4 可见的鼠标跟随与办公注视
+
+本机产物：`dist/v1.12.0-preview.4-gaze/EagleDeskPet.exe`，489,907,755 字节；产品版本 `1.12.0-preview.4+15bbfade65f956df5cb8f58e8e4f442220059a9e`。SHA256：`CF73A067A145E3B0A3B714CFE2DFD4CAA0B4FBF7792838CA1EEA4C448A999153`。使用前退出旧进程，保留同目录 `Live2DStage`；沿用本机 SDK 配置及存档 v4，不修改经济规则、不再次清币。
+
+旧版真实宿主基线 48 / 48：站立时 `GetCursorPos → PointFromScreen → TickGaze → WebView` 已正常传递，不能归因为鼠标坐标丢失。主要可见度问题是 160 DIP 图像中瞳孔自身单向偏移上限仅约 0.365 / 0.156 DIP，加上脸附近方向目标较小，视觉反应弱。办公则确实被宿主的 `InteractionsUnavailable`（包含工作）与 Stage 的 Idle-only 条件禁用。
+
+本轮提高脸附近响应与头眼幅度，增加朝光标侧的轻歪头，开放稳定 WorkLoop / BusyLoop；只叠加头眼，不动打字、身体、脚点或工位。办公跟随保留原低头基线和模型实际参数范围；忙碌保留黄色无瞳孔眼型。修复同一办公循环换序号时重复过渡，以及非摸鱼的 `none → none` 暂停消息导致一帧归中的问题。
+
+| 验证 | 结果 / 边界 |
+| --- | --- |
+| 规则与构建 | GazeSelfTest 41 / 41；主程序和真实宿主测试工具构建均 0 警告 / 0 错误 |
+| JS 动作 / 注视 / 摸鱼 | 共 49 / 49；动作叠加、参数边界与原有协议通过 |
+| 六套真实 Core / Stage | 166 / 166；4,551 次实际绘制，脚锚最大位移 0，GL / 运行 / 非有限顶点错误为 0；审查 160px 对比及肩颈极值 |
+| 暂停连续性 | 按真实宿主消息顺序测试，头部归一化偏移首帧 0.912、100ms 后 0.567、1.5s 后 0.000289；不是一帧硬回正 |
+| 真实 WPF 输入链路 | 60 / 60，24 场景；本机 125% DPI，三种宠物尺寸、四向、近距离、办公 / 忙碌和开关 / 拖动门控 / 暂停 / 装备切换 / 菜单 / 摸鱼 / 远离 |
+| 最终自包含 EXE 原业务 | 7 / 7，26.68 秒，实际 `live2d-native-hybrid`；完整吃饭、办公至忙碌与退出、暂停、装备与独立预览 |
+| 最终自包含 EXE 摸鱼 | 40.09 秒通过，实际 Live2D；两种表情完整进出、装备保持、零收益、暂停与取消 |
+
+本机证据：
+
+- `.codex-build/gaze-real-host-baseline-20260930-e`：旧版真实宿主基线
+- `.codex-build/gaze-real-host-preview4-final-20260930`：最终宿主报告、隔离画布和源码指纹
+- `.codex-build/gaze-office-pause-final-20260930-182051`：六套 Stage 报告、暂停关键帧、160px 图册与录像
+- `%TEMP%/EagleExpansionSmoke-6f6edd236d1b4f60853636fb8cd7611c/evidence/live2d-smoke.json`：最终 EXE 原业务
+- `%TEMP%/EagleExpansionSmoke-d090d469fd9f40038e5bcaeb6cc86398/evidence/loafing-smoke.json`：最终 EXE 摸鱼
+
+真实宿主工具加载同版普通构建程序集，移动自己的透明、不激活窗口，将系统当前光标转换为本地坐标；没有注入 JS 跟随目标、移动系统鼠标、截取桌面或读取真实养成存档。它不是自包含 EXE 的鼠标交互人工验收；最终 EXE 另跑上述业务与摸鱼回归。发布包的 `gaze.js` / `stage.js` 与两套最终跟随测试的 SHA256 一致。仍未认证混合 DPI 跨屏拖动、物理屏幕 60 FPS 或长期稳定性；没有替用户关闭旧版或 push 到远端。
+
 <a id="preview3"></a>
 ## 2026-09-30 · preview.3 无薪摸鱼与头眼跟随
 
