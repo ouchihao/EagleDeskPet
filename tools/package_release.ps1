@@ -16,12 +16,27 @@ $hashTarget = Join-Path $releaseRoot "SHA256SUMS.txt"
 if ((Test-Path -LiteralPath $readmeTarget) -or (Test-Path -LiteralPath $hashTarget)) {
     throw "Package metadata already exists; use a fresh published directory."
 }
-$names = @("EagleDeskPet.exe", "EagleDeskPet.Mcp.exe", "THIRD-PARTY-NOTICES.md", "README.md")
-foreach ($name in $names[0..2]) {
-    if (-not (Test-Path -LiteralPath (Join-Path $releaseRoot $name) -PathType Leaf)) {
-        throw "Missing published file: $name"
+$requiredNames = @(
+    "EagleDeskPet.exe", "EagleDeskPet.Mcp.exe", "THIRD-PARTY-NOTICES.md",
+    "Live2DStage/index.html", "Live2DStage/stage.css", "Live2DStage/stage.js",
+    "Live2DStage/actions.js", "Live2DStage/bridge.js", "Live2DStage/geometry.js"
+)
+foreach ($directory in @($releaseRoot, (Join-Path $releaseRoot "Live2DStage"))) {
+    if (-not (Test-Path -LiteralPath $directory -PathType Container)) { throw "Missing published directory: $directory" }
+    if ((Get-Item -LiteralPath $directory).Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+        throw "Published directories cannot be links: $directory"
     }
 }
+foreach ($name in $requiredNames) {
+    $source = Join-Path $releaseRoot $name
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "Missing published file: $name"
+    }
+    if ((Get-Item -LiteralPath $source).Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+        throw "Published files cannot be links: $name"
+    }
+}
+$names = $requiredNames + "README.md"
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot "..\docs\DISTRIBUTION-README.md") -Destination $readmeTarget
 $lines = foreach ($name in $names) {
     $hash = (Get-FileHash -LiteralPath (Join-Path $releaseRoot $name) -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -29,7 +44,7 @@ $lines = foreach ($name in $names) {
 }
 [System.IO.File]::WriteAllLines($hashTarget, $lines, [System.Text.UTF8Encoding]::new($false))
 
-# Explicit allowlist: never package saves, settings, credentials or build intermediates.
+# Explicit allowlist excludes tests, saves, credentials, local model configuration and official SDK files
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $stream = [System.IO.File]::Open($archiveTarget, [System.IO.FileMode]::CreateNew)
@@ -46,7 +61,7 @@ try {
 
 $archive = [System.IO.Compression.ZipFile]::OpenRead($archiveTarget)
 try {
-    if ($archive.Entries.Count -ne 5) { throw "Unexpected archive entry count." }
+    if ($archive.Entries.Count -ne ($names.Count + 1)) { throw "Unexpected archive entry count." }
     foreach ($entry in $archive.Entries) {
         if ($entry.FullName -notin ($names + "SHA256SUMS.txt")) { throw "Unexpected archive entry." }
         $expected = (Get-FileHash -LiteralPath (Join-Path $releaseRoot $entry.FullName) -Algorithm SHA256).Hash

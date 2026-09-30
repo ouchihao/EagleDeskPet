@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Live2DStage\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Live2DStage\*.js;Live2DStage\*.html;Live2DStage\*.css" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Remove="Assets\mascot-animated-neutral.png" />
     <None Remove="Assets\actions.json" />
     <Resource Include="Assets\actions.json" />
