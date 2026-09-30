@@ -4,11 +4,13 @@
     B = globalThis.EagleBridge,
     G = globalThis.EagleGeometry,
     Eye = globalThis.EagleGaze,
+    Loaf = globalThis.EagleLoafing,
     canvas = document.getElementById("stage");
   const query = new URLSearchParams(location.search),
     qa = query.get("qa") === "1",
     generation = Number(query.get("generation") || (qa ? 1 : NaN));
   const gaze = new Eye.Tracking(generation);
+  const loafing = new Loaf.Tracking(generation);
   const metrics = {
     frames: 0,
     coreUpdates: 0,
@@ -176,7 +178,7 @@
       this.alpha = gl.getUniformLocation(this.program, "alpha");
       this.sampler = gl.getUniformLocation(this.program, "image");
     }
-    draw(image, rect = [0, 0, 384, 346], alpha = 1, rotation = 0, pivot) {
+    draw(image, rect = [0, 0, 384, 346], alpha = 1, rotation = 0, pivot, flipY = false) {
       if (!image || alpha <= 0) return;
       const points = G.corners(rect, rotation, pivot).map(([x, y]) => [
         x / 192 - 1,
@@ -188,6 +190,7 @@
         [1, 0],
         [1, 1],
       ];
+      if (flipY) for (const point of uv) point[1] = 1 - point[1];
       gl.useProgram(this.program);
       gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
       gl.bufferData(
@@ -336,6 +339,20 @@
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       gl.activeTexture(gl.TEXTURE0);
     }
+    drawBehindDesk(model, offsetY, surfaceY) {
+      gl.disable(gl.SCISSOR_TEST);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      model.draw("all", this.framebuffer, offsetY);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.enable(gl.SCISSOR_TEST);
+      const bottom = Math.ceil((346 - surfaceY) * canvas.height / 346);
+      gl.scissor(0, bottom, canvas.width, canvas.height - bottom);
+      quad.draw({ id: this.image }, [0, 0, 384, 346], 1, 0, undefined, true);
+      gl.disable(gl.SCISSOR_TEST);
+    }
     release() {
       gl.deleteTexture(this.image);
       gl.deleteFramebuffer(this.framebuffer);
@@ -467,6 +484,8 @@
         ]),
       );
       this.renderer.setMvpMatrix(matrix);
+      this.matrix = matrix;
+      this.mvp = Float32Array.from(matrix.getArray());
       this.renderer.setRenderState(null, [0, 0, canvas.width, canvas.height]);
       this.renderer.loadShaders("/runtime/shaders/");
       for (
@@ -530,8 +549,12 @@
       require(metrics.nonFiniteVertices === 0, "Non-finite Core vertex");
       metrics.coreUpdates++;
     }
-    draw(pass, framebuffer = null) {
+    draw(pass, framebuffer = null, offsetY = 0) {
       this.pass = pass;
+      const transform = Float32Array.from(this.mvp);
+      transform[13] -= 2 * offsetY / 346;
+      this.matrix.setMatrix(transform);
+      this.renderer.setMvpMatrix(this.matrix);
       this.renderer.setRenderState(framebuffer, [
         0,
         0,
@@ -718,6 +741,22 @@
       alpha,
     );
   }
+  function drawLoafing(sample, model) {
+    if (sample.modelVisible) {
+      if (sample.modelOffsetY > 0)
+        foregroundTarget.drawBehindDesk(model, sample.modelOffsetY, scene.deskSurfaceAnchor.y);
+      else model.draw("all");
+    }
+    quad.draw(active.back);
+    if (sample.modelVisible && sample.modelOffsetY === 0)
+      for (const side of ["l", "r"])
+        foregroundTarget.draw(model, active.back, [0, 0, 384, 346], side,
+          G.aboveDesk(model.hand(side).y, scene.deskSurfaceAnchor.y));
+    quad.draw(active.front);
+    if (sample.computerVisible)
+      quad.draw(active.pc, [sample.computerX, sample.computerY, 384, 346], 1,
+        sample.computerRotation, [192 + sample.computerX, 250 + sample.computerY]);
+  }
   function draw(now) {
     if (dead || !active || !current) return;
     const p = B.progress(current, receivedAt, now),
@@ -730,7 +769,8 @@
         neutralizing ? 0 : p,
         scene,
       ),
-      m = active.model;
+      m = active.model,
+      loaf = loafing.sample(now);
     if (m.gazeRanges) {
       sample.parameters.ParamEyeBallX = 0;
       sample.parameters.ParamEyeBallY = 0;
@@ -766,7 +806,12 @@
     )
       Object.assign(sample.parameters, frozenParameters);
     lastActionParameters = { ...sample.parameters };
-    const idleGaze = current.kind === "Idle" && !neutralizing && !!m.gazeRanges;
+    if (loaf.active) {
+      Object.assign(sample.parameters, loaf.parameters);
+      sample.parameters.ParamEyeBallX = sample.parameters.ParamEyeBallY = 0;
+      motion.fire = loaf.fire;
+    }
+    const idleGaze = current.kind === "Idle" && !neutralizing && !loaf.active && !!m.gazeRanges;
     gaze.step(now, idleGaze, idleGaze && !current.paused && !transitionFrom);
     if (idleGaze && !transitionFrom) gaze.apply(sample.parameters, m.gazeRanges);
     lastParameters = { ...sample.parameters };
@@ -791,98 +836,101 @@
       quad.draw(fire[index], [0, anchor * (1 - g), 384, 346 * g]);
       gl.disable(gl.SCISSOR_TEST);
     }
-    m.draw("all");
-    const left = m.hand("l"),
-      right = m.hand("r"),
-      lift = sample.props.bowl;
-    if (motion.visible) {
-      quad.draw(active.back, [motion.deskX, 0, 384, 346]);
-      for (const [side, hand] of [
-        ["l", left],
-        ["r", right],
-      ])
+    if (loaf.active) drawLoafing(loaf, m);
+    else {
+      m.draw("all");
+      const left = m.hand("l"),
+        right = m.hand("r"),
+        lift = sample.props.bowl;
+      if (motion.visible) {
+        quad.draw(active.back, [motion.deskX, 0, 384, 346]);
+        for (const [side, hand] of [
+          ["l", left],
+          ["r", right],
+        ])
+          foregroundTarget.draw(
+            m,
+            active.back,
+            [motion.deskX, 0, 384, 346],
+            side,
+            G.aboveDesk(hand.y, scene.deskSurfaceAnchor.y),
+          );
+      }
+      const bowlName = current.kind === "Eat" ? "bowlFull" : "bowlEmpty",
+        bowl = extras[bowlName],
+        bowlAnchor =
+          current.kind === "Eat"
+            ? { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 }
+            : {
+                x: scene.deskSurfaceAnchor.x + motion.deskX,
+                y: scene.deskSurfaceAnchor.y,
+              },
+        bowlRect = G.heldRect(
+          bowl.rect.slice(2),
+          bowlAnchor,
+          current.kind === "Eat" ? [0.5, 0.58] : [0.5, 1],
+          0.9,
+        );
+      quad.draw(bowl.image, bowlRect, lift);
+      if (current.kind === "Eat" && lift > 0)
         foregroundTarget.draw(
           m,
-          active.back,
-          [motion.deskX, 0, 384, 346],
-          side,
-          G.aboveDesk(hand.y, scene.deskSurfaceAnchor.y),
+          bowl.image,
+          bowlRect,
+          null,
+          lift,
+          0,
+          [0, 0],
+          0.22,
         );
-    }
-    const bowlName = current.kind === "Eat" ? "bowlFull" : "bowlEmpty",
-      bowl = extras[bowlName],
-      bowlAnchor =
-        current.kind === "Eat"
-          ? { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 }
-          : {
-              x: scene.deskSurfaceAnchor.x + motion.deskX,
-              y: scene.deskSurfaceAnchor.y,
-            },
-      bowlRect = G.heldRect(
-        bowl.rect.slice(2),
-        bowlAnchor,
-        current.kind === "Eat" ? [0.5, 0.58] : [0.5, 1],
-        0.9,
-      );
-    quad.draw(bowl.image, bowlRect, lift);
-    if (current.kind === "Eat" && lift > 0)
-      foregroundTarget.draw(
-        m,
-        bowl.image,
-        bowlRect,
-        null,
-        lift,
-        0,
-        [0, 0],
-        0.22,
-      );
-    const tea = extras.tea,
-      teaPivot = [right.x, right.y],
-      teaRect = G.heldRect(tea.rect.slice(2), right, [0.25, 0.72], 0.9);
-    quad.draw(
-      tea.image,
-      teaRect,
-      sample.props.tea,
-      sample.props.teaTilt,
-      teaPivot,
-    );
-    if (sample.props.tea > 0)
-      foregroundTarget.draw(
-        m,
+      const tea = extras.tea,
+        teaPivot = [right.x, right.y],
+        teaRect = G.heldRect(tea.rect.slice(2), right, [0.25, 0.72], 0.9);
+      quad.draw(
         tea.image,
         teaRect,
-        "r",
         sample.props.tea,
         sample.props.teaTilt,
         teaPivot,
-        0.26,
       );
-    metrics.attachments = { left, right, bowlRect, teaRect };
-    for (const side of ["r", "l"]) {
-      const eye = m.eyelid(side),
-        tear = G.tear(eye, sample.props.tearFlow, side, sample.props.tears);
-      quad.draw(
-        extras.tears.image,
-        tear.rect,
-        sample.props.tears * tear.opacity,
+      if (sample.props.tea > 0)
+        foregroundTarget.draw(
+          m,
+          tea.image,
+          teaRect,
+          "r",
+          sample.props.tea,
+          sample.props.teaTilt,
+          teaPivot,
+          0.26,
+        );
+      metrics.attachments = { left, right, bowlRect, teaRect };
+      for (const side of ["r", "l"]) {
+        const eye = m.eyelid(side),
+          tear = G.tear(eye, sample.props.tearFlow, side, sample.props.tears);
+        quad.draw(
+          extras.tears.image,
+          tear.rect,
+          sample.props.tears * tear.opacity,
+        );
+        quad.draw(
+          extras.cryEye.image,
+          [eye.x - 10, eye.y - 1.5, 20, 3],
+          sample.props.tears,
+        );
+      }
+      extra(
+        "anger",
+        sample.props.anger,
+        0,
+        0,
+        1 + 0.05 * Math.sin(p * Math.PI * 12),
       );
-      quad.draw(
-        extras.cryEye.image,
-        [eye.x - 10, eye.y - 1.5, 20, 3],
-        sample.props.tears,
-      );
-    }
-    extra(
-      "anger",
-      sample.props.anger,
-      0,
-      0,
-      1 + 0.05 * Math.sin(p * Math.PI * 12),
-    );
-    if (motion.visible) {
-      quad.draw(active.front, [motion.deskX, 0, 384, 346]);
-      if (motion.computer)
-        quad.draw(active.pc, [0, motion.computerY, 384, 346]);
+      if (motion.visible) {
+        quad.draw(active.front, [motion.deskX, 0, 384, 346]);
+        if (motion.computer)
+          quad.draw(active.pc, [0, motion.computerY, 384, 346]);
+      }
     }
     const error = gl.getError();
     if (error !== gl.NO_ERROR) metrics.glErrors.push(error);
@@ -931,7 +979,7 @@
       }
     }
     const terminal = [current.sequence, current.kind].join(":");
-    if (current.phase === "Terminal" && p === 1 && terminalKey !== terminal) {
+    if (!loaf.active && current.phase === "Terminal" && p === 1 && terminalKey !== terminal) {
       if (terminalCandidate?.key !== terminal)
         terminalCandidate = { key: terminal, firstFrame: frameSerial };
       else if (frameSerial - terminalCandidate.firstFrame >= 2) {
@@ -961,6 +1009,19 @@
       message.generation === generation, "Message generation mismatch");
     if (message.type === "gaze") {
       gaze.receive(message, performance.now());
+      return;
+    }
+    if (message.type === "loafing") {
+      const now = performance.now();
+      const parameters = message.phase === "return" && current
+        ? A.sample(current.kind, B.progress(current, receivedAt, now)).parameters
+        : lastParameters ?? A.neutral();
+      if (loafing.receive(message, now, parameters)) {
+        terminalCandidate = null;
+        if (message.phase === "none") transitionFrom = null;
+        gaze.reset();
+        draw(now);
+      }
       return;
     }
     if (message.type === "record-raster-frame") {
@@ -1365,6 +1426,7 @@
       lastSequence: current?.sequence,
       parameters: lastParameters ? { ...lastParameters } : null,
       gaze: { supported: !!active?.model.gazeRanges, limits: active?.model.gazeRanges, ...gaze.report() },
+      loafing: loafing.sample(performance.now()),
       recordingSurface: recording ? (rasterFrame ? "Png" : "Live2D") : null,
       rasterFramesPrepared: [...rasterFrames.values()].reduce(
         (count, frames) => count + frames.length,
