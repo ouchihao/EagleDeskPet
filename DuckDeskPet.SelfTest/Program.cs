@@ -37,7 +37,7 @@ internal static class Program
             ("Catalog separates idle and interaction actions", CatalogContract),
             ("Retired minigame clips cannot be scheduled", RetiredGameClips),
             ("Every requested clip has complete endpoints", CompleteRequestedClips),
-            ("Automatic action and exact 2-second idle", AutomaticActionAndExactIdle),
+            ("Automatic Yawn waits a random 45–90 seconds", AutomaticActionAndExactIdle),
             ("Automatic scheduling selects only idle-group Yawn", AutomaticCoverageWithoutRepeats),
             ("Active requests never shorten the clip", ActiveRequestsNeverShortenClip),
             ("Pending waits through complete idle", PendingWaitsThroughCompleteIdle),
@@ -47,7 +47,7 @@ internal static class Program
             ("Input invariants", InputInvariants),
         };
 
-        tests = tests.Concat(CareTests.Cases).Concat(WorkTests.Cases).Concat(LoafingTests.Cases).ToArray();
+        tests = tests.Concat(CareTests.Cases).Concat(WorkTests.Cases).Concat(LoafingTests.Cases).Concat(YawnPacingTests.Cases).ToArray();
         int failures = 0;
         foreach ((string name, Action body) in tests)
         {
@@ -133,7 +133,7 @@ internal static class Program
             2.0,
             ClipTimeline.AutomaticIdleDurationSeconds,
             0.0,
-            "Automatic idle duration changed.");
+            "Interaction idle duration changed.");
         AssertEqual(1, ClipCatalog.PlayableClipCount, "Automatic pool must contain only Yawn.");
 
         foreach (ClipKind kind in AutomaticClips)
@@ -202,18 +202,18 @@ internal static class Program
 
     private static void AutomaticActionAndExactIdle()
     {
-        var random = new ScriptedRandomSource(0u, 0u, 0u);
+        var random = new ScriptedRandomSource(0u, uint.MaxValue, 0u);
         var timeline = new ClipTimeline(random);
 
-        AssertIdleForFrames(timeline, 119, "initial idle");
+        AssertIdleForFrames(timeline, 60 * 45 - 1, "initial idle");
         ClipSample first = timeline.Advance(Step60);
         AssertSample(first, ClipKind.Yawn, ClipPlaybackPhase.Playing, 0.0, "first automatic start");
-        AssertEqual(1, random.CallCount, "Random source was consumed during fixed idle.");
+        AssertEqual(1, random.CallCount, "Each idle delay should consume exactly one random value.");
         AssertAutomaticRunsEveryFrameToTerminal(timeline, ClipKind.Yawn);
 
         ClipSample idle = timeline.Advance(Step60);
         AssertSample(idle, ClipKind.Idle, ClipPlaybackPhase.Idle, 0.0, "first post-action idle");
-        AssertIdleForFrames(timeline, 119, "post-action idle");
+        AssertIdleForFrames(timeline, 60 * 90 - 1, "post-action idle");
         ClipSample second = timeline.Advance(Step60);
         AssertSample(second, ClipKind.Yawn, ClipPlaybackPhase.Playing, 0.0, "second automatic start");
         AssertEqual(2, random.CallCount, "Random source consumption changed.");
@@ -227,7 +227,7 @@ internal static class Program
         long sequence = 0;
         int starts = 0;
 
-        for (int frame = 0; frame < 60 * 600 && starts < 60; frame++)
+        for (int frame = 0; frame < 60 * 6000 && starts < 60; frame++)
         {
             ClipSample sample = timeline.Advance(Step60);
             if (sample.Kind == ClipKind.Idle || sample.Sequence == sequence)
@@ -328,7 +328,7 @@ internal static class Program
         AssertEqual(ClipKind.Shy, timeline.PendingClip, "Pending clip was consumed before idle.");
         AssertIdleForFrames(timeline, 119, "pending idle");
         AssertEqual(ClipKind.Shy, timeline.PendingClip, "Pending clip was lost during idle.");
-        AssertEqual(0, random.CallCount, "Pending idle consumed the random source.");
+        AssertEqual(2, random.CallCount, "Initial and post-action idle delays should each consume one random value.");
 
         AssertSample(
             timeline.Advance(Step60),
@@ -337,7 +337,7 @@ internal static class Program
             0.0,
             "pending Shy start after two seconds");
         AssertEqual(null, timeline.PendingClip, "Pending clip was not consumed at start.");
-        AssertEqual(0, random.CallCount, "Random action won priority over pending clip.");
+        AssertEqual(2, random.CallCount, "Starting a pending clip consumed extra randomness.");
 
         var manualOverride = new ClipTimeline(92u);
         manualOverride.RequestClip(ClipKind.SideEye);

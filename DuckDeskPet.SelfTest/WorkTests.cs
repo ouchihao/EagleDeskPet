@@ -147,8 +147,9 @@ internal static class WorkTests
         for (int i = 0; i < 120; i++) Equal(ClipKind.WorkExit, controller.Advance(Step).Kind);
         Equal(ClipKind.Idle, controller.Advance(Step).Kind);
         Check(!controller.IsWorkSceneActive, "Work exit still owns the renderer.");
-        for (int i = 0; i < 119; i++) Equal(ClipKind.Idle, controller.Advance(Step).Kind);
-        Equal(ClipKind.Yawn, controller.Advance(Step).Kind);
+        for (int i = 0; i < 60 * 45 - 1; i++) Equal(ClipKind.Idle, controller.Advance(Step).Kind);
+        for (int i = 0; i <= 60 * 45 && controller.CurrentSample.Kind == ClipKind.Idle; i++) controller.Advance(Step);
+        Equal(ClipKind.Yawn, controller.CurrentSample.Kind);
     }
 
     private static void WorkPause()

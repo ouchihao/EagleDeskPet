@@ -295,7 +295,7 @@ internal static class Program
     {
         var b = Hungry(); b.CancelHungryScene(); b.QueueReaction(PetBehaviorKind.Fed); b.QueueReaction(PetBehaviorKind.Fed);
         End(b); Equal(ClipKind.HungryExit, b.Advance(Step).Kind); End(b); b.Advance(Step); IdleBeat(b, ClipKind.Eat);
-        Equal(0, b.PendingCount); End(b); b.Advance(Step); IdleBeat(b, ClipKind.Yawn);
+        Equal(0, b.PendingCount); End(b); b.Advance(Step); AutomaticYawn(b);
     }
     private static void AnnoyedQueue()
     {
@@ -310,7 +310,7 @@ internal static class Program
     }
     private static void SuspendActive()
     {
-        var b = new PetBehaviorController(); IdleBeat(b, ClipKind.Yawn); b.Advance(Step); var before = b.CurrentSample; b.SuspendAutomatic(true); Equal(before, b.CurrentSample);
+        var b = new PetBehaviorController(); AutomaticYawn(b); b.Advance(Step); var before = b.CurrentSample; b.SuspendAutomatic(true); Equal(before, b.CurrentSample);
         End(b); b.Advance(Step); for (int i = 0; i < 500; i++) Equal(ClipKind.Idle, b.Advance(Step).Kind);
     }
     private static void ExclusiveActions()
@@ -322,7 +322,7 @@ internal static class Program
     private static void ResumeAutomatic()
     {
         var b = new PetBehaviorController(); b.SuspendAutomatic(true); for (int i = 0; i < 300; i++) b.Advance(Step);
-        b.SuspendAutomatic(false); Equal(ClipKind.Yawn, b.Advance(Step).Kind);
+        b.SuspendAutomatic(false); AutomaticYawn(b);
     }
     private static void NewActionCompletion()
     {
@@ -362,6 +362,12 @@ internal static class Program
     {
         for (int i = 0; i < 119; i++) Equal(ClipKind.Idle, b.Advance(Step).Kind);
         Equal(expected, b.Advance(Step).Kind); Near(0, b.CurrentSample.Progress);
+    }
+    private static void AutomaticYawn(PetBehaviorController b)
+    {
+        for (int i = 0; i < 60 * 45 - 1; i++) Equal(ClipKind.Idle, b.Advance(Step).Kind);
+        for (int i = 0; i <= 60 * 45 && b.CurrentSample.Kind == ClipKind.Idle; i++) b.Advance(Step);
+        Equal(ClipKind.Yawn, b.CurrentSample.Kind); Near(0, b.CurrentSample.Progress);
     }
     private static void End(PetBehaviorController b)
     {

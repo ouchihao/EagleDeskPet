@@ -3,15 +3,16 @@ using System;
 namespace DuckDeskPet.Core;
 
 /// <summary>
-/// Deterministic, allocation-free scheduler for complete action clips. Every
-/// automatic action plays from zero to one, followed by an exact two-second
-/// idle interval before the next idle-group action. Yawn is currently the only
-/// automatic action; interaction and work clips never enter this pool.
+/// Deterministic, allocation-free scheduler for complete action clips
+/// Queued interactions keep a two-second idle beat; automatic yawns wait for
+/// 45–90 seconds of eligible idle time and never accumulate during suspension
 /// </summary>
 public sealed class ClipTimeline
 {
     public const double MaximumDeltaSeconds = 0.050;
     public const double AutomaticIdleDurationSeconds = 2.0;
+    public const double MinimumAutomaticYawnDelaySeconds = 45.0;
+    public const double MaximumAutomaticYawnDelaySeconds = 90.0;
 
     private const double ProceduralFadeFraction = 0.15;
     private const double Tau = Math.PI * 2.0;
@@ -19,6 +20,7 @@ public sealed class ClipTimeline
     private readonly IClipRandomSource _randomSource;
     private double _motionTimeSeconds;
     private double _secondsUntilAutomaticClip;
+    private double _idleElapsedSeconds;
     private double _naturalElapsedSeconds;
     private long _sequence;
     private ClipKind? _pendingClip;
@@ -133,19 +135,16 @@ public sealed class ClipTimeline
 
         if (CurrentSample.Kind == ClipKind.Idle)
         {
-            _secondsUntilAutomaticClip = Math.Max(0, _secondsUntilAutomaticClip - boundedDeltaSeconds);
-            if (_secondsUntilAutomaticClip <= 1e-12)
+            _idleElapsedSeconds += boundedDeltaSeconds;
+            if (!IsAutomaticSuspended)
+                _secondsUntilAutomaticClip = Math.Max(0, _secondsUntilAutomaticClip - boundedDeltaSeconds);
+            if (_pendingClip is ClipKind pending && _idleElapsedSeconds >= AutomaticIdleDurationSeconds - 1e-12)
             {
-                if (_pendingClip is ClipKind pending)
-                {
-                    _pendingClip = null;
-                    BeginClip(pending);
-                }
-                else if (!IsAutomaticSuspended)
-                {
-                    BeginAutomaticClip();
-                }
+                _pendingClip = null;
+                BeginClip(pending);
             }
+            else if (!IsAutomaticSuspended && _secondsUntilAutomaticClip <= 1e-9)
+                BeginClip(ClipKind.Yawn);
 
             UpdateProceduralPose();
             return CurrentSample;
@@ -265,20 +264,6 @@ public sealed class ClipTimeline
         CurrentProceduralPose = Pose.Neutral;
     }
 
-    private void BeginAutomaticClip()
-    {
-        ClipKind next = ChooseAutomaticClip();
-        BeginClip(next);
-    }
-
-    private ClipKind ChooseAutomaticClip()
-    {
-        // Keep a stable RNG consumption contract for future idle-group additions,
-        // without relying on contiguous enum values or interaction asset counts.
-        _randomSource.NextUInt32();
-        return ClipKind.Yawn;
-    }
-
     internal void ResetToIdle(long minimumSequence)
     {
         _sequence = Math.Max(_sequence, minimumSequence);
@@ -292,7 +277,10 @@ public sealed class ClipTimeline
 
     private void ScheduleNextAutomaticClip()
     {
-        _secondsUntilAutomaticClip = AutomaticIdleDurationSeconds;
+        _idleElapsedSeconds = 0.0;
+        _secondsUntilAutomaticClip = MinimumAutomaticYawnDelaySeconds +
+            (MaximumAutomaticYawnDelaySeconds - MinimumAutomaticYawnDelaySeconds) *
+            (_randomSource.NextUInt32() / (double)uint.MaxValue);
     }
 
     private static void ValidatePlayableKind(ClipKind kind)
