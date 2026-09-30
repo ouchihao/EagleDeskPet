@@ -15,6 +15,11 @@ test("inert own eye fails even if another drawable changed",()=>{const s=valid()
 test("NaN eye geometry fails",()=>{const s=valid();s[0].states[0].drawableDeltas[2].heightRatio=NaN;assert.equal(eagle(s,ids).passed,false);});
 test("empty parameter sweep fails",()=>assert.equal(eagle([],ids).passed,false));
 test("neutral QA pose leaves default parameters intact",()=>assert.deepEqual(poseSettings("neutral"),[]));
+test("gaze QA separates true eye motion from bounded head following",()=>{
+  assert.deepEqual(poseSettings("gaze-eye-right"),[["ParamEyeBallX",1]]);
+  assert.deepEqual(poseSettings("gaze-near-right"),[["ParamAngleX",9],["ParamEyeBallX",.35]]);
+  assert.deepEqual(poseSettings("gaze-closed-up-right"),[["ParamEyeLOpen",0],["ParamEyeROpen",0],["ParamEyeBallX",1],["ParamEyeBallY",1]]);
+});
 test("eye intermediate QA poses use geometric quarter steps",()=>{
   for(const [name,value] of [["eyes-quarter",.25],["eyes-half",.5],["eyes-three-quarter",.75]])
     assert.deepEqual(poseSettings(name),[["ParamEyeLOpen",value],["ParamEyeROpen",value]]);

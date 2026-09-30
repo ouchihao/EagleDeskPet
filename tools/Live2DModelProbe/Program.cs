@@ -214,6 +214,8 @@ internal sealed class ProbeWindow : Window
                 poses.AddRange(["double-lift", "beak-open", "beak-start", "beak-quarter", "beak-half", "beak-full", "yawn-elbow", "eat-elbow", "brows-sad", "brows-low", "hungry-face"]);
             if (await core.ExecuteScriptAsync("window.probe.report().parameters.some(p=>p.id==='ParamBusyEyes')") == "true")
                 poses.AddRange(["busy-eyes", "busy-eyes-half", "busy-eyes-closed"]);
+            if (await core.ExecuteScriptAsync("window.probe.report().parameterSweeps.some(p=>p.id==='ParamEyeBallX'&&p.effective)") == "true")
+                poses.AddRange(["gaze-eye-left", "gaze-eye-right", "gaze-eye-up", "gaze-eye-down", "gaze-near-left", "gaze-near-right", "gaze-near-up", "gaze-near-down", "gaze-closed-up-right"]);
             foreach (string pose in poses)
             {
                 await core.ExecuteScriptAsync("window.probe.pose(" + JsonSerializer.Serialize(pose) + ")");

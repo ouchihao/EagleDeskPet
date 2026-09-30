@@ -43,6 +43,8 @@ dotnet run -c Release --no-build -- --sdk $sdkRoot --framework $frameworkBundle 
 
 带全身动作参数的模型额外截图双翼上举、鸟喙张开以及哈欠、进食的肘部组合；带 `ParamBusyEyes` 的模型再截图黄色忙碌眼的全开、半闭与闭合。它们是原作者参数的固定姿态检查，不是完整动作播放器；生产 14 动作时序与场景层级由 `DuckDeskPet/Live2DStage` 和真实宿主 smoke 验证。
 
+`ParamEyeBallX` 实扫有效时再追加九个视线姿态：独立瞳孔四向、生产小幅头眼四向、完全闭眼时向右上看。按真实 sweep 结果启用，不能仅以参数名称存在宣称瞳孔能动。新旧模型对照应裁同一实际画布，排除标题文字；中立、半闭、全闭都需要检查，动态跟随另由 `tools/GazeStageSelfTest` 验证。
+
 `provenance.json` 为输入来源，`initial.json` 为加载/静态扫描结果（此时动画尚未验完，`passed` 为 false 正常），`report.json` 为最终结果。失败写 `failure.txt`，不会伪装成功。正常 exit 0 表示本工具限定检查通过，exit 1 表示运行/模型未通过，exit 2 表示参数/输入错误。
 
 `animation-30fps.webm` 是 **canvas 的 30 fps 编码预览**，只含模型本身，不抓桌面、其它窗口或用户数据。报告中的 `requestAnimationFrame` 是回调间隔，不是物理显示帧率测量，不证明生产 EXE 60 FPS。WebView 运行配置单独放证据目录。

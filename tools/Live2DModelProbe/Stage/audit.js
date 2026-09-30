@@ -34,7 +34,16 @@
     "hungry-face": [["ParamBrowLY",0.8],["ParamBrowRY",0.8],["ParamEyeLOpen",0.78],["ParamEyeROpen",0.78],["ParamAngleY",-8]],
     "busy-eyes": [["ParamBusyEyes",1]],
     "busy-eyes-half": [["ParamBusyEyes",1],["ParamEyeLOpen",0.5],["ParamEyeROpen",0.5]],
-    "busy-eyes-closed": [["ParamBusyEyes",1],["ParamEyeLOpen",0],["ParamEyeROpen",0]]
+    "busy-eyes-closed": [["ParamBusyEyes",1],["ParamEyeLOpen",0],["ParamEyeROpen",0]],
+    "gaze-eye-left": [["ParamEyeBallX",-1]],
+    "gaze-eye-right": [["ParamEyeBallX",1]],
+    "gaze-eye-up": [["ParamEyeBallY",1]],
+    "gaze-eye-down": [["ParamEyeBallY",-1]],
+    "gaze-near-left": [["ParamAngleX",-9],["ParamEyeBallX",-.35]],
+    "gaze-near-right": [["ParamAngleX",9],["ParamEyeBallX",.35]],
+    "gaze-near-up": [["ParamAngleY",5],["ParamEyeBallY",.3]],
+    "gaze-near-down": [["ParamAngleY",-5],["ParamEyeBallY",-.3]],
+    "gaze-closed-up-right": [["ParamEyeLOpen",0],["ParamEyeROpen",0],["ParamEyeBallX",1],["ParamEyeBallY",1]]
   };
   function poseSettings(name) {
     if (!Object.hasOwn(poses, name)) throw new Error("Unknown QA pose: " + name);
