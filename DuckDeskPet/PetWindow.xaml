@@ -79,7 +79,7 @@
                     <MenuItem x:Name="BanterMenuItem" Header="主动职场骚话 · 每分钟" IsCheckable="True" Click="BanterMenu_OnClick" />
                     <MenuItem x:Name="EmotionMenuItem" Header="低心情自动闹别扭 · 默认关闭" IsCheckable="True" Click="EmotionMenu_OnClick" />
                     <MenuItem Header="馋饭小剧场 · 手动预览…" Click="HungryPreviewMenu_OnClick" />
-                    <MenuItem x:Name="GazeMenuItem" Header="站立时看向附近鼠标" ToolTip="仅已声明头眼能力的 Live2D 角色支持；尊重系统减弱动画设置" IsCheckable="True" Click="GazeMenu_OnClick" />
+                    <MenuItem x:Name="GazeMenuItem" Header="鼠标跟随 · 待机 / 办公" IsCheckable="True" Click="GazeMenu_OnClick" />
                     <MenuItem x:Name="PauseMenuItem" Header="暂停动作" IsCheckable="True" Click="PauseMenuItem_OnClick" />
                     <MenuItem x:Name="TopmostMenuItem" Header="保持置顶" IsCheckable="True" IsChecked="True" Click="TopmostMenuItem_OnClick" />
                     <MenuItem x:Name="FpsMenuItem" Header="显示帧率" IsCheckable="True" Click="FpsMenuItem_OnClick" />

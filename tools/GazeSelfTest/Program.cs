@@ -12,7 +12,12 @@ Check(GazePolicy.Resolve(283, 147, 384, 346).X > 0 && GazePolicy.Resolve(103, 14
 Check(GazePolicy.Resolve(193, 72, 384, 346).Y > 0 && GazePolicy.Resolve(193, 222, 384, 346).Y < 0, "WPF downward y is converted to upward model y");
 Check(GazePolicy.Resolve(193 + 240, 147, 384, 346) == GazeTarget.Neutral, "Far pointer is disabled");
 Check(Math.Abs(GazePolicy.Resolve(193 + 239.9, 147, 384, 346).X) < 0.00001, "Distance boundary fades continuously");
-Check(GazePolicy.Resolve(195, 145, 384, 346) == center, "Sub-three-DIP jitter does not move the head");
+Check(GazePolicy.Resolve(195, 145, 384, 346) == center, "Two-DIP jitter does not move the head");
+Check(GazePolicy.Resolve(223, 147, 384, 346).X > .7 && GazePolicy.Resolve(193, 122, 384, 346).Y > .7,
+    "Near-face pointer movement produces a readable target at desktop size");
+foreach (ClipKind kind in Enum.GetValues<ClipKind>())
+    Check(GazePolicy.Supports(kind) == (kind is ClipKind.Idle or ClipKind.WorkLoop or ClipKind.BusyLoop),
+        $"Gaze action gate: {kind}");
 foreach (double scale in new[] { .5, .8, 1, 1.28, 1.5, 2 })
 {
     var q = GazePolicy.Resolve(193 * scale + 50, 147 * scale - 30, 384 * scale, 346 * scale);

@@ -1,11 +1,24 @@
 "use strict";
 (() => {
   const limits = Object.freeze({
-    ParamAngleX: 9,
-    ParamAngleY: 5,
-    ParamEyeBallX: 0.35,
-    ParamEyeBallY: 0.3,
+    ParamAngleX: 22,
+    ParamAngleY: 12,
+    ParamAngleZ: 12,
+    ParamEyeBallX: 0.9,
+    ParamEyeBallY: 0.85,
   });
+  const profiles = Object.freeze({
+    Idle: limits,
+    WorkLoop: Object.freeze({ ...limits, ParamAngleX: 18, ParamAngleY: 9, ParamAngleZ: 9 }),
+    BusyLoop: Object.freeze({
+      ParamAngleX: 16,
+      ParamAngleY: 8,
+      ParamAngleZ: 7,
+      ParamEyeBallX: 0,
+      ParamEyeBallY: 0,
+    }),
+  });
+  const supports = (kind) => Object.hasOwn(profiles, kind);
   function capability(parameters, declared, descriptor) {
     if (
       descriptor?.schemaVersion !== 1 ||
@@ -14,7 +27,7 @@
     )
       return null;
     const metadata = new Map((declared || []).map((p) => [p.id, p]));
-    const result = {};
+    const result = {}, bounds = {};
     for (const [id, maximum] of Object.entries(limits)) {
       const index = parameters.ids.indexOf(id),
         entry = metadata.get(id);
@@ -30,8 +43,12 @@
       )
         return null;
       result[id] = Math.min(maximum, -min, max, -entry.min, entry.max);
+      bounds[id] = Object.freeze({
+        min: Math.max(min, entry.min),
+        max: Math.min(max, entry.max),
+      });
     }
-    return Object.freeze(result);
+    return Object.freeze({ limits: Object.freeze(result), bounds: Object.freeze(bounds) });
   }
   class Tracking {
     constructor(generation) {
@@ -64,8 +81,8 @@
       this.receivedAt = now;
       return true;
     }
-    step(now, idle, allowed) {
-      if (!idle) {
+    step(now, supported, allowed) {
+      if (!supported) {
         this.reset();
         return;
       }
@@ -85,18 +102,21 @@
       this.headX += (x - this.headX) * headBlend;
       this.headY += (y - this.headY) * headBlend;
     }
-    apply(parameters, ranges) {
-      if (!ranges) return;
+    apply(parameters, ranges, kind = "Idle") {
+      if (!ranges || !supports(kind)) return;
       const values = {
         ParamAngleX: this.headX,
         ParamAngleY: this.headY,
+        ParamAngleZ: this.headX,
         ParamEyeBallX: this.eyeX,
         ParamEyeBallY: this.eyeY,
       };
       for (const [id, value] of Object.entries(values)) {
+        const amplitude = Math.min(profiles[kind][id], ranges.limits[id]);
+        if (amplitude === 0) continue;
         parameters[id] = Math.max(
-          -ranges[id],
-          Math.min(ranges[id], (parameters[id] || 0) + value * ranges[id]),
+          ranges.bounds[id].min,
+          Math.min(ranges.bounds[id].max, (parameters[id] || 0) + value * amplitude),
         );
       }
     }
@@ -111,7 +131,7 @@
       };
     }
   }
-  const api = { capability, Tracking, limits };
+  const api = { capability, Tracking, limits, profiles, supports };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else globalThis.EagleGaze = api;
 })();

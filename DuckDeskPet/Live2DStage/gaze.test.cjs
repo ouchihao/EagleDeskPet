@@ -49,7 +49,7 @@ test("six outfits must explicitly declare real head and eye capability before ac
       fs.readFileSync(path.join(dir, "action-bindings.json"), "utf8"),
     );
     assert.deepEqual(
-      G.capability(model(b.parameters), b.parameters, b.gaze),
+      G.capability(model(b.parameters), b.parameters, b.gaze)?.limits ?? null,
       b.gaze?.eyes ? G.limits : null,
     );
   }
@@ -68,11 +68,70 @@ test("absent, undeclared or non-directional axes disable gaze safely", () => {
   const m = model();
   m.maximumValues[m.ids.indexOf("ParamEyeBallY")] = 0;
   assert.equal(G.capability(m, bindings.parameters, descriptor), null);
+  assert.equal(
+    G.capability(model(bindings.parameters.filter((p) => p.id !== "ParamAngleZ")), bindings.parameters, descriptor),
+    null,
+  );
 });
 test("actual Core limits further restrict authored safe limits", () => {
   const m = model();
   m.maximumValues[m.ids.indexOf("ParamAngleX")] = 3;
-  assert.equal(G.capability(m, bindings.parameters, descriptor).ParamAngleX, 3);
+  const capability = G.capability(m, bindings.parameters, descriptor);
+  assert.equal(capability.limits.ParamAngleX, 3);
+  assert.deepEqual(capability.bounds.ParamAngleX, { min: -45, max: 3 });
+});
+
+test("only idle and stable office loops accept gaze", () => {
+  for (const kind of Object.keys(A.durations))
+    assert.equal(G.supports(kind), ["Idle", "WorkLoop", "BusyLoop"].includes(kind));
+  assert.equal(G.supports("toString"), false);
+});
+
+test("office gaze adds to its authored head pose without changing typing or props", () => {
+  for (const kind of ["WorkLoop", "BusyLoop"])
+    for (const progress of [0, 0.17, 0.5, 0.8, 1])
+      for (const [x, y] of [[1, 1], [-1, -1], [0, 0]]) {
+        const g = new G.Tracking(1);
+        send(g, 1, 0, true, x, y);
+        run(g, 0, 180, true, true, true);
+        const sample = A.sample(kind, progress), before = { ...sample.parameters };
+        g.apply(sample.parameters, limits, kind);
+        for (const [id, original] of Object.entries(before)) {
+          const amplitude = G.profiles[kind][id];
+          if (amplitude === undefined || amplitude === 0)
+            assert.equal(sample.parameters[id], original, kind + " " + id);
+        }
+        assert.ok(Math.abs(sample.parameters.ParamAngleY - before.ParamAngleY - y * G.profiles[kind].ParamAngleY) < 0.001);
+        assert.ok(Math.abs(sample.parameters.ParamAngleX - before.ParamAngleX - x * G.profiles[kind].ParamAngleX) < 0.001);
+        assert.ok(Math.abs(sample.parameters.ParamAngleZ - before.ParamAngleZ - x * G.profiles[kind].ParamAngleZ) < 0.001);
+        if (kind === "BusyLoop") {
+          assert.equal(sample.parameters.ParamBusyEyes, 1);
+          assert.equal(sample.parameters.ParamEyeBallX, undefined);
+          assert.equal(sample.parameters.ParamEyeBallY, undefined);
+        }
+      }
+});
+
+test("zero gaze preserves work and busy head baselines exactly", () => {
+  for (const kind of ["WorkLoop", "BusyLoop"]) {
+    const q = A.sample(kind, 0.3).parameters, before = { ...q };
+    new G.Tracking(1).apply(q, limits, kind);
+    assert.equal(q.ParamAngleY, before.ParamAngleY);
+    assert.equal(q.ParamAngleX, before.ParamAngleX);
+  }
+});
+
+test("gaze clamps to actual asymmetric Core bounds rather than clipping the action to its offset budget", () => {
+  const m = model();
+  m.minimumValues[m.ids.indexOf("ParamAngleY")] = -18;
+  m.maximumValues[m.ids.indexOf("ParamAngleX")] = 5;
+  const ranges = G.capability(m, bindings.parameters, descriptor);
+  const g = new G.Tracking(1);
+  g.headX = 1; g.headY = -1;
+  const q = A.sample("BusyLoop", 0.3).parameters;
+  g.apply(q, ranges, "BusyLoop");
+  assert.equal(q.ParamAngleY, -18);
+  assert.equal(q.ParamAngleX, 5);
 });
 test("stale and malformed local samples cannot change tracking", () => {
   const g = new G.Tracking(1);

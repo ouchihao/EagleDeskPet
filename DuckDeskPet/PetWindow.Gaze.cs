@@ -13,8 +13,9 @@ public partial class PetWindow
     {
         if (_live2D?.IsActive != true) return;
         bool allowed = _settings.FollowCursor && SystemParameters.ClientAreaAnimation &&
-            sample.Kind == ClipKind.Idle && !_behavior.IsPaused && !_nativeDragInProgress && !_loafingVisual.Active &&
-            !PetMenu.IsOpen && !InteractionsUnavailable && !_isClosing && IsVisible;
+            GazePolicy.Supports(sample.Kind) && !_behavior.IsPaused && !_nativeDragInProgress && !_loafingVisual.Active &&
+            !PetMenu.IsOpen && _assetsReady && !IsFeeding && !IsContentEquipmentApplying &&
+            !_preparingReaction && !_preparingOwnedAction && !_isClosing && IsVisible;
         long now = Stopwatch.GetTimestamp();
         if (allowed == _lastGazeAllowed && _lastGazeTick != 0 && Stopwatch.GetElapsedTime(_lastGazeTick, now).TotalMilliseconds < 50)
             return;
@@ -35,5 +36,15 @@ public partial class PetWindow
         _settings.FollowCursor = GazeMenuItem.IsChecked;
         SaveCurrentSettings();
         TickGaze(_behavior.CurrentSample);
+    }
+
+    private void RefreshGazeMenu()
+    {
+        GazeMenuItem.IsChecked = _settings.FollowCursor;
+        GazeMenuItem.IsEnabled = _live2D?.IsActive == true;
+        GazeMenuItem.ToolTip = _live2D?.IsActive != true
+            ? "当前是逐帧兼容模式，需启用 Live2D 才能独立转动头眼"
+            : !SystemParameters.ClientAreaAnimation ? "Windows 已关闭界面动画，跟随暂时停用"
+            : "站立、办公、忙碌时看向附近鼠标；进出场、互动、摸鱼、拖动和菜单展开时暂时让出控制";
     }
 }

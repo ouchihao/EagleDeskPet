@@ -53,6 +53,7 @@ public partial class PetWindow
             if (image is not null) image.Opacity = opacity;
         ApplyPose(live || _loafingVisual.Active ? Pose.Neutral : _behavior.CurrentProceduralPose);
         if (_loafingVisual.Active) ApplyLoafingVisual();
+        RefreshGazeMenu();
         RendererStatusMenuItem.Header = !live ? "动画 · 逐帧兼容模式" : _live2D!.UsesNativeAction(ClipKind.Eat)
             ? "动画 · Live2D + 原帧吃饭 / 哈欠" : "动画 · Live2D（当前装扮）";
         if (!live && _live2D?.Warning is { } warning)

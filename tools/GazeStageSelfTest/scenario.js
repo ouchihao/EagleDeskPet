@@ -8,7 +8,8 @@
   };
   let revision = 100,
     sequence = 100,
-    gazeRevision = 100;
+    gazeRevision = 100,
+    loafingRevision = 0;
   const snapshots = [],
     checks = [],
     messages = [];
@@ -33,13 +34,13 @@
       y,
     });
   }
-  function state(kind = "Idle", paused = false) {
+  function state(kind = "Idle", paused = false, sameSequence = false) {
     return stage.receive({
       type: "state",
       protocol: 1,
       generation: 1,
       revision: ++revision,
-      sequence: ++sequence,
+      sequence: sameSequence ? sequence : ++sequence,
       kind,
       phase: kind === "Idle" ? "Idle" : "Playing",
       progress: 0,
@@ -59,6 +60,29 @@
       await gaze(x, y, enabled);
       await wait(50);
     }
+  }
+  function checkOffice(report, kind, x, y, label) {
+    const headX = kind === "WorkLoop" ? 18 : 16,
+      headY = kind === "WorkLoop" ? 9 : 8,
+      headTilt = kind === "WorkLoop" ? 9 : 7;
+    check(report.gaze.actionSupported, label + " accepts gaze while typing");
+    check(
+      Math.abs(report.parameters.ParamAngleX - report.actionParameters.ParamAngleX - x * headX) < 0.6 &&
+      Math.abs(report.parameters.ParamAngleY - report.actionParameters.ParamAngleY - y * headY) < 0.4 &&
+      Math.abs(report.parameters.ParamAngleZ - report.actionParameters.ParamAngleZ - x * headTilt) < 0.2,
+      label + " preserves office head baseline and adds bounded tracking",
+    );
+    check(
+      Object.entries(report.actionParameters).every(([id, value]) =>
+        ["ParamAngleX", "ParamAngleY", "ParamAngleZ", "ParamEyeBallX", "ParamEyeBallY"].includes(id) || report.parameters[id] === value),
+      label + " leaves typing, body, feet, eyebrows and mouth unchanged",
+    );
+    check(
+      kind === "BusyLoop"
+        ? report.parameters.ParamBusyEyes === 1 && report.parameters.ParamEyeBallX === 0 && report.parameters.ParamEyeBallY === 0
+        : Math.abs(report.parameters.ParamEyeBallX - x * 0.9) < 0.04 && Math.abs(report.parameters.ParamEyeBallY - y * 0.85) < 0.04,
+      label + (kind === "BusyLoop" ? " preserves pupil-less yellow busy eyes" : " really moves bound pupils"),
+    );
   }
   try {
     await state();
@@ -91,7 +115,21 @@
       "Far pointer smoothly returns to neutral",
     );
     await hold(1, 1);
-    await state("Idle", true);
+    const beforePause = stage.report().gaze;
+    await gaze(0, 0, false);
+    await state("Idle", true, true);
+    await stage.receive({ type: "loafing", protocol: 1, generation: 1,
+      revision: ++loafingRevision, phase: "none", kind: "None", seconds: 0, paused: true });
+    r = capture("paused-host-order-first-frame");
+    check(
+      r.gaze.headX > beforePause.headX * 0.65 && r.gaze.eyeX > beforePause.eyeX * 0.55,
+      "Real host pause order preserves gaze through none-to-none loafing heartbeat without a one-frame snap",
+    );
+    const pauseStart = r.gaze.headX;
+    await wait(100);
+    r = capture("paused-host-order-easing");
+    check(r.gaze.headX > 0 && r.gaze.headX < pauseStart,
+      "Paused host sequence eases gaze towards center over subsequent frames");
     await hold(-1, -1, 1500);
     r = capture("paused-neutral");
     check(
@@ -151,6 +189,40 @@
     await state();
     await hold(0, 1);
     capture("return-idle-up");
+    for (const kind of ["WorkLoop", "BusyLoop"]) {
+      await state(kind);
+      await wait(180);
+      for (const [name, x, y] of [["up-left", -1, 1], ["down-right", 1, -1]]) {
+        await hold(x, y, 1000);
+        const frame = capture(kind + "-" + name);
+        checkOffice(frame, kind, x, y, kind + " " + name);
+      }
+      const before = stage.report();
+      await state(kind);
+      const after = capture(kind + "-loop-boundary");
+      check(
+        Math.abs(after.parameters.ParamAngleX - before.parameters.ParamAngleX) < 0.1 &&
+        Math.abs(after.parameters.ParamAngleY - before.parameters.ParamAngleY) < 0.1,
+        kind + " loop sequence change never drops the gaze offset",
+      );
+      await state(kind, true);
+      await hold(-1, 1, 1600);
+      const paused = capture(kind + "-paused");
+      check(
+        Math.abs(paused.parameters.ParamAngleX - paused.actionParameters.ParamAngleX) < 0.01 &&
+        Math.abs(paused.parameters.ParamAngleY - paused.actionParameters.ParamAngleY) < 0.01,
+        kind + " pause releases gaze while keeping its authored office pose",
+      );
+    }
+    await state("WorkLoop");
+    await hold(-1, 1);
+    await stage.receive({ type: "loafing", protocol: 1, generation: 1, revision: ++loafingRevision,
+      phase: "loop", kind: "NosePicking", seconds: 0, paused: false });
+    await hold(1, -1, 300);
+    r = capture("loafing-no-gaze");
+    check(r.gaze.headX === 0 && r.gaze.eyeX === 0, "Loafing suppresses office gaze completely");
+    await stage.receive({ type: "loafing", protocol: 1, generation: 1, revision: ++loafingRevision,
+      phase: "none", kind: "None", seconds: 0, paused: false });
     if (window.gazeQaAllOutfits) {
       check(
         stage.capabilities.outfits.length === 6,
@@ -185,6 +257,15 @@
             outfit + " " + name + " converges in actual Stage",
           );
         }
+        for (const kind of ["WorkLoop", "BusyLoop"]) {
+          await state(kind);
+          await wait(180);
+          for (const [name, x, y] of [["up-left", -1, 1], ["down-right", 1, -1]]) {
+            await hold(x, y, 1000);
+            const label = outfit.replaceAll(".", "-") + "-" + kind + "-" + name;
+            checkOffice(capture(label), kind, x, y, label);
+          }
+        }
       }
     }
     const report = stage.report();
@@ -209,7 +290,7 @@
       limitations: [
         "Isolated actual production Stage, not native desktop mouse injection or physical Present measurement",
         "PNG neutral handoff is exercised; the WPF PNG overlay itself is not displayed by this tool",
-        "Default candidate override does not validate remaining outfit models",
+        ...(window.gazeQaAllOutfits ? [] : ["Default candidate override does not validate remaining outfit models"]),
       ],
     };
   } catch (error) {

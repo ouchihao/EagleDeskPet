@@ -11,6 +11,8 @@ public static class GazePolicy
     public const double FullAttentionRadiusDip = 140;
     public const double MaximumDistanceDip = 240;
 
+    public static bool Supports(ClipKind kind) => kind is ClipKind.Idle or ClipKind.WorkLoop or ClipKind.BusyLoop;
+
     public static GazeTarget Resolve(double pointerX, double pointerY, double imageWidth, double imageHeight)
     {
         if (!double.IsFinite(pointerX) || !double.IsFinite(pointerY) ||
@@ -23,9 +25,9 @@ public static class GazePolicy
         if (distance >= MaximumDistanceDip) return GazeTarget.Neutral;
         double fade = Math.Clamp((MaximumDistanceDip - distance) / (MaximumDistanceDip - FullAttentionRadiusDip), 0, 1);
         fade = fade * fade * (3 - 2 * fade);
-        return new(true, Direction(x, 90) * fade, -Direction(y, 75) * fade);
+        return new(true, Direction(x, 38) * fade, -Direction(y, 32) * fade);
     }
 
     private static double Direction(double distance, double extent) =>
-        Math.Sign(distance) * Math.Clamp((Math.Abs(distance) - 3) / extent, 0, 1);
+        Math.Sign(distance) * Math.Clamp((Math.Abs(distance) - 2) / extent, 0, 1);
 }

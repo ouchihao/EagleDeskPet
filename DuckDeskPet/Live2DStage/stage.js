@@ -811,9 +811,9 @@
       sample.parameters.ParamEyeBallX = sample.parameters.ParamEyeBallY = 0;
       motion.fire = loaf.fire;
     }
-    const idleGaze = current.kind === "Idle" && !neutralizing && !loaf.active && !!m.gazeRanges;
-    gaze.step(now, idleGaze, idleGaze && !current.paused && !transitionFrom);
-    if (idleGaze && !transitionFrom) gaze.apply(sample.parameters, m.gazeRanges);
+    const trackingGaze = Eye.supports(current.kind) && !neutralizing && !loaf.active && !!m.gazeRanges;
+    gaze.step(now, trackingGaze, trackingGaze && !current.paused && !transitionFrom);
+    if (trackingGaze && !transitionFrom) gaze.apply(sample.parameters, m.gazeRanges, current.kind);
     lastParameters = { ...sample.parameters };
     m.update(sample.parameters);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1013,13 +1013,18 @@
     }
     if (message.type === "loafing") {
       const now = performance.now();
+      const wasLoafing = loafing.phase !== "none";
       const parameters = message.phase === "return" && current
         ? A.sample(current.kind, B.progress(current, receivedAt, now)).parameters
         : lastParameters ?? A.neutral();
       if (loafing.receive(message, now, parameters)) {
-        terminalCandidate = null;
-        if (message.phase === "none") transitionFrom = null;
-        gaze.reset();
+        if (message.phase !== "none") {
+          terminalCandidate = null;
+          gaze.reset();
+        } else if (wasLoafing) {
+          terminalCandidate = null;
+          transitionFrom = null;
+        }
         draw(now);
       }
       return;
@@ -1114,7 +1119,10 @@
     if (changed) {
       terminalKey = "";
       terminalCandidate = null;
-      transitionFrom = next.paused ? null : lastParameters;
+      const continuousOfficeLoop = next.kind === current.kind &&
+        B.equipmentKey(next.equipment) === B.equipmentKey(current.equipment) &&
+        (next.kind === "WorkLoop" || next.kind === "BusyLoop");
+      transitionFrom = next.paused || continuousOfficeLoop ? null : lastParameters;
       transitionClock = { startedAt: now };
     }
     if (active?.model !== selection.model) gaze.reset();
@@ -1425,7 +1433,15 @@
         : null,
       lastSequence: current?.sequence,
       parameters: lastParameters ? { ...lastParameters } : null,
-      gaze: { supported: !!active?.model.gazeRanges, limits: active?.model.gazeRanges, ...gaze.report() },
+      actionParameters: lastActionParameters ? { ...lastActionParameters } : null,
+      gaze: {
+        supported: !!active?.model.gazeRanges,
+        limits: active?.model.gazeRanges?.limits,
+        bounds: active?.model.gazeRanges?.bounds,
+        actionSupported: Eye.supports(current?.kind),
+        profile: Eye.profiles[current?.kind] ?? null,
+        ...gaze.report(),
+      },
       loafing: loafing.sample(performance.now()),
       recordingSurface: recording ? (rasterFrame ? "Png" : "Live2D") : null,
       rasterFramesPrepared: [...rasterFrames.values()].reduce(

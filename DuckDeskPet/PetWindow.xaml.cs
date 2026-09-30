@@ -303,7 +303,7 @@ public partial class PetWindow : Window
         StopWorkMenuItem.IsEnabled = CareState.IsWorking;
         BanterMenuItem.IsChecked = ActiveBanterEnabled;
         EmotionMenuItem.IsChecked = _emotions.Enabled;
-        GazeMenuItem.IsChecked = _settings.FollowCursor;
+        RefreshGazeMenu();
         TickGaze(_behavior.CurrentSample);
         PauseMenuItem.IsEnabled = !WorkInProgress && !IsFeeding && !_pauseChanging && !IsContentEquipmentApplying && !_preparingOwnedAction;
         PauseMenuItem.IsChecked = _settings.IsPaused;
