@@ -4,13 +4,15 @@
 
 一只陪你上班、摸头会害羞、干饭会开心，还能替 AI 和 GitHub 传话的桌面小鹰。
 
-**Windows x64 · C# / WPF · v1.12.0-preview.4 · 最高 60 Hz 动画时间轴**
+**Windows x64 · C# / WPF · v1.12.0-preview.5 · 最高 60 Hz 动画时间轴**
 
 v1.12 预览版加入**图钉便签墙**和可选的 **Windows 原生提醒**。本机动画开发版采用 Live2D / 逐帧混合路线，覆盖 14 段核心动作、6 套形象与结构化工位：待机、办公等由真实模型连续驱动；原味大头鹰的吃饭 / 哈欠恢复鼓腮与大张嘴逐帧，五套服装暂保留现有 Live2D 动作；所有装扮的哭泣采用粗眼线、纯色宽泪带的 T-T。跨后端先对齐中立姿态再交接，保留完整 PNG 故障回退。运行方法、逐项验证与尚未完成的发布验收见 [混合动画记录](docs/LIVE2D-FULL-ACTIONS.md)；本机 SDK 配置不等于可直接分发的免配置安装包。
 
 preview.2 移除饱食度，吃饭改为 +20 心情，心情影响工资而不限制工作时长。最低付费商品 5,100 鹰币，原七天定标是假定不发生摸鱼的有效工作基线，不是新版实际挂机七天的保证。**首次由旧格式升级到存档 v4 时旧金币仅清零一次，并保留独立迁移备份；收藏、等级和成就不清空。preview.3 仍使用 v4，不再清一次金币。**当前价格、收入与迁移见[经济规则](docs/ECONOMY-v1.12.md)。
 
 preview.3 加入概率摸鱼与头眼跟随；preview.4 提高实际桌宠尺寸下的跟随可见度，并开放办公 / 忙碌状态。普通办公时头眼看向鼠标、双手继续打字；忙碌保留原黄色无瞳孔眼，通过转头表达注视。右键“鼠标跟随 · 待机 / 办公”可关闭，互动、进出场与摸鱼暂时让出控制。验证范围见 [REQ-012 / REQ-013](docs/REQUIREMENTS.md#req-012) 与 [验证记录](docs/VALIDATION-v1.12-preview.md)。
+
+preview.5 将头部跟随幅度再提高约三分之一；自动哈欠改为累计待机 45～90 秒随机触发，不再站立 2 秒就打一次。手动哈欠、互动间隔和动作本身的速度不变，工作 / 摸鱼与暂停不累计自动哈欠时间。
 
 2026-09-30 按用户决定移除猜拳玩法，专注工作、吃饭、摸头与日常陪伴。旧存档、已购装备和 18 枚养成荣誉保留；猜拳的历史图片与制作记录不再代表当前功能。
 
@@ -142,20 +144,20 @@ cd EagleDeskPet
 如果系统对本地脚本有执行限制，请按你的设备或组织策略允许运行该脚本。也可以不运行脚本，直接执行：
 
 ```powershell
-dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.12.0-preview.4
-dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.12.0-preview.4
-Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.12.0-preview.4\THIRD-PARTY-NOTICES.md
+dotnet publish .\DuckDeskPet\DuckDeskPet.csproj -c Release -p:PublishProfile=win-x64 -o .\dist\v1.12.0-preview.5
+dotnet publish .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\dist\v1.12.0-preview.5
+Copy-Item -LiteralPath .\docs\THIRD-PARTY-NOTICES.md -Destination .\dist\v1.12.0-preview.5\THIRD-PARTY-NOTICES.md
 ```
 
 需要发给同事时，可将刚发布的目录打成带校验和的程序包（目标 ZIP 必须不存在）：
 
 ```powershell
-.\tools\package_release.ps1 -ReleaseDirectory .\dist\v1.12.0-preview.4 -ArchivePath .\dist\EagleDeskPet-v1.12.0-preview.4-win-x64.zip
+.\tools\package_release.ps1 -ReleaseDirectory .\dist\v1.12.0-preview.5 -ArchivePath .\dist\EagleDeskPet-v1.12.0-preview.5-win-x64.zip
 ```
 
 打包工具只收录两个 EXE、明确列出的 Live2DStage 运行文件、使用说明、第三方声明与校验和，逐文件复核 ZIP，不包含本机 SDK、存档或账号配置。本预览版的功能与验证边界见[验证记录](docs/VALIDATION-v1.12-preview.md)，当前经济回归见[经济规则](docs/ECONOMY-v1.12.md#验证边界)；v1.11 的[发布说明](docs/RELEASE-NOTES-v1.11.md)保留为历史基线。
 
-脚本从主工程版本读取默认输出目录，本版为 `dist/v1.12.0-preview.4/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
+脚本从主工程版本读取默认输出目录，本版为 `dist/v1.12.0-preview.5/`；它拒绝非空目标，不删除或覆盖旧包，需要重发时指定新的 `-OutputDirectory`。手动发布也请先选择新的空目录。分发时将两个自包含 EXE 与 `THIRD-PARTY-NOTICES.md` 一起保留；脚本自动复制依赖声明，手动发布需执行上面的复制步骤。首次构建需要还原 NuGet 依赖。源码包含较多逐帧 PNG，因此克隆和发布产物都比纯代码项目大；构建缓存、EXE、存档和凭据不纳入 Git。
 
 ## 让它替 AI 和 GitHub 传话
 

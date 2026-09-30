@@ -12,7 +12,7 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.4/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.4-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.5/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.5-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
 
 <a id="preview3-摸鱼与光标注视"></a>
 ## preview.3–4 摸鱼与光标注视
