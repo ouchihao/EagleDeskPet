@@ -65,8 +65,8 @@ public partial class PetWindow
                 ExpansionCheck(!_companion.AutoEmotionScenesEnabled && !_emotions.Enabled, "Automatic emotions must default to off in a fresh profile.");
                 _settings.IsPaused = false; _behavior.SetPaused(false); _behavior.SuspendAutomatic(true);
                 SetActiveBanter(false); SetNotifications(true); SetTaskNotificationsMuted(true);
-                CareState.Coins = 50000.05m; CareState.Food = 12; CareState.FoodProgressSeconds = 0;
-                CareState.Fullness = 75; CareState.Mood = 60;
+                CareState.Coins = 950000.05m; CareState.Food = 12; CareState.FoodProgressSeconds = 0;
+                CareState.Mood = 60;
                 ExpansionCheck(_store.Save(CareState), "Cannot seed the isolated real store.");
                 EmotionMenuItem.IsChecked = true; EmotionMenu_OnClick(EmotionMenuItem, new RoutedEventArgs(MenuItem.ClickEvent));
                 await ExpansionWaitAsync(() => !_preparingEmotionAssets, timeout.Token, "emotion preloading");
@@ -150,26 +150,28 @@ public partial class PetWindow
                     "Repeated touches gave extra care count or XP beyond the first allowed touch.");
             });
 
-            await Case("hungry scene exits before one meal and complete Eat", async () =>
+            await Case("manual craving scene exits before one mood-only meal and complete Eat", async () =>
             {
                 await ExpansionIdleAsync(timeout.Token);
-                CareState.Fullness = 10;
-                EmotionMenuItem.IsChecked = true; EmotionMenu_OnClick(EmotionMenuItem, new RoutedEventArgs(MenuItem.ClickEvent));
+                CareState.Mood = 40;
+                foreach (var clip in new[] { ClipKind.HungryEnter, ClipKind.HungryLoop, ClipKind.HungryExit })
+                    await _framePlayer.WarmClipAsync(clip, timeout.Token);
+                _behavior.RequestHungryScene();
                 await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.HungryLoop, timeout.Token, "HungryLoop");
                 RenderOwnVisual(Root, Path.Combine(output, "expansion-hungry.png"));
-                int food = CareState.Food, meals = CareState.TotalMeals;
+                int food = CareState.Food, meals = CareState.TotalMeals, experience = CareState.Experience;
                 long sequence = _behavior.CurrentSample.Sequence;
                 FeedPet(); FeedPet(); FeedPet();
                 ExpansionCheck(CareState.Food == food && _pendingFeed, "Food was consumed before the hungry stage left.");
                 await ExpansionObserveClipAsync(ClipKind.Eat, sequence, output, "expansion-eating.png", timeout.Token);
-                ExpansionCheck(CareState.Food == food - 1 && CareState.TotalMeals == meals + 1 && !_pendingFeed,
-                    "Repeated feed requests consumed more than one meal.");
-                EmotionMenuItem.IsChecked = false; EmotionMenu_OnClick(EmotionMenuItem, new RoutedEventArgs(MenuItem.ClickEvent));
+                ExpansionCheck(CareState.Food == food - 1 && CareState.TotalMeals == meals + 1 && !_pendingFeed &&
+                    CareState.Experience == experience && CareState.Mood > 59,
+                    "Repeated feed requests consumed extra food, gave XP or failed to restore mood.");
 
                 // A feed accepted during another authored action owns its queued Eat.
                 // Crossing the two-second care cooldown must not merge two paid meals.
                 await ExpansionIdleAsync(timeout.Token);
-                CareState.Fullness = 10;
+                CareState.Mood = 40;
                 _behavior.RequestAction(ClipKind.Yawn);
                 await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.Yawn, timeout.Token, "yawn before feeding handoff");
                 long beforeEat = _behavior.CurrentSample.Sequence;
@@ -190,7 +192,7 @@ public partial class PetWindow
             await Case("work holds desk and computer until full exit, then applies pending", async () =>
             {
                 await ExpansionIdleAsync(timeout.Token);
-                CareState.Fullness = 80;
+                CareState.Mood = 80;
                 await StartWorkingAsync().WaitAsync(timeout.Token);
                 await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, timeout.Token, "WorkLoop");
                 SceneSelection oldScene = _workStage.ActiveSelection;
@@ -288,7 +290,7 @@ public partial class PetWindow
                 long sequence = _behavior.CurrentSample.Sequence;
                 _behavior.RequestAction(ClipKind.Yawn);
                 await ExpansionObserveClipAsync(ClipKind.Yawn, sequence, output, "expansion-hoodie-yawn.png", timeout.Token);
-                CareState.Fullness = 80;
+                CareState.Mood = 80;
                 await StartWorkingAsync().WaitAsync(timeout.Token);
                 await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, timeout.Token, "hoodie arcade work");
                 ExpansionCheck(_workStage.ActiveSelection.DeskId == ContentCatalog.ArcadeDeskId &&

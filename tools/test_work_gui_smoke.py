@@ -48,7 +48,7 @@ def main():
     gui_output = deque(maxlen=32)
     rpc = None
     started = time.monotonic()
-    deadline = started + 90
+    deadline = started + 150
     gui = subprocess.Popen([str(gui_exe)], cwd=gui_exe.parent, env=environment,
                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                            **hidden_startup())
@@ -68,7 +68,8 @@ def main():
         state_before = None
         # No write/tool notification until BOTH the exact PID and data directory
         # identify the process we launched, even with an isolated pipe name.
-        while time.monotonic() < min(deadline, started + 35):
+        # The complete six-model Live2D preflight precedes host smoke admission
+        while time.monotonic() < min(deadline, started + 75):
             assert gui.poll() is None, "Our GUI exited before reaching WorkLoop."
             reply = rpc.tool("pet_get_state")
             if reply.get("status") == "unavailable":
@@ -91,13 +92,14 @@ def main():
         print("PASS: exact GUI ownership verified; real MCP notification preserved continuous work", flush=True)
 
         remaining = deadline - time.monotonic()
-        assert remaining > 0, "Work smoke test exceeded its 90-second deadline."
+        assert remaining > 0, "Work smoke test exceeded its 150-second deadline."
         gui.wait(timeout=remaining)
         assert gui.returncode == 0, f"GUI exited with {gui.returncode}: {' | '.join(gui_errors)}"
         report_path = output / "gui-smoke.json"
         assert report_path.is_file(), "The GUI did not produce gui-smoke.json."
         report = json.loads(report_path.read_bytes().decode("utf-8-sig"))
-        for flag in ("passed", "workMode", "cancelExitVerified", "workStoppedAtZero", "propsHidden", "banterTogglePersisted"):
+        for flag in ("passed", "workMode", "cancelExitVerified", "zeroMoodWorkContinued", "lowMoodWagesVerified",
+                     "manualExitVerified", "propsHidden", "banterTogglePersisted"):
             assert report.get(flag) is True, f"{flag}: {report}"
         required_actions = {"Idle", "WorkEnter", "WorkLoop", "WorkToBusy", "BusyLoop", "BusyExit", "WorkExit"}
         assert required_actions.issubset(report.get("observedActions", [])), report
@@ -110,7 +112,7 @@ def main():
         assert saved.get("IsWorking") is False, saved
         preferences = json.loads((data / "companion.json").read_bytes().decode("utf-8-sig"))
         assert isinstance(preferences.get("ActiveBanterEnabled"), bool), preferences
-        print("PASS: entry/loop/busy/cancel/hunger-zero exits, props cleanup, anchored scene, banter setting, own-visual PNGs", flush=True)
+        print("PASS: entry/loop/busy/cancel, zero-mood continuous work at half pay, props cleanup, anchored scene, banter setting, own-visual PNGs", flush=True)
         print(f"Evidence: {report_path}", flush=True)
         print("Limits: accelerated isolated care clock; no manual pointer-drag or sustained physical-display 60 FPS certification.", flush=True)
         return 0

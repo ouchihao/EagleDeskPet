@@ -31,7 +31,7 @@ public partial class PetWindow : Window
         Time = new(); _feedingTime = Time;
         _store = new(directory);
         _care = new(_store.Load(), Time.GetUtcNow());
-        CareState.Food = 10; CareState.Fullness = 20;
+        CareState.Food = 10; CareState.Mood = 20;
         _behavior.SuspendAutomatic(true);
         Width = Height = 10; Left = Top = -20000; ShowInTaskbar = false;
         Closing += (_, e) => { if (!TryCloseFeedingForPetExit()) e.Cancel = true; };
@@ -53,6 +53,12 @@ public partial class PetWindow : Window
     {
         if (InteractionsUnavailable) return false;
         _care.StartWork(Time.GetUtcNow()); _behavior.SetWorkState(CareState.IsWorking, false); return CareState.IsWorking;
+    }
+    internal void AdvanceCare(double seconds)
+    {
+        Time.Advance(seconds);
+        _care.Advance(Time.GetUtcNow());
+        _behavior.SetWorkState(CareState.IsWorking, CareState.IsBusy);
     }
     internal bool TryPause()
     {

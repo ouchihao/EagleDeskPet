@@ -10,7 +10,7 @@ public partial class PetWindow
 {
     // Only reached through the explicitly enabled, isolated-data smoke runner.
     // Real WPF rendering and care ticks run normally; only the test save's
-    // work-session threshold/fullness are advanced to avoid waiting half an hour.
+    // work-session threshold and mood are advanced to avoid waiting half an hour
     private async Task RunWorkSmokeAsync(string output)
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("EAGLE_PET_TEST_CHANNEL")))
@@ -89,20 +89,29 @@ public partial class PetWindow
         bool cancelExitVerified = !CareState.IsWorking && !_behavior.IsWorkSceneActive;
         if (!cancelExitVerified) throw new InvalidOperationException("Cancel did not finish its busy exit.");
 
+        CareState.Mood = 0;
+        CareState.Food = 0;
         await StartWorkingAsync();
         await At(ClipKind.WorkLoop, .1);
-        CareState.Fullness = .0001;
-        await Until(() => !CareState.IsWorking, "hunger-zero stop", 3);
+        decimal coinsBeforeLowMood = CareState.Coins;
+        bool lowMoodRateVerified = MoneyPerWorkMinute ==
+            EconomyPolicy.CoinsPerWorkMinute * .5m * (1m + CurrentEquipmentBonuses.WorkCoinBonus);
+        await ContinuousLoop(ClipKind.WorkLoop, 4.2);
+        bool zeroMoodWorkContinued = CareState.IsWorking && CareState.Mood == 0 &&
+            !_behavior.IsHungrySceneActive && !_behavior.IsHungryRequested;
+        bool lowMoodWagesVerified = lowMoodRateVerified && CareState.Coins > coinsBeforeLowMood;
+        StopWorking();
         await At(ClipKind.WorkExit, .3);
         await At(ClipKind.Idle);
-        bool stoppedAtZero = !CareState.IsWorking && CareState.Fullness == 0;
+        bool manualExitVerified = !CareState.IsWorking && !_behavior.IsWorkSceneActive;
         bool propsHidden = new[] { DeskBackImage, DeskFrontImage, LaptopImage, BusyFireImage }
             .All(item => item.Visibility == Visibility.Collapsed);
         RenderOwnVisual(Root, Path.Combine(output, "pet-idle.png"));
         _store.Save(CareState);
         var reloaded = new PetStore().Load() ?? throw new InvalidOperationException("Work save did not reload.");
-        if (!stoppedAtZero || !propsHidden || reloaded.IsWorking || reloaded.Fullness != 0)
-            throw new InvalidOperationException("Hunger-zero exit, props cleanup or persistence failed.");
+        if (!zeroMoodWorkContinued || !lowMoodWagesVerified || !manualExitVerified || !propsHidden ||
+            reloaded.IsWorking || reloaded.Mood != 0)
+            throw new InvalidOperationException("Zero-mood work, reduced wages, manual exit or persistence failed.");
 
         // Test the actual preference/bubble path without waiting another minute.
         // This only advances OfficeBanter, never the economy or work clock.
@@ -123,7 +132,7 @@ public partial class PetWindow
         File.WriteAllText(Path.Combine(output, "gui-smoke.json"), JsonSerializer.Serialize(new
         {
             passed = true, workMode = true, cancelExitVerified,
-            workStoppedAtZero = stoppedAtZero, propsHidden, banterTogglePersisted = banterPersisted,
+            zeroMoodWorkContinued, lowMoodWagesVerified, manualExitVerified, propsHidden, banterTogglePersisted = banterPersisted,
             headAnchorDriftPixels = anchorDrift, decodedFramesAfterExit = _framePlayer.DecodedFrameCount,
             observedActions = observed.Select(kind => kind.ToString()).ToArray(),
             dataDirectory = AppPaths.DataDirectory,

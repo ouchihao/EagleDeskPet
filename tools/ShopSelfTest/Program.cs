@@ -13,6 +13,8 @@ using DuckDeskPet.Core;
 internal static class Program
 {
     private static string? _output;
+    private const decimal StartingCoins = 500000m;
+    private const decimal MintPrice = 6375m;
     [STAThread]
     private static int Main(string[] args)
     {
@@ -43,9 +45,9 @@ internal static class Program
             ("Shelf pagination exposes every item without a long vertical scroll", UiPages),
             ("Category and owned filters compose without modifying progress", UiFilters),
             ("Narrow and short windows retain reachable product details and paging", UiResponsive),
-            ("440-wide shelf keeps long Chinese names, four equipment stats and maximum wallet reachable", UiEquipmentResponsive),
+            ("440-wide shelf keeps long Chinese names, three equipment stats and maximum wallet reachable", UiEquipmentResponsive),
             ("Real modal purchase dialog shows installed art, price and balances without spending", PurchaseDialogContent),
-            ("Premium equipment confirmation keeps long names, four stats and cent balances visible", PurchaseDialogEquipment),
+            ("Premium equipment confirmation keeps long names, three stats and cent balances visible", PurchaseDialogEquipment),
             ("Real modal confirmation accepts only confirm; cancel, Escape and close return false", PurchaseDialogDecisions),
             ("Purchase dialog supports Tab focus and Enter while preserving safe initial cancel", PurchaseDialogKeyboard),
             ("Default shop modal rechecks resource availability after its message pump", UiModalRevalidation),
@@ -73,11 +75,11 @@ internal static class Program
     {
         using var f = new Fixture(); var before = f.State.Content.Equipped[ContentSlot.Desk];
         var result = f.Shop.Purchase(ContentCatalog.MintDeskId);
-        Check(result.Success && result.Changed && f.State.Coins == 850m && f.State.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Purchase not applied together.");
+        Check(result.Success && result.Changed && f.State.Coins == (StartingCoins - MintPrice) && f.State.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Purchase not applied together.");
         Check(f.State.Content.Equipped[ContentSlot.Desk] == before, "Purchase auto-equipped the desk.");
-        Check(f.State.AppliedWalletDebits[ContentCatalog.PurchaseTransactionId(ContentCatalog.MintDeskId)] == 150m, "Stable receipt missing.");
+        Check(f.State.AppliedWalletDebits[ContentCatalog.PurchaseTransactionId(ContentCatalog.MintDeskId)] == MintPrice, "Stable receipt missing.");
         var saved = new PetStore(f.Directory).Load()!;
-        Check(saved.Coins == 850m && saved.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Durable state differs from live state.");
+        Check(saved.Coins == (StartingCoins - MintPrice) && saved.Content.OwnedContentIds.Contains(ContentCatalog.MintDeskId), "Durable state differs from live state.");
     }
     private static void DuplicatePurchase()
     {
@@ -97,13 +99,13 @@ internal static class Program
     private static void ChangedResources()
     {
         using var f = new Fixture(); Check(f.Shop.Quote(ContentCatalog.MintDeskId).CanPurchase, "Expected a quote.");
-        f.Available = false; Check(!f.Shop.Purchase(ContentCatalog.MintDeskId).Success && f.State.Coins == 1000m, "Stale quote authorized unavailable content.");
+        f.Available = false; Check(!f.Shop.Purchase(ContentCatalog.MintDeskId).Success && f.State.Coins == StartingCoins, "Stale quote authorized unavailable content.");
     }
     private static void FreeReward()
     {
         using var f = new Fixture(); f.State.TotalMeals = 30;
         Check(!f.Shop.Purchase(ContentCatalog.MintDeskId).Changed, "Eligible reward was sold.");
-        Check(f.Shop.ClaimReward(ContentCatalog.MintDeskId).Changed && f.State.Coins == 1000m, "Reward cost coins or did not grant.");
+        Check(f.Shop.ClaimReward(ContentCatalog.MintDeskId).Changed && f.State.Coins == StartingCoins, "Reward cost coins or did not grant.");
         Check(!f.Shop.ClaimReward(ContentCatalog.MintDeskId).Changed && f.State.AppliedWalletDebits.Count == 0, "Repeat reward created a receipt.");
     }
     private static void MissingRewardArt()
@@ -129,8 +131,8 @@ internal static class Program
         using var f = new Fixture(); var otherStore = new PetStore(f.Directory); var otherState = otherStore.Load()!;
         var otherShop = new ShopTransactions(otherStore, () => otherState, _ => true);
         Check(f.Shop.Purchase(ContentCatalog.MintDeskId).Changed, "First writer failed.");
-        Check(!otherShop.Purchase(ContentCatalog.MidnightComputerId).Success && otherState.Coins == 1000m, "Stale writer overwrote another purchase.");
-        Check(new PetStore(f.Directory).Load()!.Coins == 850m, "Stale writer changed durable balance.");
+        Check(!otherShop.Purchase(ContentCatalog.MidnightComputerId).Success && otherState.Coins == StartingCoins, "Stale writer overwrote another purchase.");
+        Check(new PetStore(f.Directory).Load()!.Coins == (StartingCoins - MintPrice), "Stale writer changed durable balance.");
     }
     private static void DeferredEquipment()
     {
@@ -154,7 +156,7 @@ internal static class Program
     {
         using var f = new Fixture(); f.Shop.Purchase(ContentCatalog.MintDeskId);
         for (int i = 0; i < 3; i++) { f.Shop.Equip(ContentCatalog.MintDeskId, false); f.Shop.Equip(ContentCatalog.DefaultDeskId, false); }
-        Check(f.State.Coins == 850m && f.State.AppliedWalletDebits.Count == 1, "Re-equipping charged more coins.");
+        Check(f.State.Coins == (StartingCoins - MintPrice) && f.State.AppliedWalletDebits.Count == 1, "Re-equipping charged more coins.");
     }
 
     private static ShopWindow Window(Fixture f, bool confirm = true, Func<string, Task>? preview = null) => new(f.Shop,
@@ -166,9 +168,9 @@ internal static class Program
         try
         {
             Layout(window); var items = (ItemsControl)window.FindName("CardsItems");
-            Check(window.FilteredCount == ContentCatalog.Definitions.Count && items.Items.Count == 8 && window.PageCount == 3 && ((TextBlock)window.FindName("BalanceText")).Text == 1000m.ToString("N2"), "Shop did not expose its paged catalog and balance.");
+            Check(window.FilteredCount == ContentCatalog.Definitions.Count && items.Items.Count == 8 && window.PageCount == 3 && ((TextBlock)window.FindName("BalanceText")).Text == StartingCoins.ToString("N2"), "Shop did not expose its paged catalog and balance.");
             object tea = Card(items, ContentCatalog.TeaActionId);
-            Check(Property<string>(tea, "Acquisition").Contains("2 级") && Property<string>(tea, "PriceLabel").Contains("120.00"), "Reward condition or price absent.");
+            Check(Property<string>(tea, "Acquisition").Contains("2 级") && Property<string>(tea, "PriceLabel").Contains(ContentCatalog.Get(ContentCatalog.TeaActionId).Price.ToString("N2")), "Reward condition or price absent.");
             Save(window, "shop-all.png");
             f.Available = false; window.Refresh(); Layout(window);
             object computer = Card(items, ContentCatalog.MidnightComputerId);
@@ -186,16 +188,16 @@ internal static class Program
     }
     private static void UiDecimalBalance()
     {
-        using var f = new Fixture(1000.05m); var window = Window(f);
+        using var f = new Fixture((StartingCoins + .05m)); var window = Window(f);
         try
         {
             Layout(window);
-            Check(((TextBlock)window.FindName("BalanceText")).Text == 1000.05m.ToString("N2"), "Initial cents were hidden.");
+            Check(((TextBlock)window.FindName("BalanceText")).Text == (StartingCoins + .05m).ToString("N2"), "Initial cents were hidden.");
             Check(f.Shop.Purchase(ContentCatalog.MintDeskId).Changed, "Decimal wallet could not purchase.");
             window.Refresh(); Layout(window);
-            Check(f.State.Coins == 850.05m && ((TextBlock)window.FindName("BalanceText")).Text == 850.05m.ToString("N2"),
+            Check(f.State.Coins == (StartingCoins - MintPrice + .05m) && ((TextBlock)window.FindName("BalanceText")).Text == (StartingCoins - MintPrice + .05m).ToString("N2"),
                 "Purchase or refresh lost cents.");
-            Check(new PetStore(f.Directory).Load()!.Coins == 850.05m, "Serialized wallet lost cents.");
+            Check(new PetStore(f.Directory).Load()!.Coins == (StartingCoins - MintPrice + .05m), "Serialized wallet lost cents.");
         }
         finally { window.Close(); }
     }
@@ -287,9 +289,9 @@ internal static class Program
         {
             Check(((Image)dialog.FindName("ProductImage")).Source is BitmapSource, "Confirmation has no real product portrait.");
             Check(((TextBlock)dialog.FindName("ProductName")).Text == "薄荷小工位" &&
-                ((TextBlock)dialog.FindName("ProductPrice")).Text.Contains("150.00 鹰币") &&
-                ((TextBlock)dialog.FindName("CurrentBalance")).Text == $"{1000m:N2} 鹰币" &&
-                ((TextBlock)dialog.FindName("RemainingBalance")).Text == $"{850m:N2} 鹰币", "Confirmation omitted exact item, price or balances.");
+                ((TextBlock)dialog.FindName("ProductPrice")).Text.Contains($"{MintPrice:N2} 鹰币") &&
+                ((TextBlock)dialog.FindName("CurrentBalance")).Text == $"{StartingCoins:N2} 鹰币" &&
+                ((TextBlock)dialog.FindName("RemainingBalance")).Text == $"{(StartingCoins - MintPrice):N2} 鹰币", "Confirmation omitted exact item, price or balances.");
             Save(dialog, "shop-purchase-confirmation.png");
             ((Button)dialog.FindName("CancelButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         });
@@ -318,7 +320,8 @@ internal static class Program
                 var effects = Descendants<TextBlock>(details).Single(x => x.Text == EquipmentPresentation.Describe(item.Bonuses));
                 Check(effects.Text.Contains("赚钱") && effects.Text.Contains("工作经验"), "Work properties are missing: " + id);
                 if (item.Type != ContentType.Computer)
-                    Check(effects.Text.Contains("饱食衰减") && effects.Text.Contains("心情衰减"), "Four-stat details are incomplete: " + id);
+                    Check(effects.Text.Contains("心情衰减"), "Mood preservation is missing: " + id);
+                Check(!effects.Text.Contains("饱食"), "Retired fullness property remains: " + id);
                 foreach (string name in new[] { "CardsItems", "DetailsPanel", "NextButton", "ActionButton", "PreviewButton", "BalanceText" })
                     AssertInside((FrameworkElement)window.FindName(name), surface, id + ":" + name);
                 foreach (var text in Descendants<TextBlock>(details))
@@ -387,7 +390,7 @@ internal static class Program
         }) == true, "Enter on the explicit confirm choice failed.");
         Check(InPurchaseDialog(dialog => SendDialogKey(dialog, Key.Enter)) != true, "Enter on the initial cancel choice unexpectedly purchased.");
     }
-    private static bool? InPurchaseDialog(Action<PurchaseConfirmationWindow> inspect, decimal balance = 1000m, ContentDefinition? item = null)
+    private static bool? InPurchaseDialog(Action<PurchaseConfirmationWindow> inspect, decimal balance = StartingCoins, ContentDefinition? item = null)
     {
         var owner = HiddenOwner(); owner.Show();
         var dialog = new PurchaseConfirmationWindow(item ?? ContentCatalog.Get(ContentCatalog.MintDeskId), balance) { Owner = owner };
@@ -460,7 +463,7 @@ internal static class Program
             var button = Descendants<Button>((DependencyObject)window.Content).Single(x => ReferenceEquals(x.DataContext, card) && (string?)x.Content == "领取奖励");
             button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Layout(window, 840, 1200);
             card = items.Items.Cast<object>().Single(x => Property<string?>(x, "RewardContentId") == ContentCatalog.MintDeskId);
-            Check(Property<string>(card, "RewardLabel").Contains("已拥有") && f.State.Coins == 1000m, "Honor failed to refresh ownership or charged coins.");
+            Check(Property<string>(card, "RewardLabel").Contains("已拥有") && f.State.Coins == StartingCoins, "Honor failed to refresh ownership or charged coins.");
             var rewardIds = new HashSet<string>(StringComparer.Ordinal);
             for (int page = 0; page < 32; page++)
             {
@@ -567,7 +570,7 @@ internal static class Program
         internal PetStore Store { get; }
         internal ShopTransactions Shop { get; }
         internal bool Available = true, Compatible = true;
-        internal Fixture(decimal coins = 1000m)
+        internal Fixture(decimal coins = StartingCoins)
         {
             State = new() { Coins = coins, LastUpdatedUtc = DateTimeOffset.UtcNow, WageLastUpdatedUtc = DateTimeOffset.UtcNow };
             Store = new(Directory); Check(Store.Load() is null && Store.Save(State), "Could not create isolated save.");

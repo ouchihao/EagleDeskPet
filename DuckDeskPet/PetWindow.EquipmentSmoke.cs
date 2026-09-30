@@ -19,6 +19,13 @@ public partial class PetWindow
         foreach (var set in sets)
         {
             await ExpansionIdleAsync(token);
+            decimal purchaseCost = set.Where(id => !ContentOwnershipService.Owns(CareState.Content, id))
+                .Sum(id => ContentCatalog.Get(id).Price);
+            if (CareState.Coins < purchaseCost)
+            {
+                CareState.Coins = purchaseCost;
+                ExpansionCheck(_store.Save(CareState), "Could not fund the isolated equipment fixture.");
+            }
             foreach (string id in set)
             {
                 ExpansionCheck(IsContentResourceAvailable(ContentCatalog.Get(id)), id + " resource validation failed.");
@@ -32,9 +39,10 @@ public partial class PetWindow
             var expected = EquipmentPolicy.Resolve(CareState.Content, new Dictionary<ContentSlot, string>
                 { [ContentSlot.Desk] = set[0], [ContentSlot.Computer] = set[1], [ContentSlot.Outfit] = set[2] });
             ExpansionCheck(!_care.IsCatchUpPending && CurrentEquipmentBonuses == expected &&
-                MoneyPerWorkMinute == 1m + expected.WorkCoinBonus, "Actual equipment bonuses disagree with rendered equipment.");
+                MoneyPerWorkMinute == EconomyPolicy.CoinsPerWorkMinute * EconomyPolicy.MoodWageFactor(CareState.MoodUnits) *
+                    (1m + expected.WorkCoinBonus), "Actual mood-adjusted equipment bonuses disagree with rendered equipment.");
             RenderOwnVisual(Root, Path.Combine(output, "equipment-" + set[2] + "-idle.png"));
-            CareState.Fullness = 90;
+            CareState.Mood = 90;
             await StartWorkingAsync().WaitAsync(token);
             await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, token, "V2 equipped workplace");
             await Task.Delay(200, token);

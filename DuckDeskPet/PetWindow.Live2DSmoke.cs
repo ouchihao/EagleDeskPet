@@ -96,7 +96,7 @@ public partial class PetWindow
                 _settings.IsPaused = false; _behavior.SetPaused(false); _behavior.SuspendAutomatic(true);
                 _emotions.Enabled = false; _behavior.CancelAutomaticEmotions();
                 SetActiveBanter(false); SetNotifications(false); SetTaskNotificationsMuted(true);
-                CareState.Coins = 50000.05m; CareState.Food = 12; CareState.Fullness = 50; CareState.Mood = 70;
+                CareState.Coins = 950000.05m; CareState.Food = 12; CareState.Mood = 70;
                 ExpansionCheck(_store.Save(CareState), "Cannot seed the disposable profile: " + _store.Warning);
                 ExpansionCheck(PetVisual.IsHitTestVisible && PetVisual.AllowDrop && PetVisual.ContextMenu == PetMenu,
                     "The original pet input surface is no longer active");
@@ -112,10 +112,13 @@ public partial class PetWindow
                 await Case("one meal reaches its actual terminal before feeding releases", async () =>
                 {
                     await ExpansionIdleAsync(token);
-                    int food = CareState.Food, meals = CareState.TotalMeals;
+                    int food = CareState.Food, meals = CareState.TotalMeals, experience = CareState.Experience;
+                    double mood = CareState.Mood;
                     long acknowledgements = _live2D!.PresentedTerminalCount;
                     FeedPet(); FeedPet();
-                    ExpansionCheck(CareState.Food == food - 1 && IsFeeding, "Meal admission charged more than one bowl or did not own Eat");
+                    ExpansionCheck(CareState.Food == food - 1 && IsFeeding && CareState.Experience == experience &&
+                        Math.Abs(CareState.Mood - Math.Min(100, mood + 20)) < .01,
+                        "Meal admission charged more than one bowl, changed XP or failed to restore mood");
                     await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.Eat && _behavior.CurrentSample.Progress >= .55,
                         token, "Live2D Eat midpoint");
                     ExpansionCheck(_live2D.IsNativeRasterVisible, "The actual meal surface is not the original PNG action");
@@ -142,7 +145,7 @@ public partial class PetWindow
                 });
                 await Case("real work enters, loops, crosses thirty minutes and fully exits", async () =>
                 {
-                    CareState.Fullness = 90;
+                    CareState.Mood = 90;
                     long acknowledgements = _live2D!.PresentedTerminalCount;
                     await StartWorkingAsync().WaitAsync(token);
                     await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == ClipKind.WorkLoop, token, "Live2D work loop");

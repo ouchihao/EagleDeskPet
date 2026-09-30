@@ -27,7 +27,9 @@ internal static class Program
             ("Work and pause cannot discard a consumed but queued meal", WorkPause),
             ("A previous Eat completion cannot complete a newly queued meal", PreviousEat),
             ("Earlier same-priority reactions finish before the owned Eat", EarlierReaction),
-            ("Fullness, missing food and cooldown release failed feeding admission", CareRejections),
+            ("Full mood, missing food and cooldown release failed feeding admission", CareRejections),
+            ("Feeding restores only mood, clamps at full and leaves experience unchanged", MoodOnlyMeal),
+            ("Zero mood and empty pantry cannot stop work or its half-rate wages", ZeroMoodWork),
             ("Hungry scene defers and coalesces feeding without consuming", Hungry),
             ("Save conflict preserves disk while one in-memory meal finishes", SaveFailure),
             ("Close waits through the queued meal then retries at its full end", Closing),
@@ -126,10 +128,36 @@ internal static class Program
         });
         void CareRejections()
         {
-            WithPet(p => { p.CareState.Fullness = 100; p.FeedPet(); Check(!p.IsFeeding && p.CareState.Food == 10 && p.Behavior.PendingCount == 0, "Full pet claimed animation."); });
+            WithPet(p =>
+            {
+                p.CareState.Mood = 100;
+                string before = JsonSerializer.Serialize(p.CareState);
+                p.FeedPet();
+                Check(!p.IsFeeding && !p.PendingFeed && p.Behavior.PendingCount == 0 &&
+                    JsonSerializer.Serialize(p.CareState) == before, "Full-mood rejection changed care or claimed animation.");
+            });
             WithPet(p => { p.CareState.Food = 0; p.FeedPet(); Check(!p.IsFeeding && p.Behavior.PendingCount == 0, "Empty pantry claimed animation."); });
             WithPet(p => { p.CareState.LastFedUtc = p.Time.GetUtcNow(); p.FeedPet(); Check(!p.IsFeeding && p.CareState.Food == 10 && p.Behavior.PendingCount == 0, "Care cooldown claimed animation."); });
         }
+        void MoodOnlyMeal() => WithPet(p =>
+        {
+            p.CareState.Mood = 85; p.CareState.Experience = 42;
+            p.FeedPet();
+            Check(p.IsFeeding && p.CareState.Mood == 100 && p.CareState.Experience == 42 &&
+                p.CareState.Food == 9 && p.CareState.TotalMeals == 1, "Meal altered more than mood and meal bookkeeping.");
+            p.RenderUntil(() => !p.IsFeeding);
+            Check(p.CareState.Experience == 42, "Completing the Eat animation added experience.");
+        });
+        void ZeroMoodWork() => WithPet(p =>
+        {
+            p.CareState.Mood = 0; p.CareState.Food = 0;
+            Check(p.TryWork(), "Zero mood or empty pantry prevented work admission.");
+            p.RenderUntil(() => p.Behavior.CurrentSample.Kind == ClipKind.WorkLoop);
+            p.AdvanceCare(60);
+            Check(p.CareState.IsWorking && p.CareState.Mood == 0 && p.CareState.Coins == .50m &&
+                p.Behavior.CurrentSample.Kind == ClipKind.WorkLoop && !p.Behavior.IsHungryRequested,
+                "Low mood interrupted the working controller or changed the half-rate wage.");
+        });
         void Hungry() => WithPet(p =>
         {
             p.Behavior.RequestHungryScene(); p.RenderUntil(() => p.Behavior.IsHungrySceneActive);

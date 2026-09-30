@@ -44,8 +44,11 @@ public partial class PetWindow
             _behavior.SetPaused(false);
             OpenCarePanel();
             int before = CareState.Food;
+            double moodBefore = CareState.Mood;
+            int experienceBefore = CareState.Experience;
             FeedPet();
-            if (CareState.Food != before - 1 || CareState.Fullness < 99)
+            if (CareState.Food != before - 1 || Math.Abs(CareState.Mood - Math.Min(100, moodBefore + 20)) > .01 ||
+                CareState.Experience != experienceBefore)
                 throw new InvalidOperationException("Feed integration did not update care state.");
             RenderOwnVisual(_carePanel!, Path.Combine(output, "care-panel.png"));
             ShowDemoNotification("联调测试");
