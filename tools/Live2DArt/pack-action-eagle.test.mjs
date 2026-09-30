@@ -24,17 +24,17 @@ for (const variant of manifest.variants) {
   variants.set(variant.id, { bytes, psd: readPsd(bytes, { useImageData: true, skipThumbnail: true }), variant });
 }
 console.log('Evidence: ' + output);
-test('all six outfit sources share the native canvas and real articulated body / hand / beak parts', () => {
+test('all six outfit sources share the native canvas and articulated wings / beak parts', () => {
   assert.deepEqual([...variants.keys()], ['outfit.default', 'outfit.office', 'outfit.hoodie', 'outfit.ox', 'outfit.hero', 'outfit.astronaut']);
   for (const { psd, bytes, variant } of variants.values()) {
     assert.equal(psd.width, 384); assert.equal(psd.height, 346);
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), variant.psdSha256);
-    for (const name of ['handwear-l', 'handwear-r', 'forearm-l', 'forearm-r', 'beak-upper', 'beak-lower', 'beak-inner', 'rps-rock', 'rps-paper', 'rps-scissors', 'busy-eye-l', 'busy-eye-r'])
+    for (const name of ['handwear-l', 'handwear-r', 'forearm-l', 'forearm-r', 'beak-upper', 'beak-lower', 'beak-inner', 'busy-eye-l', 'busy-eye-r'])
       assert.ok(psd.children.some(layer => layer.name === name), name);
   }
 });
-test('new mouth and hand artwork starts at zero opacity without being hidden or empty', () => {
-  for (const { psd } of variants.values()) for (const child of psd.children.filter(x => /^(beak-|rps-|busy-eye-)/.test(x.name))) {
+test('new mouth and eye artwork starts at zero opacity without being hidden or empty', () => {
+  for (const { psd } of variants.values()) for (const child of psd.children.filter(x => /^(beak-|busy-eye-)/.test(x.name))) {
     assert.equal(child.opacity, 0); assert.notEqual(child.hidden, true);
     assert.ok(child.imageData.data.some((n, index) => index % 4 === 3 && n > 200));
   }
@@ -61,14 +61,9 @@ test('the stationary torso does not retain the moving wing silhouette', () => {
     assert.ok(alpha(140, 212) >= 254);
   }
 });
-test('gesture palms have an open wrist with hidden overlap, not a sealed floating hand icon', () => {
-  const { psd } = variants.get('outfit.default');
-  for (const hand of psd.children.filter(x => x.name.startsWith('rps-'))) {
-    const { width, height, data } = hand.imageData;
-    assert.equal(hand.top + height, 280);
-    assert.deepEqual(data.subarray((271 - hand.top) * width * 4, (272 - hand.top) * width * 4), data.subarray((height - 1) * width * 4));
-    assert.ok(data[((height - 1) * width + 140 - hand.left) * 4 + 3] > 200);
-  }
+test('removed guessing-game hands are absent from every source model', () => {
+  for (const { psd } of variants.values())
+    assert.ok(psd.children.every(layer => !layer.name.startsWith('rps-')));
 });
 test('default neutral preserves every visible original pixel after authoring', async () => {
   const expected = await sharp(before).ensureAlpha().raw().toBuffer();

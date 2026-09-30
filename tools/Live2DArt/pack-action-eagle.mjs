@@ -33,9 +33,6 @@ const partsLayout = [
   ['beak-inner', [912, 107, 267, 225], [176, 163, 44, 34]],
   ['beak-lower', [493, 178, 277, 140], [176, 173, 46, 21]],
   ['beak-upper', [74, 128, 309, 204], [167, 151, 63, 40]],
-  ['rps-rock', [82, 525, 273, 276], [122, 230, 36, 46]],
-  ['rps-paper', [446, 452, 363, 350], [114, 211, 53, 65]],
-  ['rps-scissors', [931, 448, 241, 356], [119, 211, 43, 65]],
 ];
 async function partLayer(name, crop, placement) {
   const [left, top, width, height] = placement;
@@ -44,16 +41,6 @@ async function partLayer(name, crop, placement) {
   return { name, left, top, opacity: 0, hidden: false, imageData: { width, height, data: new Uint8ClampedArray(rgba) } };
 }
 const actionLayers = await Promise.all(partsLayout.map(args => partLayer(...args)));
-for (const layer of actionLayers.filter(x => x.name.startsWith('rps-'))) {
-  const original = layer.imageData, height = 280 - layer.top;
-  const data = new Uint8ClampedArray(original.width * height * 4);
-  const openRow = 271 - layer.top;
-  data.set(original.data.subarray(0, (openRow + 1) * original.width * 4));
-  // Extend the existing wrist sides and interior as an open joint, not a closed icon attached to another palm
-  for (let y = openRow + 1; y < height; y++)
-    data.set(original.data.subarray(openRow * original.width * 4, (openRow + 1) * original.width * 4), y * original.width * 4);
-  layer.imageData = { width: original.width, height, data };
-}
 const busyReference = await sharp(await read('DuckDeskPet/Assets/Animations/BusyLoop/frame-0000.png')).ensureAlpha().raw().toBuffer();
 const busyEyes = [];
 for (const [name, sx, targetX, right] of [['busy-eye-r', 143, 152, false], ['busy-eye-l', 205, 215, true]]) {
@@ -301,7 +288,7 @@ for (const outfit of ['default', 'office', 'hoodie', 'ox', 'hero', 'astronaut'])
   children.splice(children.findIndex(x => x.name === 'mouth'), 0, ...structuredClone(busyEyes));
   children.splice(children.findIndex(x => x.name === 'mouth close') + 1, 0,
     ...structuredClone(actionLayers.filter(x => x.name.startsWith('beak-'))));
-  children.push(...forearms, ...structuredClone(actionLayers.filter(x => x.name.startsWith('rps-'))));
+  children.push(...forearms);
   const neutral = compositeLayers(children);
   const directory = path.join(output, outfit);
   await fs.mkdir(directory);

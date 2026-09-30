@@ -214,82 +214,6 @@
         "mouthOpen"
       ]
     },
-    "RpsRock": {
-      "support": "complete",
-      "model": "main",
-      "resource": "runtime/avatar/motions/RpsRock.motion3.json",
-      "durationSeconds": 2.8,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "holdStartSeconds": 1,
-      "holdEndSeconds": 1.87,
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsPaper": {
-      "support": "complete",
-      "model": "main",
-      "resource": "runtime/avatar/motions/RpsPaper.motion3.json",
-      "durationSeconds": 2.8,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "holdStartSeconds": 1,
-      "holdEndSeconds": 1.87,
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsScissors": {
-      "support": "complete",
-      "model": "main",
-      "resource": "runtime/avatar/motions/RpsScissors.motion3.json",
-      "durationSeconds": 2.8,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "holdStartSeconds": 1,
-      "holdEndSeconds": 1.87,
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsWin": {
-      "support": "complete",
-      "model": "main",
-      "resource": "runtime/avatar/motions/RpsWin.motion3.json",
-      "durationSeconds": 2.4,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
-    "RpsLose": {
-      "support": "complete",
-      "model": "main",
-      "resource": "runtime/avatar/motions/RpsLose.motion3.json",
-      "durationSeconds": 2.4,
-      "phase": "once",
-      "entryPose": "standing",
-      "exitPose": "standing",
-      "controlledParameters": [
-        "headAngle",
-        "bodyAngle",
-        "mouthOpen"
-      ]
-    },
     "Annoyed": {
       "support": "complete",
       "model": "main",
@@ -617,31 +541,6 @@
       "sha256": null
     },
     "runtime/avatar/motions/Tea.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "runtime/avatar/motions/RpsRock.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "runtime/avatar/motions/RpsPaper.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "runtime/avatar/motions/RpsScissors.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "runtime/avatar/motions/RpsWin.motion3.json": {
-      "role": "motion",
-      "byteLength": 0,
-      "sha256": null
-    },
-    "runtime/avatar/motions/RpsLose.motion3.json": {
       "role": "motion",
       "byteLength": 0,
       "sha256": null

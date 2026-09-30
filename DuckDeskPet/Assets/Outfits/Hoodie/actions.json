@@ -133,56 +133,6 @@
       "durationSeconds": 2
     },
     {
-      "id": "rps-rock",
-      "clip": "RpsRock",
-      "name": "出石头",
-      "group": "Interaction",
-      "phase": "once",
-      "directory": "Assets/Outfits/Hoodie/Animations/RpsRock",
-      "frameCount": 169,
-      "durationSeconds": 2.8
-    },
-    {
-      "id": "rps-paper",
-      "clip": "RpsPaper",
-      "name": "出布",
-      "group": "Interaction",
-      "phase": "once",
-      "directory": "Assets/Outfits/Hoodie/Animations/RpsPaper",
-      "frameCount": 169,
-      "durationSeconds": 2.8
-    },
-    {
-      "id": "rps-scissors",
-      "clip": "RpsScissors",
-      "name": "出剪刀",
-      "group": "Interaction",
-      "phase": "once",
-      "directory": "Assets/Outfits/Hoodie/Animations/RpsScissors",
-      "frameCount": 169,
-      "durationSeconds": 2.8
-    },
-    {
-      "id": "rps-win",
-      "clip": "RpsWin",
-      "name": "得意小鹰",
-      "group": "Interaction",
-      "phase": "once",
-      "directory": "Assets/Outfits/Hoodie/Animations/RpsWin",
-      "frameCount": 145,
-      "durationSeconds": 2.4
-    },
-    {
-      "id": "rps-lose",
-      "clip": "RpsLose",
-      "name": "输后捂脸",
-      "group": "Interaction",
-      "phase": "once",
-      "directory": "Assets/Outfits/Hoodie/Animations/RpsLose",
-      "frameCount": 145,
-      "durationSeconds": 2.4
-    },
-    {
       "id": "annoyed",
       "clip": "Annoyed",
       "name": "护头龇牙",
