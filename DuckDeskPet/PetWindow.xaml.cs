@@ -320,7 +320,7 @@ public partial class PetWindow : Window
         {
             if (_isClosing) return;
             _settings.IsPaused = targetPaused;
-            _behavior.SetPaused(targetPaused);
+            _behavior.SetPaused(targetPaused, preserveAction: true);
             ApplyPresentation(_behavior.CurrentSample, 0, force: true);
             SaveCurrentSettings();
         }

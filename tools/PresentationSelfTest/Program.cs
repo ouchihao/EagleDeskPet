@@ -1,5 +1,7 @@
 using DuckDeskPet;
 using DuckDeskPet.Core;
+using System.Text.Json.Nodes;
+using System.Text.Json;
 
 int passed = 0;
 void Check(bool condition, string message)
@@ -43,4 +45,55 @@ Check(behavior.CurrentSample.Kind == ClipKind.Eat && behavior.CurrentSample.Phas
 controlled.Acknowledge(20, behavior.CurrentSample.Sequence, ClipKind.Eat);
 if (controlled.CanLeave(behavior.CurrentSample)) behavior.Advance(1d / 60);
 Check(behavior.CurrentSample.Kind == ClipKind.Idle, "A confirmed full meal returns to the existing idle beat");
+var hybridPause = new PetBehaviorController();
+hybridPause.SuspendAutomatic(true);
+hybridPause.QueueReaction(PetBehaviorKind.Fed);
+for (int i = 0; i < 600 && (hybridPause.CurrentSample.Kind != ClipKind.Eat || hybridPause.CurrentSample.Progress < .25); i++)
+    hybridPause.Advance(1d / 60);
+var pausedSample = hybridPause.CurrentSample;
+hybridPause.SetPaused(true, preserveAction: true);
+for (int i = 0; i < 120; i++) hybridPause.Advance(1d / 60);
+Check(hybridPause.CurrentSample == pausedSample, "Hybrid pause retains the entire meal pose and original action sequence");
+hybridPause.SetPaused(false, preserveAction: true);
+hybridPause.Advance(1d / 60);
+Check(hybridPause.CurrentSample.Kind == ClipKind.Eat && hybridPause.CurrentSample.Sequence == pausedSample.Sequence &&
+    hybridPause.CurrentSample.Progress > pausedSample.Progress, "Resuming continues the original PNG timeline without shortening or restarting the meal");
+var receipt = JsonNode.Parse("""{"protocol":1,"type":"neutralized","generation":9,"requestId":3,"revision":18,"sequence":12,"kind":"Eat","equipment":{"desk":"d","computer":"c","outfit":"o"}}""")!;
+bool Accept(JsonNode candidate) => NeutralHandoffReceipt.Matches(JsonSerializer.SerializeToElement(candidate), 9, 3, 18,
+    new(ClipKind.Eat, ClipPlaybackPhase.Playing, 0, 12), "d", "c", "o");
+Check(Accept(receipt), "Exact neutral receipt matches its generation, request, revision, sequence and complete equipment");
+foreach (string field in new[] { "generation", "requestId", "revision", "sequence" })
+{
+    var changed = receipt.DeepClone(); changed[field] = -1;
+    Check(!Accept(changed), "Neutral handoff rejects stale " + field);
+}
+foreach (string field in new[] { "desk", "computer", "outfit" })
+{
+    var changed = receipt.DeepClone(); changed["equipment"]![field] = "other";
+    Check(!Accept(changed), "Neutral handoff rejects mismatched " + field);
+}
+var terminalReceipt = receipt.DeepClone(); terminalReceipt["type"] = "terminal";
+Check(!Accept(terminalReceipt), "Ordinary terminal acknowledgement cannot substitute for neutral handoff");
+var wrongAction = receipt.DeepClone(); wrongAction["kind"] = "Yawn";
+Check(!Accept(wrongAction), "Another action cannot hand off the meal");
+const string pack = """{"version":1,"width":384,"height":346,"frameCount":121,"durationSeconds":2,"outfits":{"outfit.default":{"route":"native-raster","directory":"default"},"outfit.office":{"route":"native-raster","directory":"office"}}}""";
+string? DirectoryFor(string json) { using var data = JsonDocument.Parse(json); return HybridActionManifest.Resolve(data.RootElement, "outfit.office", ["outfit.default", "outfit.office"]).Directory; }
+Check(DirectoryFor(pack) == "office", "Hybrid manifest preserves the precise authored frame count, timing and outfit directory");
+void RejectManifest(string json, string description)
+{
+    bool rejected = false;
+    try { DirectoryFor(json); } catch (InvalidDataException) { rejected = true; }
+    Check(rejected, description);
+}
+foreach (var field in new[] { "version", "width", "height", "frameCount", "durationSeconds" })
+{
+    var wrong = JsonNode.Parse(pack)!; wrong[field] = 99;
+    RejectManifest(wrong.ToJsonString(), "Hybrid manifest rejects a false " + field + " declaration");
+}
+RejectManifest(pack.Replace("\"outfits\":{", "\"outfits\":{\"outfit.office\":{\"directory\":\"other\"},"), "Duplicate outfit keys cannot pretend to be a complete pack");
+RejectManifest(pack.Replace("\"directory\":\"office\"", "\"directory\":\"default\""), "A claimed costume cannot silently substitute the default frame suite");
+RejectManifest(pack.Replace("\"directory\":\"office\"", "\"directory\":\"../office\""), "Hybrid frame directories cannot escape their resource root");
+Check(DirectoryFor(pack.Replace("\"route\":\"native-raster\",\"directory\":\"office\"", "\"route\":\"live2d\"")) is null,
+    "An explicitly Live2D outfit does not demand nonexistent native frames or degrade its work renderer");
+RejectManifest(pack.Replace("\"route\":\"native-raster\",\"directory\":\"office\"", "\"route\":\"unknown\""), "An unknown outfit route is rejected rather than silently substituted");
 Console.WriteLine($"Presentation acknowledgement: {passed}/{passed}");

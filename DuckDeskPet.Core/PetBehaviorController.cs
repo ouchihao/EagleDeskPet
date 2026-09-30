@@ -37,6 +37,7 @@ public sealed class PetBehaviorController
     private bool _busyDesired;
     private bool _hungryDesired;
     private bool _paused;
+    private bool _preservePausedAction;
     private Pose _workEntryPose = Pose.Neutral;
 
     public PetBehaviorController(ClipTimeline? timeline = null)
@@ -224,7 +225,7 @@ public sealed class PetBehaviorController
         return sample;
     }
 
-    public void SetPaused(bool paused)
+    public void SetPaused(bool paused, bool preserveAction = false)
     {
         if (paused == IsPaused)
         {
@@ -232,7 +233,9 @@ public sealed class PetBehaviorController
         }
 
         _paused = paused;
-        if (!_workScene.IsActive && !_hungryScene.IsActive) _timeline.SetPaused(paused);
+        if (paused) _preservePausedAction = preserveAction && CurrentSample.Kind != ClipKind.Idle;
+        if (!_workScene.IsActive && !_hungryScene.IsActive && !_preservePausedAction) _timeline.SetPaused(paused);
+        if (!paused) _preservePausedAction = false;
         _pending.Clear();
         _idleElapsed = 0.0;
     }

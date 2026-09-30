@@ -8,5 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../../DuckDeskPet.Core/DuckDeskPet.Core.csproj" />
     <Compile Include="../../DuckDeskPet/PresentationAcknowledgementGate.cs" Link="PresentationAcknowledgementGate.cs" />
+    <Compile Include="../../DuckDeskPet/NeutralHandoffReceipt.cs" Link="NeutralHandoffReceipt.cs" />
+    <Compile Include="../../DuckDeskPet/HybridActionManifest.cs" Link="HybridActionManifest.cs" />
   </ItemGroup>
 </Project>

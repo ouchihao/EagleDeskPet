@@ -32,6 +32,8 @@
 
   <ItemGroup>
     <Content Include="Live2DStage\*.js;Live2DStage\*.html;Live2DStage\*.css" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Remove="Assets\HybridActions\**\*.png;Assets\HybridActions\manifest.json" />
+    <Resource Include="Assets\HybridActions\**\*.png;Assets\HybridActions\manifest.json" Condition="Exists('Assets\HybridActions\manifest.json')" />
     <None Remove="Assets\mascot-animated-neutral.png" />
     <None Remove="Assets\actions.json" />
     <Resource Include="Assets\actions.json" />

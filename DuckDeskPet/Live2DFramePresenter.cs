@@ -11,7 +11,7 @@ using Microsoft.Web.WebView2.Wpf;
 
 namespace DuckDeskPet;
 
-internal sealed class Live2DFramePresenter : IPetPresentationBackend
+internal sealed partial class Live2DFramePresenter : IPetPresentationBackend
 {
     private const string Origin = "https://stage.eagledeskpet.invalid";
     private static long _nextGeneration;
@@ -23,6 +23,7 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
         Focusable = false,
     };
     private readonly Grid _layer = new() { IsHitTestVisible = false, Opacity = 0 };
+    private readonly Grid _coreSurface = new() { IsHitTestVisible = false };
     private readonly PresentationAcknowledgementGate _acknowledgements = new(Interlocked.Increment(ref _nextGeneration));
     private readonly TaskCompletionSource<JsonElement> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Dictionary<string, string> _files = new(StringComparer.Ordinal);
@@ -42,7 +43,9 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
     {
         _parent = parent;
         Panel.SetZIndex(_layer, 10);
-        _layer.Children.Add(_view);
+        _coreSurface.Children.Add(_view);
+        _layer.Children.Add(_coreSurface);
+        InitializeHybridLayer();
         parent.Children.Add(_layer);
     }
 
@@ -106,8 +109,10 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
         _presented = new(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
+            var legacy = await PrepareLegacyActionsAsync(equipment.Outfit);
             Post(new { type = "prepare", protocol = 1, generation = _acknowledgements.Generation, requestId = ++_requestId, equipment });
             await _prepared.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            _legacyActions = legacy;
             _pendingRevision = _revision + 1;
             SendState(sample, paused, equipment);
             await _presented.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -124,6 +129,11 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
     public bool CanAdvance(ClipSample sample)
     {
         if (IsPreparing) return false;
+        if (IsActive && UsesNativeAction(sample.Kind))
+        {
+            try { return CanAdvanceHybrid(sample); }
+            catch (Exception ex) when (ex is not OutOfMemoryException) { Fail(ex.Message); return true; }
+        }
         if (!IsActive || _acknowledgements.CanLeave(sample)) return true;
         if (_clock.Elapsed.TotalSeconds - _terminalSentAt > 2)
             Fail("动作末帧未获得显示确认，已切回相同装备的逐帧动画");
@@ -133,6 +143,8 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
     public void Present(ClipSample sample, bool paused, bool force = false)
     {
         if (!IsActive || IsPreparing || ActiveEquipment is null) return;
+        try { if (PresentHybrid(sample, paused)) return; }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { Fail(ex.Message); return; }
         if (force || sample.Kind != _lastSent.Kind || sample.Sequence != _lastSent.Sequence ||
             sample.Phase != _lastSent.Phase || paused != _lastPaused || _clock.Elapsed.TotalSeconds - _lastSentAt >= 0.1)
         {
@@ -188,10 +200,11 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
                         _presented?.TrySetResult();
                     break;
                 case "terminal":
-                    if (Enum.TryParse<ClipKind>(message.GetProperty("kind").GetString(), out var kind) &&
+                    if (Enum.TryParse<ClipKind>(message.GetProperty("kind").GetString(), out var kind) && !UsesNativeAction(kind) &&
                         _acknowledgements.Acknowledge(_acknowledgements.Generation, message.GetProperty("sequence").GetInt64(), kind))
                         PresentedTerminalCount++;
                     break;
+                case "neutralized": ReceiveNeutralized(message); break;
                 case "error": Fail(message.GetProperty("message").GetString() ?? "Live2D 画面异常"); break;
             }
         }
@@ -279,6 +292,7 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
         IsPreparing = false;
         Warning = "Live2D 暂不可用，已保留相同装备并切回逐帧动画。" + reason;
         _view.Visibility = Visibility.Collapsed;
+        _layer.Visibility = Visibility.Collapsed;
         _ready.TrySetCanceled();
         _prepared?.TrySetCanceled();
         _presented?.TrySetCanceled();
@@ -289,6 +303,7 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
     internal async Task CaptureStageAsync(string path)
     {
         if (!IsActive) throw new InvalidOperationException("Live2D is not active");
+        if (IsNativeRasterVisible) { await CaptureNativeRasterAsync(path); return; }
         string result = await _view.CoreWebView2.ExecuteScriptAsync("window.eagleStage.capture()");
         string value = JsonSerializer.Deserialize<string>(result) ?? throw new InvalidDataException("Canvas capture returned no image");
         const string prefix = "data:image/png;base64,";
@@ -296,15 +311,27 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
         await File.WriteAllBytesAsync(path, Convert.FromBase64String(value[prefix.Length..]));
     }
 
-    internal Task<string> GetStageDiagnosticsAsync()
+    internal async Task<string> GetStageDiagnosticsAsync()
     {
         if (!IsActive) throw new InvalidOperationException("Live2D is not active");
-        return _view.CoreWebView2.ExecuteScriptAsync("window.eagleStage.report()");
+        var report = JsonNode.Parse(await _view.CoreWebView2.ExecuteScriptAsync("window.eagleStage.report()"))!.AsObject();
+        report["visibleSurface"] = VisibleSurface;
+        report["nativeRasterTerminalCount"] = NativeRasterTerminalCount;
+        report["nativeRasterFrames"] = _nativeFrameChanges;
+        report["activeOutfitActionRouting"] = JsonSerializer.SerializeToNode(new
+        {
+            outfit = ActiveEquipment?.Outfit,
+            Yawn = UsesNativeAction(ClipKind.Yawn) ? "native-raster" : "live2d-core",
+            Eat = UsesNativeAction(ClipKind.Eat) ? "native-raster" : "live2d-core",
+        });
+        report["handoffPhase"] = _hybridPhase.ToString();
+        return report.ToJsonString();
     }
 
     internal async Task BeginStageRecordingAsync()
     {
         if (!IsActive) throw new InvalidOperationException("Live2D is not active");
+        await PrepareVisibleRecordingAsync();
         await _view.CoreWebView2.ExecuteScriptAsync("window.eagleStage.beginRecording()");
     }
 
@@ -321,6 +348,7 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
             byte[] bytes = Convert.FromBase64String(result.RootElement.GetProperty("data").GetString()!);
             if (bytes.Length > 32 * 1024 * 1024) throw new InvalidDataException("Recording exceeds 32 MiB");
             await File.WriteAllBytesAsync(path, bytes);
+            _recordingVisibleSurface = false;
             await _view.CoreWebView2.ExecuteScriptAsync("delete window.__eagleRecordingResult");
             return;
         }
@@ -343,6 +371,7 @@ internal sealed class Live2DFramePresenter : IPetPresentationBackend
     {
         if (_browserDisposed) return;
         _browserDisposed = true;
+        DisposeHybridLayer();
         _parent.Children.Remove(_layer);
         _view.Dispose();
     }

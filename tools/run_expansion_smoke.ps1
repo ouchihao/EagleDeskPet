@@ -4,6 +4,7 @@ param(
     [string]$DotnetRoot,
     [ValidateSet('expansion', 'live2d', 'live2d-business', 'live2d-gallery', 'live2d-review')][string]$Mode = 'expansion',
     [string]$Live2DConfig,
+    [string]$HybridActionsDirectory,
     [string]$ReviewOutfit = 'outfit.default',
     [switch]$SkipOutfit
 )
@@ -18,6 +19,10 @@ if ($DotnetRoot) {
 if ($Live2DConfig) {
     $petLiveConfig = (Get-Item -LiteralPath $Live2DConfig -ErrorAction Stop).FullName
     if ([IO.Path]::GetExtension($petLiveConfig) -ne '.json') { throw 'Live2DConfig must be the prepared local-runtime.json.' }
+}
+if ($HybridActionsDirectory) {
+    $petHybridDirectory = (Get-Item -LiteralPath $HybridActionsDirectory -ErrorAction Stop).FullName
+    if (-not (Test-Path -LiteralPath $petHybridDirectory -PathType Container)) { throw 'HybridActionsDirectory must be a prepared local directory.' }
 }
 $petHardLimit = $(if ($Mode -like 'live2d*') { 650 } else { 300 })
 $petReportName = $(if ($Mode -like 'live2d*') { 'live2d-smoke.json' } else { 'expansion-smoke.json' })
@@ -49,6 +54,8 @@ $petStart.EnvironmentVariables['EAGLE_PET_TEST_CHANNEL'] = $petRunId
 $petStart.EnvironmentVariables['EAGLE_PET_SMOKE_SKIP_OUTFIT'] = $(if ($SkipOutfit) { '1' } else { '0' })
 if ($DotnetRoot) { $petStart.EnvironmentVariables['DOTNET_ROOT'] = $petRuntime }
 if ($Live2DConfig) { $petStart.EnvironmentVariables['EAGLE_PET_LIVE2D_CONFIG'] = $petLiveConfig }
+$petStart.EnvironmentVariables.Remove('EAGLE_PET_HYBRID_ACTIONS_DIR')
+if ($HybridActionsDirectory) { $petStart.EnvironmentVariables['EAGLE_PET_HYBRID_ACTIONS_DIR'] = $petHybridDirectory }
 if ($Mode -like 'live2d*') { $petStart.EnvironmentVariables['EAGLE_PET_RENDERER'] = 'live2d' }
 
 $petChild = [Diagnostics.Process]::Start($petStart)
@@ -84,7 +91,18 @@ try {
         throw "Expansion smoke failed. Evidence retained at $petEvidence"
     }
     $petReport = Get-Content -LiteralPath $petReportPath -Raw | ConvertFrom-Json
-    Write-Output (Get-Content -LiteralPath $petReportPath -Raw)
+    [ordered]@{
+        passed = $petReport.passed
+        completed = $petReport.completed
+        mode = $Mode
+        elapsedSeconds = $petReport.elapsedSeconds
+        actualBackend = $petReport.actualBackend
+        cases = $petReport.cases
+        clipSegments = @($petReport.clips).Count
+        equipmentCombinations = @($petReport.combinations).Count
+        nativeRasterTerminalAcknowledgements = $petReport.nativeRasterTerminalAcknowledgements
+        error = $petReport.error
+    } | ConvertTo-Json -Depth 8 | Write-Output
     Write-Output "Evidence: $petReportPath"
     if (-not $petReport.passed -or -not $petReport.completed) { throw "Expansion smoke did not pass. Evidence retained at $petEvidence" }
     if ($petReport.cases | Where-Object { $_.Status -eq 'skipped' }) {

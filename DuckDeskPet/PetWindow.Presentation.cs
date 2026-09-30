@@ -50,7 +50,8 @@ public partial class PetWindow
         foreach (var image in new[] { PetImage, BusyFireImage, DeskBackImage, DeskFrontImage, LaptopImage, _workStage.ForegroundLayer })
             if (image is not null) image.Opacity = opacity;
         ApplyPose(live ? Pose.Neutral : _behavior.CurrentProceduralPose);
-        RendererStatusMenuItem.Header = live ? "动画 · Live2D 全动作" : "动画 · 逐帧兼容模式";
+        RendererStatusMenuItem.Header = !live ? "动画 · 逐帧兼容模式" : _live2D!.UsesNativeAction(ClipKind.Eat)
+            ? "动画 · Live2D + 原帧吃饭 / 哈欠" : "动画 · Live2D（当前装扮）";
         if (!live && _live2D?.Warning is { } warning)
         {
             CareStatus = warning;
