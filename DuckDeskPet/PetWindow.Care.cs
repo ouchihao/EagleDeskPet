@@ -209,8 +209,8 @@ public partial class PetWindow
             if (_isClosing) return;
             var result = _care.StartWork(DateTimeOffset.UtcNow);
             _behavior.SetWorkState(CareState.IsWorking, CareState.IsBusy);
-            CareStatus = result.Message.Trim();
             _store.Save(CareState);
+            CareStatus = _store.Warning ?? result.Message.Trim();
             Say(CareStatus);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or InvalidOperationException or NotSupportedException)
@@ -226,8 +226,8 @@ public partial class PetWindow
     {
         var result = _care.StopWork(DateTimeOffset.UtcNow);
         _behavior.SetWorkState(CareState.IsWorking, CareState.IsBusy);
-        CareStatus = result.Message.Trim();
         _store.Save(CareState);
+        CareStatus = _store.Warning ?? result.Message.Trim();
         _carePanel?.Refresh();
         Say(CareStatus);
     }
