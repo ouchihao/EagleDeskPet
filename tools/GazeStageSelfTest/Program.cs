@@ -132,6 +132,7 @@ internal sealed class GazeWindow : Window
             if (i >= 400) throw new TimeoutException("Stage unavailable: " + JsonSerializer.Serialize(_messages));
             await Task.Delay(100);
         }
+        await core.ExecuteScriptAsync("window.gazeQaAllOutfits=" + (_args.Length == 5 ? "true" : "false"));
         await core.ExecuteScriptAsync(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "scenario.js")));
         JsonElement result = default;
         for (int i = 0; i < 900; i++)

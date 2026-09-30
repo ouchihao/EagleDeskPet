@@ -151,6 +151,42 @@
     await state();
     await hold(0, 1);
     capture("return-idle-up");
+    if (window.gazeQaAllOutfits) {
+      check(
+        stage.capabilities.outfits.length === 6,
+        "All six distinct outfit models are present",
+      );
+      for (const outfit of stage.capabilities.outfits) {
+        equipment.outfit = outfit;
+        await stage.receive({
+          type: "prepare",
+          protocol: 1,
+          generation: 1,
+          requestId: ++revision,
+          equipment,
+        });
+        await state();
+        await wait(180);
+        check(
+          stage.report().gaze.supported,
+          outfit + " declares real gaze binding",
+        );
+        for (const [name, x, y] of [
+          ["left", -1, 0],
+          ["right", 1, 0],
+          ["up", 0, 1],
+          ["down", 0, -1],
+        ]) {
+          await hold(x, y);
+          const frame = capture(outfit.replaceAll(".", "-") + "-" + name);
+          check(
+            Math.abs(frame.gaze.eyeX - x) < 0.03 &&
+              Math.abs(frame.gaze.eyeY - y) < 0.03,
+            outfit + " " + name + " converges in actual Stage",
+          );
+        }
+      }
+    }
     const report = stage.report();
     check(
       report.errors.length === 0 &&
@@ -169,6 +205,7 @@
       snapshots,
       report,
       video,
+      allOutfitsTested: !!window.gazeQaAllOutfits,
       limitations: [
         "Isolated actual production Stage, not native desktop mouse injection or physical Present measurement",
         "PNG neutral handoff is exercised; the WPF PNG overlay itself is not displayed by this tool",
