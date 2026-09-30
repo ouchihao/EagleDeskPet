@@ -43,6 +43,7 @@
     "foregroundLayers": ["forearm-l", "forearm-r"],
     "handAttachments": { "l": { "layer": "forearm-l", "source": [244, 286] }, "r": { "layer": "forearm-r", "source": [140, 286] } },
     "eyeAttachments": { "l": { "layer": "face", "source": [238, 159] }, "r": { "layer": "face", "source": [159, 159] } },
+    "softBrows": { "left": "eyebrow-l", "right": "eyebrow-r", "innerLiftPx": 4.5, "outerDropPx": 0.3 },
     "wingRootY": 197,
     "bodyGroundY": 309,
     "leftWing": { "layers": ["handwear-l", "forearm-l"], "pivotX": 246, "pivotY": 221, "elbowX": 244, "elbowY": 247, "foldDegrees": 110 },

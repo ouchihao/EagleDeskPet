@@ -71,6 +71,7 @@ public final class ExportPsdModelSelfTest {
         if (parsedProfile.containsKey("fullBody")) {
             int actionMeshes = ((JsonObject) parsedProfile.get("fullBody")).containsKey("busyEyes") ? 14 : 10;
             if (((JsonObject) parsedProfile.get("fullBody")).containsKey("eyeAttachments")) actionMeshes++;
+            if (((JsonObject) parsedProfile.get("fullBody")).containsKey("softBrows")) actionMeshes += 2;
             if (!validation.contains("\"fullBodyRig\": true") || !validation.contains("\"actionBoundMeshes\": " + actionMeshes))
                 throw new AssertionError("Missing full-body mesh authoring assertions");
             JsonObject bindings = (JsonObject) Json.Default.parseToJsonElement(Files.readString(validOutput.resolve("action-bindings.json")));
@@ -91,6 +92,13 @@ public final class ExportPsdModelSelfTest {
                     throw new AssertionError("Both tears must attach to the face rather than collapsing eyelids");
             }
             mark("full-body mesh movement, rest geometry, jaw shapes, two prop attachments and foreground bindings verified");
+            if (((JsonObject) parsedProfile.get("fullBody")).containsKey("softBrows")) {
+                if (!validation.contains("\"positiveBrowsOnly\": true"))
+                    throw new AssertionError("Missing exact neutral/negative brow preservation assertion");
+                mark("positive brow corners authored while neutral and negative keys stay byte-identical");
+                reject(input, evidence, "brow-lift-too-large", change(validProfile, "fullBody.softBrows", "innerLiftPx", "12"), "brow innerLiftPx must be in");
+                reject(input, evidence, "brow-outer-direction", change(validProfile, "fullBody.softBrows", "outerDropPx", "-2"), "brow outerDropPx must be in");
+            }
             reject(input, evidence, "wing-empty-layers", change(validProfile, "fullBody.leftWing", "layers", "[]"), "Wing layers must not be empty");
             reject(input, evidence, "wing-pivot-above-root", change(validProfile, "fullBody.leftWing", "pivotY", "190"), "wing pivotY must be in");
             reject(input, evidence, "elbow-above-shoulder", change(validProfile, "fullBody.leftWing", "elbowY", "210"), "elbowY must be in");

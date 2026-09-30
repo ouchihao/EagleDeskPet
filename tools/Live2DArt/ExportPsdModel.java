@@ -164,6 +164,7 @@ public final class ExportPsdModel {
                 object(profile.get("headConnection"), "headConnection"),
                 analysis.getSource().getWidthPx(), analysis.getSource().getHeightPx());
         var actionBindings = new LinkedHashMap<String, String>();
+        var unmodifiedRig = preview.getRig();
         if (profile.containsKey("fullBody"))
             edits = authorFullBody(edits, preview.getRig(), preview.getAnalysis(),
                 object(profile.get("fullBody"), "fullBody"), actionBindings);
@@ -202,7 +203,7 @@ public final class ExportPsdModel {
         }
         if (!checkedFeet.equals(rootPinned) || !checkedEyes.equals(expectedEyeBindings.keySet()))
             throw new IllegalStateException("Not every reviewed source binding survived generation");
-        if (profile.containsKey("fullBody")) validateFullBody(rig, object(profile.get("fullBody"), "fullBody"), actionBindings);
+        if (profile.containsKey("fullBody")) validateFullBody(rig, unmodifiedRig, object(profile.get("fullBody"), "fullBody"), actionBindings);
 
         var result = pipeline.run(input, output, config,
             (stage, fraction) -> System.out.printf("%3d%% %s%n", Math.round(fraction * 100f), stage));
@@ -271,6 +272,7 @@ public final class ExportPsdModel {
             .append("\n  \"chestAnchoredHead\": ").append(profile.containsKey("headConnection")).append(',')
             .append("\n  \"fullBodyRig\": ").append(profile.containsKey("fullBody")).append(',')
             .append("\n  \"actionBoundMeshes\": ").append(profile.containsKey("fullBody") ? actionBindings.size() : 0).append(',')
+            .append("\n  \"positiveBrowsOnly\": ").append(profile.containsKey("fullBody") && object(profile.get("fullBody"), "fullBody").containsKey("softBrows")).append(',')
             .append("\n  \"featherSurfaceAnchored\": ").append(profile.containsKey("headConnection") &&
                 object(profile.get("headConnection"), "headConnection").containsKey("pinFaceFeathers") &&
                 bool(object(profile.get("headConnection"), "headConnection").get("pinFaceFeathers"), "pinFaceFeathers")).append(',')
@@ -333,13 +335,30 @@ public final class ExportPsdModel {
 
     private static RigEditOverlay authorFullBody(RigEditOverlay edits, BuiltRig rig, PipelineAnalysis analysis,
             JsonObject settings, Map<String, String> bindings) throws Exception {
-        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "busyEyes", "foregroundLayers", "handAttachments", "eyeAttachments"));
+        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "busyEyes", "foregroundLayers", "handAttachments", "eyeAttachments", "softBrows"));
         int width = analysis.getSource().getWidthPx(), height = analysis.getSource().getHeightPx();
         float rootY = boundedNumber(settings.get("wingRootY"), "wingRootY", 0, height);
         float groundY = boundedNumber(settings.get("bodyGroundY"), "bodyGroundY", 1, height);
         if (settings.containsKey("eyeAttachments"))
             for (var item : object(settings.get("eyeAttachments"), "eyeAttachments").values())
                 meshSpace(string(object(item, "eye attachment").get("layer"), "eye attachment layer"), rig, analysis, bindings);
+        if (settings.containsKey("softBrows")) {
+            JsonObject brows = object(settings.get("softBrows"), "softBrows");
+            keys(brows, Set.of("left", "right", "innerLiftPx", "outerDropPx"));
+            float lift = boundedNumber(brows.get("innerLiftPx"), "brow innerLiftPx", 1, 6);
+            float drop = boundedNumber(brows.get("outerDropPx"), "brow outerDropPx", 0, 1);
+            for (String side : List.of("L", "R")) {
+                MeshSpace mesh = meshSpace(string(brows.get(side.equals("L") ? "left" : "right"), "brow layer"), rig, analysis, bindings);
+                var delta = new ArrayList<Float>(mesh.positions().length);
+                for (int i = 0; i < mesh.positions().length; i += 2) {
+                    float u = (mesh.x(i) - mesh.canvas().getLeft()) / mesh.canvas().getWidth();
+                    float inner = smoothStep(side.equals("L") ? 1 - u : u);
+                    delta.add(0f); delta.add((drop * (1 - inner) - lift * inner) / mesh.scaleY());
+                }
+                edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, mesh.id(), null),
+                    Map.of("ParamBrow" + side + "Y", 1f), new RigKeyformGeometryEdit(null, null, null, null, null, delta), null));
+            }
+        }
         for (String side : List.of("L", "R")) {
             JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
             keys(wing, Set.of("layers", "pivotX", "pivotY", "elbowX", "elbowY", "foldDegrees"));
@@ -414,10 +433,34 @@ public final class ExportPsdModel {
         return edits.upsert(new RigParameterEdit(id, id, min, max, 0f, ParameterKind.NORMAL, false, true));
     }
 
-    private static void validateFullBody(BuiltRig rig, JsonObject settings, Map<String, String> bindings) throws Exception {
+    private static void validateFullBody(BuiltRig rig, BuiltRig unmodifiedRig, JsonObject settings, Map<String, String> bindings) throws Exception {
         var meshes = new HashMap<String, Drawable>();
         for (Drawable drawable : rig.getPuppet().getDrawables())
             meshes.put(mangledString(drawable, Drawable.class, "getId-"), drawable);
+        if (settings.containsKey("softBrows")) {
+            JsonObject brows = object(settings.get("softBrows"), "softBrows");
+            for (String side : List.of("L", "R")) {
+                String id = bindings.get(string(brows.get(side.equals("L") ? "left" : "right"), "brow layer"));
+                Drawable before = null;
+                for (Drawable drawable : unmodifiedRig.getPuppet().getDrawables())
+                    if (id.equals(mangledString(drawable, Drawable.class, "getId-"))) before = drawable;
+                var grid = meshes.get(id).getGeometryGrid();
+                if (before == null || grid == null || grid.getCells().size() != 3)
+                    throw new IllegalStateException("Soft brow must retain its three native keys");
+                requireAxes(grid, Set.of("ParamBrow" + side + "Y"));
+                if (!Arrays.equals(before.getMesh().getPositions(), meshes.get(id).getMesh().getPositions()))
+                    throw new IllegalStateException("Soft brow changed its neutral mesh");
+                var originalGrid = before.getGeometryGrid();
+                for (var cell : grid.getCells()) {
+                    float key = grid.getAxes().getFirst().getKeys()[cell.getCoordinate()[0]];
+                    var original = originalGrid.getCells().stream().filter(candidate ->
+                        originalGrid.getAxes().getFirst().getKeys()[candidate.getCoordinate()[0]] == key).findFirst().orElseThrow();
+                    boolean same = Arrays.equals(original.getForm().getPositionDeltas(), cell.getForm().getPositionDeltas());
+                    if ((key <= 0) != same) throw new IllegalStateException("Soft brow must change only the positive key");
+                }
+            }
+            System.out.println("Soft brow verification: both neutral and negative keys preserved exactly; only positive inner corners lifted");
+        }
         var roles = new LinkedHashMap<String, String>();
         for (String side : List.of("L", "R")) {
             JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
