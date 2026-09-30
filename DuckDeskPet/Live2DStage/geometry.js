@@ -62,12 +62,16 @@
     const value = Math.max(0, Math.min(1, (surfaceY - 12 - handY) / 10));
     return value * value * (3 - 2 * value);
   }
-  function tear(eye, flow, side) {
-    const t = (flow + (side === "l" ? 0.5 : 0)) % 1,
-      direction = side === "l" ? 1 : -1;
+  function tear(eye, flow, side, amount = 1) {
+    const wave = Math.sin((flow + (side === "l" ? 0.5 : 0)) * Math.PI * 2);
     return {
-      rect: [eye.x - 4 + direction * t, eye.y + 1 + 12 * t, 8, 11],
-      opacity: 0.85 * Math.sin(Math.PI * t) ** 2,
+      rect: [
+        eye.x - 6 + (side === "l" ? 2 : -2),
+        eye.y,
+        12,
+        (24 + 1.5 * wave) * amount,
+      ],
+      opacity: 1,
     };
   }
   const api = { bindPoint, point, corners, heldRect, aboveDesk, tear };

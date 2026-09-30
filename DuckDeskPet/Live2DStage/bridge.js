@@ -73,7 +73,45 @@
       Math.min(1, ((clock.pausedAt ?? now) - clock.startedAt) / 120),
     );
   }
-  const api = { state, progress, align, equipmentKey, transitionProgress };
+  function neutralize(message, generation, previous, revision) {
+    if (
+      message?.protocol !== 1 ||
+      message.generation !== generation ||
+      message.type !== "neutralize"
+    )
+      throw new Error("Invalid neutralize protocol");
+    for (const name of ["requestId", "revision", "sequence"])
+      if (!Number.isSafeInteger(message[name]) || message[name] < 0)
+        throw new Error("Invalid neutralize " + name);
+    if (
+      !["Yawn", "Eat"].includes(message.kind) ||
+      typeof message.paused !== "boolean"
+    )
+      throw new Error("Invalid neutralize action");
+    for (const slot of ["desk", "computer", "outfit"])
+      if (typeof message.equipment?.[slot] !== "string")
+        throw new Error("Invalid neutralize equipment");
+    if (previous && message.requestId < previous.requestId) return null;
+    if (previous?.requestId === message.requestId) {
+      if (
+        ["revision", "sequence", "kind"].some(
+          (key) => message[key] !== previous[key],
+        ) ||
+        equipmentKey(message.equipment) !== equipmentKey(previous.equipment)
+      )
+        throw new Error("Neutralize request identity changed");
+      if (message.revision < revision) return null;
+    } else if (message.revision <= revision) return null;
+    return { ...message, equipment: { ...message.equipment } };
+  }
+  const api = {
+    state,
+    progress,
+    align,
+    equipmentKey,
+    transitionProgress,
+    neutralize,
+  };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else globalThis.EagleBridge = api;
 })();

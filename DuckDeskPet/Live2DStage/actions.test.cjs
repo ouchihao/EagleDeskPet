@@ -53,16 +53,36 @@ test("hanging hands cannot be copied above a desk they have not reached", () => 
   assert.equal(G.aboveDesk(250, 276), 1);
   assert.ok(G.aboveDesk(259, 276) > 0 && G.aboveDesk(259, 276) < 1);
 });
-test("small tears follow eye corners and return to a seamless loop phase", () => {
+test("T-T tear bands stay joined to eyelids with bounded length and seamless flow", () => {
   for (const side of ["l", "r"]) {
     const eye = { x: 150, y: 159 },
       a = G.tear(eye, 0.3, side),
       b = G.tear({ x: 157, y: 154 }, 0.3, side);
     assert.equal(b.rect[0] - a.rect[0], 7);
     assert.equal(b.rect[1] - a.rect[1], -5);
-    assert.deepEqual(a.rect.slice(2), [8, 11]);
-    assert.deepEqual(G.tear(eye, 0, side), G.tear(eye, 1, side));
+    assert.equal(a.rect[2], 12);
+    assert.equal(a.opacity, 1);
+    assert.equal(a.rect[1], eye.y);
+    assert.ok(a.rect[3] >= 22.5 && a.rect[3] <= 25.5);
+    assert.equal(G.tear(eye, 0.3, side, 0).rect[3], 0);
+    const first = G.tear(eye, 0, side),
+      last = G.tear(eye, 1, side);
+    first.rect.forEach((value, i) =>
+      assert.ok(Math.abs(value - last.rect[i]) < 1e-9),
+    );
   }
+});
+test("hungry T-T keeps both eyes closed and grows tears only after closure", () => {
+  for (let i = 0; i <= 480; i++) {
+    const p = i / 480,
+      loop = A.sample("HungryLoop", p),
+      enter = A.sample("HungryEnter", p);
+    assert.equal(loop.parameters.ParamEyeLOpen, 0);
+    assert.equal(loop.parameters.ParamEyeROpen, 0);
+    if (enter.props.tears > 0) assert.equal(enter.parameters.ParamEyeLOpen, 0);
+  }
+  assert.equal(A.sample("HungryExit", 0.2).parameters.ParamEyeLOpen, 0);
+  assert.equal(A.sample("HungryExit", 0.27).props.tears, 0);
 });
 test("a paused transition retains its elapsed blend time and resumes continuously", () => {
   const clock = { startedAt: 100 };
@@ -71,6 +91,41 @@ test("a paused transition retains its elapsed blend time and resumes continuousl
   assert.equal(B.transitionProgress(clock, 9130, true), 0.25);
   assert.equal(B.transitionProgress(clock, 9130, false), 0.25);
   assert.equal(B.transitionProgress(clock, 9160, false), 0.5);
+});
+test("neutral handoff rejects stale requests and preserves identity across pause updates", () => {
+  const request = {
+    type: "neutralize",
+    protocol: 1,
+    generation: 1,
+    requestId: 3,
+    revision: 10,
+    sequence: 7,
+    kind: "Eat",
+    paused: false,
+    equipment: {
+      desk: "desk.default",
+      computer: "computer.default",
+      outfit: "outfit.default",
+    },
+  };
+  const accepted = B.neutralize(request, 1, null, 9);
+  assert.notEqual(accepted.equipment, request.equipment);
+  assert.equal(
+    B.neutralize({ ...request, paused: true }, 1, accepted, 10).paused,
+    true,
+  );
+  assert.equal(
+    B.neutralize({ ...request, requestId: 2 }, 1, accepted, 10),
+    null,
+  );
+  assert.equal(B.neutralize(request, 1, accepted, 11), null);
+  assert.throws(() =>
+    B.neutralize({ ...request, sequence: 8 }, 1, accepted, 10),
+  );
+  assert.throws(() =>
+    B.neutralize({ ...request, kind: "WorkLoop" }, 1, null, 9),
+  );
+  assert.throws(() => B.neutralize(request, 2, null, 9));
 });
 test("all fourteen catalog actions and Idle have exact original durations", () => {
   assert.equal(Object.keys(A.durations).length, 15);

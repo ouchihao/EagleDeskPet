@@ -83,8 +83,8 @@
   };
   const hungryPose = {
     ParamAngleY: -8,
-    ParamEyeLOpen: 0.78,
-    ParamEyeROpen: 0.78,
+    ParamEyeLOpen: 0,
+    ParamEyeROpen: 0,
     ParamBrowLY: 0.8,
     ParamBrowRY: 0.8,
     ParamWingLLift: 0.3,
@@ -263,8 +263,6 @@
         q.ParamAngleZ = Math.sin(p * Math.PI * 2) * 2;
         q.ParamAngleY -= 1.5 * sniff;
         q.ParamBodySquash += 0.035 * sniff;
-        q.ParamEyeLOpen -= 0.13 * sniff;
-        q.ParamEyeROpen -= 0.13 * sniff;
         q.ParamBeakOpen += 0.06 * sniff;
         q.ParamWingLLift += 0.008 * sniff;
         q.ParamWingRLift += 0.008 * sniff;
@@ -274,9 +272,9 @@
         break;
       }
       case "HungryExit":
-        mix(q, hungryPose, 1 - ramp(p, 0.05, 0.62));
+        mix(q, hungryPose, 1 - ramp(p, 0.2, 0.7));
         props.bowl = 1 - ramp(p, 0.05, 0.43);
-        props.tears = 1 - ramp(p, 0, 0.3);
+        props.tears = 1 - ramp(p, 0, 0.27);
         break;
       case "Tea":
         props.tea = envelope(p, 0.03, 0.2, 0.81, 0.98);

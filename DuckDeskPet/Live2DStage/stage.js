@@ -50,7 +50,13 @@
     lastParameters,
     transitionFrom,
     transitionClock,
-    frozenParameters;
+    frozenParameters,
+    neutralizing,
+    neutralizeRequest,
+    bridgeRevision = -1,
+    rasterFrames = new Map(),
+    rasterFrame,
+    rasterPreparation = 0;
   const post = (message) => {
     if (globalThis.chrome?.webview)
       globalThis.chrome.webview.postMessage({
@@ -393,6 +399,7 @@
         2, "Missing semantic foreground hand drawables");
       this.handAnchors = {};
       this.eyeAnchors = {};
+      this.eyelids = {};
       this.foregroundSides = {};
       for (const side of ["r", "l"]) {
         this.handAnchors[side] = this.bindAttachment(
@@ -401,6 +408,10 @@
         this.eyeAnchors[side] = this.bindAttachment(
           bindings.eyeAttachments?.[side],
         );
+        this.eyelids[side] = this.model.drawables.ids.indexOf(
+          bindings.drawables?.["irides-" + side],
+        );
+        require(this.eyelids[side] >= 0, "Missing authored eyelid drawable");
         const names = ["forearm-" + side];
         this.foregroundSides[side] = new Set(
           names.map((name) =>
@@ -557,6 +568,24 @@
     eye(side) {
       return this.attachment(this.eyeAnchors[side]);
     }
+    eyelid(side) {
+      const vertices = this.model.drawables.vertexPositions[this.eyelids[side]],
+        c = this.model.canvasinfo;
+      let minX = Infinity,
+        maxX = -Infinity,
+        minY = Infinity,
+        maxY = -Infinity;
+      for (let i = 0; i < vertices.length; i += 2) {
+        minX = Math.min(minX, vertices[i]);
+        maxX = Math.max(maxX, vertices[i]);
+        minY = Math.min(minY, vertices[i + 1]);
+        maxY = Math.max(maxY, vertices[i + 1]);
+      }
+      return {
+        x: ((minX + maxX) / 2) * c.PixelsPerUnit + c.CanvasOriginX,
+        y: c.CanvasOriginY - ((minY + maxY) / 2) * c.PixelsPerUnit,
+      };
+    }
     release() {
       if (this.released) return;
       this.released = true;
@@ -611,24 +640,25 @@
   const extras = {};
   let fire = [];
   function decorations() {
-    for (const name of ["tears", "anger"]) {
+    for (const name of ["tears", "cryEye", "anger"]) {
       const source = document.createElement("canvas");
-      source.width = source.height = 64;
+      source.width = 64;
+      source.height = name === "cryEye" ? 8 : 64;
       const c = source.getContext("2d");
-      if (name === "tears") {
-        c.fillStyle = "#96d6ee";
-        c.strokeStyle = "#6db5d2";
-        c.lineWidth = 2;
+      if (name === "cryEye") {
+        c.fillStyle = "#433329";
         c.beginPath();
-        c.moveTo(32, 4);
-        c.bezierCurveTo(27, 20, 13, 34, 16, 45);
-        c.bezierCurveTo(20, 63, 47, 63, 49, 45);
-        c.bezierCurveTo(52, 34, 38, 19, 32, 4);
+        c.roundRect(0, 0, 64, 8, 4);
         c.fill();
-        c.stroke();
-        c.fillStyle = "#e0f9ff";
+      } else if (name === "tears") {
+        c.fillStyle = "#79c8ed";
         c.beginPath();
-        c.ellipse(26, 43, 4, 8, 0.25, 0, Math.PI * 2);
+        c.moveTo(0, 0);
+        c.lineTo(64, 0);
+        c.lineTo(64, 57);
+        c.quadraticCurveTo(64, 64, 32, 64);
+        c.quadraticCurveTo(0, 64, 0, 57);
+        c.closePath();
         c.fill();
       } else {
         c.strokeStyle = "#e84533";
@@ -663,11 +693,11 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      const image = { id, width: 64, height: 64 };
+      const image = { id, width: source.width, height: source.height };
       textures.set("decoration:" + name, Promise.resolve(image));
       extras[name] = {
         image,
-        rect: name === "tears" ? [0, 0, 8, 11] : [238, 112, 23, 23],
+        rect: name === "tears" ? [0, 0, 12, 24] : [238, 112, 23, 23],
       };
     }
   }
@@ -686,10 +716,29 @@
   function draw(now) {
     if (dead || !active || !current) return;
     const p = B.progress(current, receivedAt, now),
-      sample = A.sample(current.kind, p),
-      motion = A.scene(current.kind, p, scene),
+      sample = A.sample(
+        neutralizing ? "Idle" : current.kind,
+        neutralizing ? 0 : p,
+      ),
+      motion = A.scene(
+        neutralizing ? "Idle" : current.kind,
+        neutralizing ? 0 : p,
+        scene,
+      ),
       m = active.model;
-    if (transitionFrom && current.phase !== "Terminal") {
+    let neutralProgress = 0;
+    if (neutralizing) {
+      neutralProgress = B.transitionProgress(
+        neutralizing.clock,
+        now,
+        neutralizing.request.paused,
+      );
+      const blend = A.smooth(neutralProgress);
+      for (const id of Object.keys(sample.parameters))
+        sample.parameters[id] =
+          neutralizing.from[id] +
+          (sample.parameters[id] - neutralizing.from[id]) * blend;
+    } else if (transitionFrom && current.phase !== "Terminal") {
       const blend = A.smooth(
         B.transitionProgress(transitionClock, now, current.paused),
       );
@@ -700,7 +749,12 @@
             (sample.parameters[id] - transitionFrom[id]) * blend;
       if (blend === 1) transitionFrom = null;
     }
-    if (current.paused && current.phase !== "Terminal" && frozenParameters)
+    if (
+      !neutralizing &&
+      current.paused &&
+      current.phase !== "Terminal" &&
+      frozenParameters
+    )
       Object.assign(sample.parameters, frozenParameters);
     lastParameters = { ...sample.parameters };
     m.update(sample.parameters);
@@ -792,11 +846,17 @@
       );
     metrics.attachments = { left, right, bowlRect, teaRect };
     for (const side of ["r", "l"]) {
-      const tear = G.tear(m.eye(side), sample.props.tearFlow, side);
+      const eye = m.eyelid(side),
+        tear = G.tear(eye, sample.props.tearFlow, side, sample.props.tears);
       quad.draw(
         extras.tears.image,
         tear.rect,
         sample.props.tears * tear.opacity,
+      );
+      quad.draw(
+        extras.cryEye.image,
+        [eye.x - 10, eye.y - 1.5, 20, 3],
+        sample.props.tears,
       );
     }
     extra(
@@ -815,6 +875,25 @@
     if (error !== gl.NO_ERROR) metrics.glErrors.push(error);
     require(error === gl.NO_ERROR, "WebGL frame failed: " + error);
     metrics.frames++;
+    drawRecordingFrame();
+    if (neutralizing) {
+      if (neutralProgress === 1 && !neutralizing.acknowledged) {
+        neutralizing.firstFrame ??= frameSerial;
+        if (frameSerial - neutralizing.firstFrame >= 2) {
+          neutralizing.acknowledged = true;
+          const request = neutralizing.request;
+          post({
+            type: "neutralized",
+            requestId: request.requestId,
+            revision: request.revision,
+            sequence: request.sequence,
+            kind: request.kind,
+            equipment: { ...request.equipment },
+          });
+        }
+      }
+      return;
+    }
     const key = B.equipmentKey(active.equipment);
     if (presentedKey !== key) {
       if (presentedCandidate?.key !== key)
@@ -867,6 +946,51 @@
     if (dead) return;
     require(message?.protocol === 1 &&
       message.generation === generation, "Message generation mismatch");
+    if (message.type === "record-raster-frame") {
+      if (!rasterFrames.size) return;
+      if (message.key === null) rasterFrame = null;
+      else {
+        require(Number.isSafeInteger(message.index) &&
+          message.index >= 0, "Invalid recorded raster frame index");
+        const frames = rasterFrames.get(message.key);
+        require(frames &&
+          message.index < frames.length, "Unknown recorded raster frame");
+        rasterFrame = frames[message.index];
+      }
+      draw(performance.now());
+      return;
+    }
+    if (message.type === "neutralize") {
+      const next = B.neutralize(
+        message,
+        generation,
+        neutralizeRequest,
+        bridgeRevision,
+      );
+      if (!next) return;
+      require(active &&
+        current &&
+        B.equipmentKey(next.equipment) ===
+          B.equipmentKey(
+            active.equipment,
+          ), "Neutralize requires the currently presented equipment");
+      const now = performance.now();
+      if (neutralizing?.request.requestId === next.requestId) {
+        B.transitionProgress(neutralizing.clock, now, next.paused);
+        neutralizing.request = next;
+      } else {
+        neutralizing = {
+          request: next,
+          from: { ...(lastParameters ?? A.neutral()) },
+          clock: { startedAt: now, pausedAt: next.paused ? now : undefined },
+        };
+      }
+      neutralizeRequest = next;
+      bridgeRevision = next.revision;
+      terminalCandidate = null;
+      draw(now);
+      return;
+    }
     if (message.type === "prepare") {
       const revision = ++prepareRevision;
       try {
@@ -887,12 +1011,12 @@
       return;
     }
     if (message.type !== "state") return;
-    let next = B.state(message, generation, current);
+    let next = B.state(message, generation, { revision: bridgeRevision });
     if (!next) return;
     const pending = prepared.get(B.equipmentKey(next.equipment));
     require(pending, "State attempted unprepared equipment");
     const selection = await pending;
-    if (current && next.revision <= current.revision) return;
+    if (next.revision <= bridgeRevision) return;
     const now = performance.now();
     next = B.align(next, current, receivedAt, now);
     const changed =
@@ -908,6 +1032,8 @@
       transitionClock = { startedAt: now };
     }
     active = selection;
+    neutralizing = null;
+    bridgeRevision = next.revision;
     current = next;
     receivedAt = now;
     draw(receivedAt);
@@ -947,7 +1073,10 @@
       MediaRecorder.isTypeSupported(
         "video/webm;codecs=vp9",
       ), "WebM capture is unavailable");
-    const stream = canvas.captureStream(fps),
+    const surface = document.createElement("canvas");
+    surface.width = canvas.width;
+    surface.height = canvas.height;
+    const stream = surface.captureStream(fps),
       chunks = [],
       recorder = new MediaRecorder(stream, {
         mimeType: "video/webm;codecs=vp9",
@@ -980,12 +1109,69 @@
       };
     });
     recorder.start(1000);
-    recording = { recorder, done };
+    recording = { recorder, done, surface, context: surface.getContext("2d") };
+    draw(performance.now());
+  }
+  async function prepareRasterRecording(sources) {
+    require(!recording, "Prepare raster recording before capture starts");
+    const preparation = ++rasterPreparation,
+      result = new Map();
+    let count = 0,
+      pixels = 0;
+    rasterFrames = new Map();
+    rasterFrame = null;
+    for (const [key, urls] of Object.entries(sources)) {
+      require(["Idle", "Yawn", "Eat"].includes(key) &&
+        Array.isArray(urls), "Invalid raster recording clip");
+      count += urls.length;
+      require(count <= 512, "Raster recording frame limit exceeded");
+      const frames = [];
+      for (const url of urls) {
+        require(typeof url === "string" &&
+          url.startsWith("data:image/png;base64,") &&
+          url.length <=
+            2 *
+              1024 *
+              1024, "Only bounded local PNG snapshots can be recorded");
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        pixels += image.width * image.height;
+        require(pixels <=
+          32 * 1024 * 1024, "Raster recording decoded memory limit exceeded");
+        frames.push(image);
+      }
+      result.set(key, frames);
+    }
+    if (preparation === rasterPreparation) rasterFrames = result;
+    return { clips: [...result.keys()], frames: count };
+  }
+  function drawRecordingFrame() {
+    if (!recording) return;
+    const { surface, context } = recording,
+      image = rasterFrame || canvas,
+      scale = Math.min(
+        surface.width / image.width,
+        surface.height / image.height,
+      ),
+      width = image.width * scale,
+      height = image.height * scale;
+    context.clearRect(0, 0, surface.width, surface.height);
+    context.drawImage(
+      image,
+      (surface.width - width) / 2,
+      (surface.height - height) / 2,
+      width,
+      height,
+    );
   }
   async function recordStop() {
     require(recording, "No recording");
     const saved = recording;
     recording = null;
+    rasterFrames = new Map();
+    rasterFrame = null;
+    rasterPreparation++;
     if (saved.recorder.state === "recording") saved.recorder.stop();
     return saved.done;
   }
@@ -1122,6 +1308,18 @@
         ? B.progress(current, receivedAt, performance.now())
         : null,
       lastSequence: current?.sequence,
+      parameters: lastParameters ? { ...lastParameters } : null,
+      recordingSurface: recording ? (rasterFrame ? "Png" : "Live2D") : null,
+      rasterFramesPrepared: [...rasterFrames.values()].reduce(
+        (count, frames) => count + frames.length,
+        0,
+      ),
+      neutralizing: neutralizing
+        ? {
+            requestId: neutralizing.request.requestId,
+            acknowledged: !!neutralizing.acknowledged,
+          }
+        : null,
       renderer: "Official Cubism Core / Framework WebGL",
       note: "rAF callbacks and video capture rate are not physical display Present measurements",
     });
@@ -1138,6 +1336,7 @@
       },
       beginRecording: recordStart,
       finishRecording: recordStop,
+      prepareRasterRecording,
     };
     raf = requestAnimationFrame(loop);
   }
