@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import io.github.psd2live.core.PSD2LivePipeline;
 import io.github.psd2live.core.PipelineConfig;
 import kotlinx.serialization.json.*;
@@ -68,19 +69,25 @@ public final class ExportPsdModelSelfTest {
             }
         }
         if (parsedProfile.containsKey("fullBody")) {
-            int actionMeshes = ((JsonObject) parsedProfile.get("fullBody")).containsKey("busyEyes") ? 17 : 13;
+            int actionMeshes = ((JsonObject) parsedProfile.get("fullBody")).containsKey("busyEyes") ? 14 : 10;
             if (!validation.contains("\"fullBodyRig\": true") || !validation.contains("\"actionBoundMeshes\": " + actionMeshes))
                 throw new AssertionError("Missing full-body mesh authoring assertions");
             JsonObject bindings = (JsonObject) Json.Default.parseToJsonElement(Files.readString(validOutput.resolve("action-bindings.json")));
-            if (((JsonArray) bindings.get("foregroundDrawableIds")).size() != 5)
-                throw new AssertionError("Desk foreground must name the two forearms and three hand shapes");
-            mark("full-body mesh movement, rest geometry, jaw shapes, hand opacity and foreground bindings verified");
+            if (((JsonArray) bindings.get("foregroundDrawableIds")).size() != 2)
+                throw new AssertionError("Desk foreground must name exactly the two forearms");
+            if (((JsonArray) bindings.get("parameters")).size() != 27)
+                throw new AssertionError("Core actions require exactly 27 parameters");
+            if (bindings.toString().contains("ParamHand") || bindings.toString().contains("rps-"))
+                throw new AssertionError("Removed gesture parameters and meshes must not survive authoring");
+            JsonObject attachments = (JsonObject) bindings.get("handAttachments");
+            if (!attachments.keySet().equals(Set.of("l", "r")))
+                throw new AssertionError("Both prop attachment points must survive authoring");
+            mark("full-body mesh movement, rest geometry, jaw shapes, two prop attachments and foreground bindings verified");
             reject(input, evidence, "wing-empty-layers", change(validProfile, "fullBody.leftWing", "layers", "[]"), "Wing layers must not be empty");
             reject(input, evidence, "wing-pivot-above-root", change(validProfile, "fullBody.leftWing", "pivotY", "190"), "wing pivotY must be in");
             reject(input, evidence, "elbow-above-shoulder", change(validProfile, "fullBody.leftWing", "elbowY", "210"), "elbowY must be in");
             reject(input, evidence, "beak-gap-disabled", change(validProfile, "fullBody.beak", "gapPx", "0"), "beak gapPx must be in");
             reject(input, evidence, "foreground-missing", change(validProfile, "fullBody", "foregroundLayers", "[\"absent-part\"]"), "Foreground layer must resolve");
-            reject(input, evidence, "wrist-taper-inverted", change(validProfile, "fullBody.handConnection", "taperStartY", "280"), "wristY must be in");
             reject(input, evidence, "attachment-missing", change(validProfile, "fullBody", "handAttachments", "{\"r\":{\"layer\":\"absent-part\",\"source\":[140,286]}}"), "Attachment layer is not an authored action mesh");
             reject(input, evidence, "unbound-forearm", replace(validProfile,
                 "\"name\": \"forearm-r\", \"semanticTag\": \"HANDWEAR\", \"side\": \"RIGHT\", \"parentDeformer\": \"DeformBodyZBreath\"",

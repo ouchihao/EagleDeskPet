@@ -327,22 +327,10 @@ public final class ExportPsdModel {
 
     private static RigEditOverlay authorFullBody(RigEditOverlay edits, BuiltRig rig, PipelineAnalysis analysis,
             JsonObject settings, Map<String, String> bindings) throws Exception {
-        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "hands", "busyEyes", "foregroundLayers", "handConnection", "handAttachments"));
+        keys(settings, Set.of("leftWing", "rightWing", "wingRootY", "bodyGroundY", "beak", "busyEyes", "foregroundLayers", "handAttachments"));
         int width = analysis.getSource().getWidthPx(), height = analysis.getSource().getHeightPx();
         float rootY = boundedNumber(settings.get("wingRootY"), "wingRootY", 0, height);
         float groundY = boundedNumber(settings.get("bodyGroundY"), "bodyGroundY", 1, height);
-        JsonObject connection = settings.containsKey("handConnection") ? object(settings.get("handConnection"), "handConnection") : null;
-        String morphForearm = null;
-        if (connection != null) {
-            keys(connection, Set.of("forearm", "wristX", "wristY", "tipY", "taperStartY", "wristFlexDegrees"));
-            morphForearm = string(connection.get("forearm"), "morph forearm");
-            float start = boundedNumber(connection.get("taperStartY"), "taperStartY", rootY + 1, height);
-            float wrist = boundedNumber(connection.get("wristY"), "wristY", start + 1, height);
-            boundedNumber(connection.get("wristX"), "wristX", 0, width);
-            boundedNumber(connection.get("tipY"), "tipY", wrist + 1, height);
-            boundedNumber(connection.get("wristFlexDegrees"), "wristFlexDegrees", 0, 75);
-            edits = parameter(edits, "ParamHandMorph", 0, 1);
-        }
         for (String side : List.of("L", "R")) {
             JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
             keys(wing, Set.of("layers", "pivotX", "pivotY", "elbowX", "elbowY", "foldDegrees"));
@@ -356,8 +344,7 @@ public final class ExportPsdModel {
             for (JsonElement item : array(wing.get("layers"), "wing layers")) {
                 String layer = string(item, "wing layer");
                 MeshSpace mesh = meshSpace(layer, rig, analysis, bindings);
-                edits = wingKeys(edits, mesh, side, pivotX, pivotY, rootY, false, 0, 0, null,
-                    layer.equals(morphForearm) ? connection : null, elbowX, elbowY, foldDegrees);
+                edits = wingKeys(edits, mesh, side, pivotX, pivotY, rootY, elbowX, elbowY, foldDegrees);
             }
         }
         edits = parameter(edits, "ParamBodySquash", -1, 1);
@@ -379,26 +366,6 @@ public final class ExportPsdModel {
                 new RigKeyformGeometryEdit(points, null, null, null, null, null), null));
         }
         if (settings.containsKey("beak")) edits = authorBeak(edits, rig, analysis, object(settings.get("beak"), "beak"), bindings);
-        if (settings.containsKey("hands")) {
-            JsonObject wing = object(settings.get("rightWing"), "rightWing");
-            float pivotX = boundedNumber(wing.get("pivotX"), "wing pivotX", 0, width);
-            float pivotY = boundedNumber(wing.get("pivotY"), "wing pivotY", rootY + 1, height);
-            float elbowX = boundedNumber(wing.get("elbowX"), "elbowX", 0, width);
-            float elbowY = boundedNumber(wing.get("elbowY"), "elbowY", pivotY + 4, height);
-            float foldDegrees = boundedNumber(wing.get("foldDegrees"), "foldDegrees", 10, 130);
-            for (JsonElement item : array(settings.get("hands"), "hands")) {
-                JsonObject hand = object(item, "hand");
-                keys(hand, Set.of("layer", "parameter", "wristX", "wristY"));
-                String layer = string(hand.get("layer"), "hand layer"), parameter = string(hand.get("parameter"), "hand parameter");
-                float wristX = boundedNumber(hand.get("wristX"), "wristX", 0, width);
-                float wristY = boundedNumber(hand.get("wristY"), "wristY", pivotY, height);
-                MeshSpace mesh = meshSpace(layer, rig, analysis, bindings);
-                edits = parameter(edits, parameter, 0, 1);
-                edits = wingKeys(edits, mesh, "R", pivotX, pivotY, rootY, true, wristX, wristY, parameter, connection, elbowX, elbowY, foldDegrees);
-                for (float value : new float[] {0, 0.15f, 0.35f, 1})
-                    edits = opacity(edits, mesh.id(), parameter, value, Math.max(0, Math.min(1, (value - 0.15f) / 0.20f)));
-            }
-        }
         if (settings.containsKey("busyEyes")) {
             edits = parameter(edits, "ParamBusyEyes", 0, 1);
             for (JsonElement item : array(settings.get("busyEyes"), "busyEyes")) {
@@ -443,7 +410,6 @@ public final class ExportPsdModel {
         for (Drawable drawable : rig.getPuppet().getDrawables())
             meshes.put(mangledString(drawable, Drawable.class, "getId-"), drawable);
         var roles = new LinkedHashMap<String, String>();
-        var handParameters = new HashMap<String, String>();
         for (String side : List.of("L", "R")) {
             JsonObject wing = object(settings.get(side.equals("L") ? "leftWing" : "rightWing"), "wing");
             if (array(wing.get("layers"), "wing layers").isEmpty()) throw new IllegalArgumentException("Wing layers must not be empty");
@@ -466,35 +432,14 @@ public final class ExportPsdModel {
             if (source.size() != 2) throw new IllegalArgumentException("Attachment source must contain x/y");
             for (var coordinate : source) boundedNumber(coordinate, "attachment coordinate", 0, 10000);
         }
-        if (settings.containsKey("hands")) for (JsonElement item : array(settings.get("hands"), "hands")) {
-            JsonObject hand = object(item, "hand");
-            String layer = string(hand.get("layer"), "hand layer");
-            roles.put(layer, "R");
-            handParameters.put(layer, string(hand.get("parameter"), "hand parameter"));
-            Drawable mesh = meshes.get(bindings.get(layer));
-            var opacity = mesh.getChannelGrids().get(FormChannel.OPACITY);
-            if (opacity == null) throw new IllegalStateException("Hand is missing opacity keyforms: " + layer);
-            requireAxes(opacity, Set.of(string(hand.get("parameter"), "hand parameter")));
-            for (var cell : opacity.getCells()) {
-                float key = opacity.getAxes().getFirst().getKeys()[cell.getCoordinate()[0]];
-                float expected = Math.max(0, Math.min(1, (key - 0.15f) / 0.20f));
-                if (!(cell.getForm() instanceof ChannelValue.Scalar value) || Math.abs(value.getValue() - expected) > 0.0001f)
-                    throw new IllegalStateException("Hand opacity must follow its authored parameter: " + layer);
-            }
-        }
         for (var role : roles.entrySet()) {
             Drawable mesh = meshes.get(bindings.get(role.getKey()));
             var grid = mesh.getGeometryGrid();
             if (!"DeformBodyZBreath".equals(mangledString(mesh, Drawable.class, "getParentDeformerId-")))
                 throw new IllegalStateException("Action wing must share the body coordinate frame: " + role.getKey());
             if (grid == null) throw new IllegalStateException("Missing wing geometry keyforms: " + role.getKey());
-            var axes = new HashSet<>(Set.of("ParamWing" + role.getValue() + "Lift", "ParamWing" + role.getValue() + "Swing", "ParamWing" + role.getValue() + "Fold"));
-            boolean hand = handParameters.containsKey(role.getKey());
-            if (hand) axes.add(handParameters.get(role.getKey()));
-            boolean morph = settings.containsKey("handConnection") && role.getKey().equals(string(object(settings.get("handConnection"), "handConnection").get("forearm"), "morph forearm"));
-            if (morph) axes.add("ParamHandMorph");
-            requireAxes(grid, axes);
-            if (grid.getCells().size() != (hand || morph ? 270 : 45) || grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
+            requireAxes(grid, Set.of("ParamWing" + role.getValue() + "Lift", "ParamWing" + role.getValue() + "Swing", "ParamWing" + role.getValue() + "Fold"));
+            if (grid.getCells().size() != 45 || grid.getCells().stream().allMatch(cell -> allZero(cell.getForm().getPositionDeltas())))
                 throw new IllegalStateException("Wing must retain its complete moving keyform grid: " + role.getKey());
             var rest = grid.getCells().stream().filter(cell -> neutral(grid, cell.getCoordinate())).findFirst().orElseThrow();
             if (!allZero(rest.getForm().getPositionDeltas())) throw new IllegalStateException("Wing neutral geometry changed: " + role.getKey());
@@ -529,7 +474,7 @@ public final class ExportPsdModel {
                 }
             }
         }
-        System.out.println("Full-body verification: seven moving wing/hand meshes, neutral geometry unchanged, real jaw geometry and hand opacity tracks");
+        System.out.println("Full-body verification: four moving wing meshes, neutral geometry unchanged, real jaw geometry and prop attachments");
     }
 
     private static MeshSpace meshSpace(String name, BuiltRig rig, PipelineAnalysis analysis, Map<String, String> bindings) throws Exception {
@@ -574,36 +519,15 @@ public final class ExportPsdModel {
     }
 
     private static RigEditOverlay wingKeys(RigEditOverlay edits, MeshSpace mesh, String side, float pivotX, float pivotY,
-            float rootY, boolean hand, float wristX, float wristY, String handParameter, JsonObject connection,
-            float elbowX, float elbowY, float foldDegrees) {
+            float rootY, float elbowX, float elbowY, float foldDegrees) {
         float maxMotion = 0;
-        boolean morph = !hand && connection != null;
-        float jointX = connection == null ? wristX : boundedNumber(connection.get("wristX"), "wristX", 0, 10000);
-        float jointY = connection == null ? wristY : boundedNumber(connection.get("wristY"), "wristY", 0, 10000);
-        float tipY = connection == null ? wristY : boundedNumber(connection.get("tipY"), "tipY", 0, 10000);
-        float taperStart = connection == null ? wristY : boundedNumber(connection.get("taperStartY"), "taperStartY", 0, 10000);
-        float flex = connection == null ? 0 : boundedNumber(connection.get("wristFlexDegrees"), "wristFlexDegrees", 0, 75);
-        for (float spread : hand || morph ? new float[] {0, 0.15f, 0.25f, 0.35f, 0.65f, 1} : new float[] {0})
         for (float lift : new float[] {0, 0.25f, 0.5f, 0.75f, 1})
             for (float swing : new float[] {-1, 0, 1}) for (float fold : new float[] {0, 0.5f, 1}) {
                 var delta = new ArrayList<Float>(mesh.positions().length);
-                float wristMorph = smoothStep(spread / 0.35f);
-                float targetWristY = hand && connection != null && spread != 0 ? tipY + (jointY - tipY) * wristMorph - 4f : wristY;
-                float[] wrist = wingPoint(wristX, targetWristY, side, pivotX, pivotY, rootY, lift, swing, fold, elbowX, elbowY, foldDegrees);
-                double wristAngle = Math.toRadians(connection == null ? (side.equals("L") ? 1 : -1) * (15 * lift + 6 * swing) :
-                    180 + (side.equals("L") ? 1 : -1) * (105 * lift + 25 * swing + foldDegrees * fold + flex * spread));
-                float width = spread == 0 ? 1 : 0.18f + 0.82f * smoothStep(spread);
-                float height = spread == 0 ? 1 : 0.86f + 0.14f * smoothStep(spread);
                 for (int i = 0; i < mesh.positions().length; i += 2) {
                     float x = mesh.x(i), y = mesh.y(i);
-                    float taper = morph ? smoothStep((y - taperStart) / (tipY - taperStart)) * wristMorph : 0;
-                    float armX = jointX + (x - jointX) * (1 - 0.90f * taper);
-                    float armY = y + (jointY - tipY) * taper;
-                    float[] target = hand ? new float[] {
-                        wrist[0] + (float) ((x - wristX) * width * Math.cos(wristAngle) - (y - wristY) * height * Math.sin(wristAngle)),
-                        wrist[1] + (float) ((x - wristX) * width * Math.sin(wristAngle) + (y - wristY) * height * Math.cos(wristAngle))
-                    } : wingPoint(morph ? armX : x, morph ? armY : y, side, pivotX, pivotY, rootY, lift, swing, fold, elbowX, elbowY, foldDegrees);
-                    boolean rest = lift == 0 && swing == 0 && fold == 0 && (!(hand || morph) || spread == 0);
+                    float[] target = wingPoint(x, y, side, pivotX, pivotY, rootY, lift, swing, fold, elbowX, elbowY, foldDegrees);
+                    boolean rest = lift == 0 && swing == 0 && fold == 0;
                     float dx = rest ? 0 : (target[0] - x) / mesh.scaleX();
                     float dy = rest ? 0 : (target[1] - y) / mesh.scaleY();
                     delta.add(dx); delta.add(dy);
@@ -613,13 +537,11 @@ public final class ExportPsdModel {
                 pose.put("ParamWing" + side + "Lift", lift);
                 pose.put("ParamWing" + side + "Swing", swing);
                 pose.put("ParamWing" + side + "Fold", fold);
-                if (hand) pose.put(handParameter, spread);
-                if (morph) pose.put("ParamHandMorph", spread);
                 edits = edits.setKeyform(new RigKeyformSetEdit(new RigTargetRef(RigTargetKind.ART_MESH, mesh.id(), null), pose,
                     new RigKeyformGeometryEdit(null, null, null, null, null, delta), null));
             }
         if (maxMotion < 5) throw new IllegalStateException("Wing binding has no usable movement: " + mesh.id());
-        System.out.printf(Locale.ROOT, "Authored wing mesh: %s side=%s hand=%s morph=%s keyforms=%d max-motion=%.2f px%n", mesh.id(), side, hand, morph, hand || morph ? 270 : 45, maxMotion);
+        System.out.printf(Locale.ROOT, "Authored wing mesh: %s side=%s keyforms=45 max-motion=%.2f px%n", mesh.id(), side, maxMotion);
         return edits;
     }
 
