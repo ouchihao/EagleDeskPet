@@ -29,12 +29,12 @@ test('all six outfit sources share the native canvas and real articulated body /
   for (const { psd, bytes, variant } of variants.values()) {
     assert.equal(psd.width, 384); assert.equal(psd.height, 346);
     assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), variant.psdSha256);
-    for (const name of ['handwear-l', 'handwear-r', 'forearm-l', 'forearm-r', 'beak-upper', 'beak-lower', 'beak-inner', 'rps-rock', 'rps-paper', 'rps-scissors'])
+    for (const name of ['handwear-l', 'handwear-r', 'forearm-l', 'forearm-r', 'beak-upper', 'beak-lower', 'beak-inner', 'rps-rock', 'rps-paper', 'rps-scissors', 'busy-eye-l', 'busy-eye-r'])
       assert.ok(psd.children.some(layer => layer.name === name), name);
   }
 });
 test('new mouth and hand artwork starts at zero opacity without being hidden or empty', () => {
-  for (const { psd } of variants.values()) for (const child of psd.children.filter(x => /^(beak-|rps-)/.test(x.name))) {
+  for (const { psd } of variants.values()) for (const child of psd.children.filter(x => /^(beak-|rps-|busy-eye-)/.test(x.name))) {
     assert.equal(child.opacity, 0); assert.notEqual(child.hidden, true);
     assert.ok(child.imageData.data.some((n, index) => index % 4 === 3 && n > 200));
   }
@@ -42,12 +42,23 @@ test('new mouth and hand artwork starts at zero opacity without being hidden or 
 test('upper-arm / forearm overlap is opaque-only and no lower arm sits behind the face', () => {
   for (const { psd } of variants.values()) for (const side of ['l', 'r']) {
     const upper = psd.children.find(x => x.name === 'handwear-' + side), lower = psd.children.find(x => x.name === 'forearm-' + side);
-    assert.equal(upper.top + upper.imageData.height, 246); assert.equal(lower.top, 242);
+    assert.equal(upper.top + upper.imageData.height, 254); assert.equal(lower.top, 242);
     assert.ok(psd.children.indexOf(lower) > psd.children.findIndex(x => x.name === 'face'));
-    for (let y = 0; y < 4; y++) for (let x = 0; x < lower.imageData.width; x++) {
+    assert.ok(psd.children.indexOf(lower) > psd.children.findIndex(x => x.name === 'beak-upper'));
+    for (let y = 0; y < 12; y++) for (let x = 0; x < lower.imageData.width; x++) {
       const alpha = lower.imageData.data[(y * lower.imageData.width + x) * 4 + 3];
       assert.ok(alpha === 0 || alpha === 255);
     }
+  }
+});
+test('the stationary torso does not retain the moving wing silhouette', () => {
+  for (const { psd } of variants.values()) {
+    const torso = psd.children.find(x => x.name === 'topwear');
+    const alpha = (x, y) => torso.imageData.data[((y - torso.top) * torso.imageData.width + x - torso.left) * 4 + 3];
+    assert.equal(alpha(117, 260), 0);
+    assert.equal(alpha(267, 260), 0);
+    assert.equal(alpha(192, 260), 255);
+    assert.ok(alpha(140, 212) >= 254);
   }
 });
 test('default neutral preserves every visible original pixel after authoring', async () => {

@@ -40,18 +40,67 @@ const partsLayout = [
 async function partLayer(name, crop, placement) {
   const [left, top, width, height] = placement;
   const rgba = await sharp(parts).extract({ left: crop[0], top: crop[1], width: crop[2], height: crop[3] })
-    .resize(width, height).ensureAlpha().raw().toBuffer();
+    .resize(width, height, { fit: 'fill' }).ensureAlpha().raw().toBuffer();
   return { name, left, top, opacity: 0, hidden: false, imageData: { width, height, data: new Uint8ClampedArray(rgba) } };
 }
 const actionLayers = await Promise.all(partsLayout.map(args => partLayer(...args)));
+const busyReference = await sharp(await read('DuckDeskPet/Assets/Animations/BusyLoop/frame-0000.png')).ensureAlpha().raw().toBuffer();
+const busyEyes = [];
+for (const [name, sx, targetX, right] of [['busy-eye-r', 143, 152, false], ['busy-eye-l', 205, 215, true]]) {
+  const width = 32, height = 24, top = 154, pixels = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    // Follow the original slanted lid, excluding the eyebrow and surrounding white face
+    const upperEdge = right ? 10 - x * .34 : 1 + x * .34;
+    if (y < upperEdge || y > 23) continue;
+    const s = ((top + y) * canvas.width + sx + x) * 4, d = (y * width + x) * 4;
+    const minimum = Math.min(...busyReference.subarray(s, s + 3));
+    if (minimum > 232) continue;
+    const alpha = Math.min(1, (255 - minimum) / 220);
+    for (let c = 0; c < 3; c++) pixels[d + c] = Math.max(0, Math.round((busyReference[s + c] - 255 * (1 - alpha)) / alpha));
+    pixels[d + 3] = Math.round(alpha * 255);
+  }
+  busyEyes.push({ name, left: targetX, top: 141, opacity: 0, hidden: false,
+    imageData: { width, height, data: new Uint8ClampedArray(pixels) } });
+}
 const extras = {};
 await fs.mkdir(path.join(output, 'props'));
+function cleanPropAlpha(data, width, height) {
+  const mask = new Uint8Array(width * height), seen = new Uint8Array(mask.length);
+  for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+    let solid = true;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+      solid &&= data[((y + dy) * width + x + dx) * 4 + 3] >= 224;
+    mask[y * width + x] = Number(solid);
+  }
+  let largest = [];
+  for (let start = 0; start < mask.length; start++) {
+    if (!mask[start] || seen[start]) continue;
+    const component = [start]; seen[start] = 1;
+    for (let i = 0; i < component.length; i++) {
+      const p = component[i], x = p % width, y = Math.floor(p / width);
+      for (const n of [x > 0 ? p - 1 : -1, x + 1 < width ? p + 1 : -1, y > 0 ? p - width : -1, y + 1 < height ? p + width : -1]) {
+        if (n >= 0 && mask[n] && !seen[n]) { seen[n] = 1; component.push(n); }
+      }
+    }
+    if (component.length > largest.length) largest = component;
+  }
+  const keep = new Uint8Array(mask.length);
+  for (const p of largest) {
+    const x = p % width, y = Math.floor(p / width);
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (x + dx >= 0 && x + dx < width && y + dy >= 0 && y + dy < height) keep[(y + dy) * width + x + dx] = 1;
+    }
+  }
+  for (let p = 0; p < mask.length; p++) if (!keep[p]) data.fill(0, p * 4, p * 4 + 4);
+  return data;
+}
 for (const [name, crop, rect] of [
   ['bowlFull', [54, 905, 334, 257], [158, 229, 79, 60]],
   ['bowlEmpty', [463, 932, 333, 230], [158, 235, 79, 54]],
   ['tea', [897, 912, 319, 254], [165, 192, 51, 41]],
 ]) {
-  await sharp(parts).extract({ left: crop[0], top: crop[1], width: crop[2], height: crop[3] }).png().toFile(path.join(output, 'props', name + '.png'));
+  const pixels = await sharp(parts).extract({ left: crop[0], top: crop[1], width: crop[2], height: crop[3] }).ensureAlpha().raw().toBuffer();
+  await sharp(cleanPropAlpha(pixels, crop[2], crop[3]), { raw: { width: crop[2], height: crop[3], channels: 4 } }).png().toFile(path.join(output, 'props', name + '.png'));
   extras[name] = { url: `props/${name}.png`, rect };
 }
 
@@ -137,6 +186,37 @@ function compositeLayers(children) {
   }
   return result;
 }
+function separateTorso(children) {
+  const body = children.find(x => x.name === 'topwear'), b = body.imageData;
+  const contours = [[222, 124], [240, 128], [260, 126], [278, 129], [290, 133], [295, 132]];
+  for (const side of ['r', 'l']) {
+    const wing = children.find(x => x.name === 'handwear-' + side), w = wing.imageData;
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) {
+      const wx = wing.left + x, wy = wing.top + y, p = (y * w.width + x) * 4;
+      if (wy < 222 || wy >= 295 || !w.data[p + 3]) continue;
+      const segment = contours.findIndex((point, i) => i < contours.length - 1 && wy >= point[0] && wy < contours[i + 1][0]);
+      const [ay, ax] = contours[segment], [by, bx] = contours[segment + 1], t = (wy - ay) / (by - ay);
+      const edge = ax + (bx - ax) * t * t * (3 - 2 * t);
+      const bi = ((wy - body.top) * b.width + wx - body.left) * 4;
+      if (wx < body.left || wx >= body.left + b.width || !b.data[bi + 3]) continue;
+      const outside = wx < edge || wx > canvas.width - edge;
+      // Move the old occluded wing silhouette into its moving layer, including its antialiased outline
+      const a = w.data[p + 3] / 255, behind = b.data[bi + 3] / 255, alpha = a + behind * (1 - a);
+      if (outside || b.data[bi + 3] === 255) {
+        for (let c = 0; c < 3; c++) w.data[p + c] = Math.round((w.data[p + c] * a + b.data[bi + c] * behind * (1 - a)) / alpha);
+        w.data[p + 3] = Math.round(alpha * 255);
+      }
+      if (outside) b.data[bi + 3] = 0;
+      else if (w.data[p + 3] === 255) {
+        // Extend clean torso paint beneath the moving arm, never retain its old crease or feather outline
+        const cleanX = side === 'r' ? 172 : 211, clean = ((wy - body.top) * b.width + cleanX - body.left) * 4;
+        const distance = Math.min(wx - edge, canvas.width - edge - wx);
+        const outline = Math.max(0, 1 - distance / 2.2);
+        for (let c = 0; c < 3; c++) b.data[bi + c] = Math.round(b.data[clean + c] * (1 - outline * .34));
+      }
+    }
+  }
+}
 const variants = [];
 for (const outfit of ['default', 'office', 'hoodie', 'ox', 'hero', 'astronaut']) {
   const children = structuredClone(canonical.children);
@@ -167,22 +247,28 @@ for (const outfit of ['default', 'office', 'hoodie', 'ox', 'hero', 'astronaut'])
       }
     }
   }
+  separateTorso(children);
   // Keep the shoulder root behind the head and place the articulated forearm in front
+  const forearms = [];
   for (const side of ['r', 'l']) {
     const upper = children.find(child => child.name === 'handwear-' + side);
-    const { width, height, data } = upper.imageData, splitY = 242, overlapEndY = 246;
+    const { width, height, data } = upper.imageData, splitY = 242, overlapEndY = 254;
     const lowerTop = Math.max(splitY, upper.top), lowerHeight = upper.top + height - lowerTop;
     const lower = Buffer.alloc(width * lowerHeight * 4);
     for (let y = 0; y < lowerHeight; y++) for (let x = 0; x < width; x++) {
       const source = ((lowerTop - upper.top + y) * width + x) * 4, target = (y * width + x) * 4;
-      if (lowerTop + y >= overlapEndY || data[source + 3] === 255)
+      const nx = (x - (width - 1) / 2) / (width / 2), cap = 12 * (1 - Math.sqrt(Math.max(0, 1 - nx * nx)));
+      if (lowerTop + y >= overlapEndY || y >= cap && data[source + 3] === 255)
         lower.set(data.subarray(source, source + 4), target);
     }
     upper.imageData = { width, height: overlapEndY - upper.top, data: data.slice(0, width * (overlapEndY - upper.top) * 4) };
-    children.push({ name: 'forearm-' + side, left: upper.left, top: lowerTop,
+    forearms.push({ name: 'forearm-' + side, left: upper.left, top: lowerTop,
       imageData: { width, height: lowerHeight, data: new Uint8ClampedArray(lower) } });
   }
-  children.push(...structuredClone(actionLayers));
+  children.splice(children.findIndex(x => x.name === 'mouth'), 0, ...structuredClone(busyEyes));
+  children.splice(children.findIndex(x => x.name === 'mouth close') + 1, 0,
+    ...structuredClone(actionLayers.filter(x => x.name.startsWith('beak-'))));
+  children.push(...forearms, ...structuredClone(actionLayers.filter(x => x.name.startsWith('rps-'))));
   const neutral = compositeLayers(children);
   const directory = path.join(output, outfit);
   await fs.mkdir(directory);
