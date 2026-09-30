@@ -53,12 +53,15 @@ dotnet run --project .\tools\OutfitSelfTest\OutfitSelfTest.csproj -c Release -- 
 dotnet run --project .\tools\FeedingIntegrationSelfTest\FeedingIntegrationSelfTest.csproj -c Release -- "$((Get-Location).Path)"
 dotnet run --project .\tools\ShopSelfTest\ShopSelfTest.csproj -c Release
 dotnet run --project .\tools\CareUiSelfTest\CareUiSelfTest.csproj -c Release -- .codex-build/care-v4-ui
+dotnet run --project .\tools\CompositionControlSelfTest\CompositionControlSelfTest.csproj -c Release
 dotnet run --project .\tools\TaskNotificationSelfTest\TaskNotificationSelfTest.csproj -c Release -- --mcp .\EagleDeskPet.Mcp\bin\Release\net8.0-windows\EagleDeskPet.Mcp.dll --dotnet dotnet
 ```
 
 任务测试前先构建 MCP。当前 `OutfitSelfTest --resources-root` 检查全部六套形象、14 个动作的 1694 帧及站姿；分层服装另严格验证 1695 个绑定映射及衣片，但不代替场景遮挡和美术复查。猜拳窗口、状态机与专属测试已按用户决定移除；通用动作、喂饭和场景回归继续保留。`FeedingIntegrationSelfTest` 链接生产 Feeding partial、Core 和 PetStore，使用可控时钟 / 渲染外壳，验证队列准入、连续喂食、完整新序列、关闭和保存失败；实际主窗口的工作 / 暂停交接仍由下方 smoke 验证。
 
 `CareUiSelfTest` 使用真实 CarePanel XAML、核心工资计算和仅供测试的宿主适配器，检查心情效率、零心情开工、迁移提示及两种窗口宽度；它不操作真实鼠标或用户存档。preview.2 的经济、迁移和界面回归结果见[当前经济规则](ECONOMY-v1.12.md#验证边界)。
+
+`CompositionControlSelfTest` 创建隔离 WPF 窗口与 WebView 用户目录，检查真实浏览器加载、局部 COM 图形初始化故障、模板重应用和取消；不修改系统显卡配置，也不全局吞掉 Dispatcher 异常。这是控件边界测试，不代替真实 Live2D 业务回归。
 
 ## 动画与 GUI 测试
 

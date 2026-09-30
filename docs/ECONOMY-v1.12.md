@@ -95,8 +95,10 @@
 | Emotion / Honor / Banter | 49 / 22 / 34 | 去除自动饥饿、工作不被情绪打断、原荣誉仍有效 |
 | Care UI | 16 / 16 | 真实 XAML 在 470 / 400 宽度下的效率、操作和迁移提示 |
 | Package | 26 / 26 | 分发白名单、哈希、拒绝覆盖及链接目录 |
+| Composition control | 5 / 5 | 真实浏览器加载、模拟 COM 失败回退、关闭取消、模板重应用与非 COM 异常传播 |
 | Debug EXE expansion | 12 / 12 | 217 秒真实宿主回归，六套装备、工作、喂食、提醒与便签 |
 | Debug EXE work + MCP | 通过 | 零心情持续半薪工作、主动退出、脚点漂移为零、真实通知不中断办公 |
+| 最终 Release EXE Live2D business | 7 / 7 | 真实 Core / 原帧混合、完整喂食、办公退场、装备生效及连续两个独立 Live2D 预览 |
 
 经济证据保留在本机 `.codex-build/economy-test-332aed57b7b34a95a0e0e9a4e42001bc/results.json`；UI 截图在 `.codex-build/care-v4-ui/` 和 `.codex-build/shop-care-v4-smoke/`，已人工查看窄版商品与最高价格确认框。真实 expansion 证据为 `%TEMP%/EagleExpansionSmoke-99613f6aed9d462fa6d42656aa3c3439/evidence/expansion-smoke.json`；work + MCP 证据为 `.codex-build/work-gui-smoke-33flleh6/gui-smoke.json`。这些是本机测试产物，不随 Git 分发。
 
@@ -107,3 +109,7 @@
 首轮 Release `live2d-business` 在喂食、暂停、办公和换装五项通过后，连续打开独立预览时中断：Windows 事件记录 `COMException 0x8876086C`，栈为 `Direct3DHelper.CreateD3D9Device → GraphicsItemD3DImage → WebView2CompositionControl.Loaded`。失败证据保留在 `%TEMP%/EagleExpansionSmoke-9f880e183f2d4b7d8f9931691592215b/evidence/`；该轮 `completed=false`，不能算通过。
 
 这条原有图形初始化路径没有被心情规则改动，但必须在发布前单独验证失败处理。微软的[控件 API 说明](https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.wpf.webview2compositioncontrol?view=webview2-dotnet-1.0.4191.47)列出了异步初始化、模板与释放接口；本机锁定 SDK 的 `Loaded` 图形初始化不属于 `EnsureCoreWebView2Async` 的普通等待异常路径。
+
+修复采用控件实例内的模板初始化保护：等当前 SDK 的宿主加载完成，再在局部异常边界内创建 D3D 资源；失败通知对应的 Presenter，沿既有同装扮 PNG 回退路径释放该浏览器，不使用全局 Dispatcher 异常吞噬。关闭时取消等待，失败后不继续启动浏览器。独立控制级测试及二次复跑均为 5 / 5，证据 `%TEMP%/EagleCompositionControl-d107955c96034fc2a0508b645d1c517a/results.json`。该测试的故障为注入，不能替代真实 Live2D 预览或全部显卡故障验收。
+
+修复后的最终自包含 EXE 为 `dist/v1.12.0-preview.2-final/EagleDeskPet.exe`，版本 `1.12.0-preview.2`，代码基线 `36d6882`，SHA256：`673ECF3FAC01F1BF181ECCEBD7991D6A984DC4FC9396D190EB452D6F568FF63F`。严格 `live2d-business` 为 **7 / 7**，业务阶段 34.67 秒（不含启动预载），进程退出码 0，`completed=true`、`actualBackend=live2d-native-hybrid`，两个独立预览均实际使用 Live2D，未放宽原断言。最终报告在 `%TEMP%/EagleExpansionSmoke-0aebd73acaf54ff3bfaff7ac5da7d015/evidence/live2d-smoke.json`，同目录保留截图。仍需保留 EXE 同目录的六个 `Live2DStage` 文件；运行 Live2D 依赖此前已配置的本机 SDK 与角色包。
