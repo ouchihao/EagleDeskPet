@@ -45,6 +45,6 @@ public partial class PetWindow
         GazeMenuItem.ToolTip = _live2D?.IsActive != true
             ? "当前是逐帧兼容模式，需启用 Live2D 才能独立转动头眼"
             : !SystemParameters.ClientAreaAnimation ? "Windows 已关闭界面动画，跟随暂时停用"
-            : "站立、办公、忙碌时看向附近鼠标；进出场、互动、摸鱼、拖动和菜单展开时暂时让出控制";
+            : "站立、办公、忙碌时跟随整个桌面的鼠标，不限制距离；进出场、互动、摸鱼、拖动和菜单展开时暂时让出控制";
     }
 }
