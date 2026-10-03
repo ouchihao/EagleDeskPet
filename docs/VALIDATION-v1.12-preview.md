@@ -1,5 +1,24 @@
 # v1.12 预览版 · 实现与验证记录
 
+<a id="preview6"></a>
+## 2026-10-03 · preview.6 全桌面鼠标跟随
+
+本机产物：`dist/v1.12.0-preview.6-global-gaze/EagleDeskPet.exe`，489,907,726 字节；产品版本 `1.12.0-preview.6+811f110ff188e5a12a9a0d6c09c1640bbaa2858e`。SHA256：`D8C4936ADFA35023485093C03050BE66ED67BDA4BCDF5F3F8342F4721272DCA0`。退出旧版后启动，保留同目录 `Live2DStage`，沿用已有本机 SDK 配置。
+
+只移除宿主的 140–240 DIP 距离衰减和 240 DIP 截止，保留 2 DIP 死区、方向封顶、平滑速度与全部动作门控。preview.5 与本版发布的 `gaze.js` SHA256 相同（`48E0DEE12A80A2E07B1FFC1E0DABB85C02BF358A1C8E5E220C5824B70E9769BB`）；不改模型、转头幅度、哈欠 45～90 秒间隔或存档。菜单改名为“全局鼠标跟随 · 待机 / 办公”。
+
+| 验证 | 本轮结果 / 边界 |
+| --- | --- |
+| GazePolicy | 51 / 51，含原 140 / 240 边界及 350 / 1920 / 7680 DIP、负坐标、缩放与角度封顶 |
+| JavaScript | 动作 / 注视 / 摸鱼 49 / 49；未重跑上一版六套模型 166 项，模型与幅度未变 |
+| 实际发布构建的真实宿主 | 103 / 103 检查，40 场景；直接加载本次 win-x64 发布构建 DLL 和发布 Stage，真实 `GetCursorPos → PointFromScreen → TickGaze → WebView` |
+| 全局实测覆盖 | 125% DPI；16 个全局候选中 13 个实际超过旧半径，待机 / 办公 / 忙碌的远处距离约 921～2002 DIP；全局开关 / 拖动 / 菜单 / 摸鱼禁用通过 |
+| 最终自包含 EXE 原业务 | 7 / 7，30.58 秒，实际 `live2d-native-hybrid`；完整吃饭、办公至忙碌及退出、暂停、换装与独立预览 |
+
+宿主证据：`.codex-build/gaze-global-host-preview6-20261003`，包含发布程序集 / Stage 指纹、画布 PNG 和报告。工具移动自己的透明不激活窗口，未注入 JS 跟随目标、移动真实鼠标或访问真实存档。光标位于屏幕右缘，3 个右上角样本距离仅约 75.9 DIP，明确不计作远处覆盖；实测负本地 Y 约 −858.4、近处负本地 X 约 −10，远处负 X 仅有规则测试，真实混合 DPI 跨屏未验收。未把隐藏窗口测试当作物理屏幕帧率证明。
+
+最终 EXE 业务证据：`%TEMP%/EagleExpansionSmoke-0ad518ed249c4c45b9b3d7e32f3e3795/evidence/live2d-smoke.json`。本轮没有重复完整摸鱼联调，没有关闭用户桌宠、修改系统动画偏好或 push。
+
 <a id="preview5"></a>
 ## 2026-09-30 · preview.5 加大跟随、减少哈欠
 

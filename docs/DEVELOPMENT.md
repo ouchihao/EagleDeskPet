@@ -12,7 +12,7 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.5/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.5-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.6/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.6-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
 
 <a id="preview3-摸鱼与光标注视"></a>
 ## preview.3–4 摸鱼与光标注视
@@ -22,6 +22,8 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 2026-09-30 本机 Demo 已完成：最终自包含 `dist/v1.12.0-preview.3-loafing/EagleDeskPet.exe` 的两种摸鱼后端与原业务联调通过，六套真实瞳孔 Stage 47 / 47。检查点、SHA256 和尚未验证的边界见 [本轮证据](VALIDATION-v1.12-preview.md#preview3)，不是远端 GitHub Release。
 
 同日 preview.4 提升注视可见度并开放办公跟随：六套 Stage 166 / 166、真实 WPF 输入链路 60 / 60；最终 `dist/v1.12.0-preview.4-gaze/EagleDeskPet.exe` 原业务 7 / 7 与摸鱼联调通过。新增暂停消息连续性检查；完整证据与未测边界见 [preview.4 记录](VALIDATION-v1.12-preview.md#preview4)。
+
+2026-10-03 preview.6 移除宿主距离限制，保留 preview.5 幅度与哈欠节奏。规则 51 / 51、实际发布构建的真实宿主 103 / 103、最终 EXE 原业务 7 / 7；远处负 X 与混合 DPI 跨屏的未测边界见 [preview.6 记录](VALIDATION-v1.12-preview.md#preview6)。
 
 - `LoafingPolicy` 按有效工作区间和持久随机状态抽签；`PetCareService` 唯一结算金币、经验、食物与心情。休息固定半小时，无金币和任何自动经验，粮食仍积累；休息心情基础衰减为 1 / 小时。渲染模块不能补发奖励
 - `LoafingVisualTimeline` / `LoafingSpriteLayer` 管理原味表情叠层；`Live2DStage/loafing.js` 管理独立模型 / 电脑转场。`SendLoafing(phase, seconds, paused, kind)` 以最多 20 Hz 同步，阶段 / 暂停边界立即发送，使用独立 generation / revision 过滤旧消息；正常工作时间轴冻结到交接结束
