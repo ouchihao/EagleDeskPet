@@ -186,7 +186,7 @@ test("four directions remain bounded and never alter body, feet, wings or mouth"
     assert.equal(Math.sign(q.ParamEyeBallY), Math.sign(y));
   }
 });
-test("distance exit or menu/drag/setting suppression returns smoothly to center", () => {
+test("menu/drag/setting suppression returns smoothly to center", () => {
   const g = new G.Tracking(1);
   send(g, 1, 0);
   run(g, 0, 60, true, true, true);

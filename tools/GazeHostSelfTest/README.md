@@ -12,7 +12,7 @@ dotnet tools/GazeHostSelfTest/bin/Release/net8.0-windows10.0.19041.0/GazeHostSel
   '<new empty evidence directory>'
 ```
 
-An optional fifth argument `baseline` expects older builds to disable gaze in WorkLoop and BusyLoop. To compare old behavior, supply the old built assembly and its matching published Live2DStage directory
+An optional fifth argument `baseline` expects older builds to disable gaze in WorkLoop and BusyLoop and outside the old 240-DIP radius. To compare old behavior, supply the old built assembly and its matching published Live2DStage directory
 
 ## Isolation and scope
 
@@ -21,6 +21,8 @@ An optional fifth argument `baseline` expects older builds to disable gaze in Wo
 - Its own non-activating, transparent test window moves around the current mouse position, bringing the real screen pointer into known local positions without changing the pointer
 - Reflection drives only the isolated pet: it stops automatic scene progression and the care timer, chooses a representative clip, changes test-only gate states, and invokes the production presentation path
 - The test records real Stage reports and PNGs for three pet sizes, four directions, near-pointer positions, normal/busy work, disabled preference, dragging, paused animation, equipment transition, open context menu, loafing and distant pointer
+- Global-following cases position the transparent test window at visible corners of the real cursor's current monitor, testing distant Idle, WorkLoop and BusyLoop without moving the cursor or leaving WebView off-screen. Preference, dragging, menu and loafing exclusions are also checked with a distant pointer
+- Each distant sample records its actual distance and whether the local cursor coordinates are negative. If the current cursor is too close to a particular corner, that case is explicitly marked uncovered instead of claiming a distant-pointer test. Available directions depend on the current cursor position; the report does not claim an unobserved negative-axis or mixed-DPI crossing case
 - Reports include image measurements, actual monitor DPI, host gate values and sampled direction. A hash manifest records the tested assembly and Stage files
 - System client-area animations must be enabled for positive-following checks. The harness reports that setting but never changes it
 - This is a real host-to-renderer integration test, not a claim that a hidden window certifies physical display frame rate or all possible mixed-DPI monitor arrangements

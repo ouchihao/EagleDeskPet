@@ -70,6 +70,8 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
     private FrameworkElement _image = null!;
     private readonly List<object> _samples = [];
     private readonly List<object> _checks = [];
+    private readonly List<object> _coverage = [];
+    private readonly HashSet<string> _distantKinds = [];
     private long _sequence = 10000;
     private object Field(object target, string name) => target.GetType().GetField(name, All)!.GetValue(target)!;
     private object? Property(object target, string name) => target.GetType().GetProperty(name, All)!.GetValue(target);
@@ -89,7 +91,7 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
     }
     private void Save() => File.WriteAllText(Path.Combine(output, "report.json"), JsonSerializer.Serialize(new
     {
-        baseline, checks = _checks, samples = _samples, clientAreaAnimation = SystemParameters.ClientAreaAnimation,
+        baseline, checks = _checks, samples = _samples, coverage = _coverage, clientAreaAnimation = SystemParameters.ClientAreaAnimation,
         pixelBudgetAt160Dip = new { previousEyeX = 2.5 * .35 * 160 / 384, previousEyeY = 1.25 * .3 * 160 / 384 }
     }, new JsonSerializerOptions { WriteIndented = true }));
 
@@ -130,24 +132,29 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
         _window.UpdateLayout();
         await Sample("near-idle-right-20dip", "Idle", 20, 0, true);
         await Sample("near-idle-up-20dip", "Idle", 0, -20, true);
+        await DistantSamples("idle", "Idle");
         await InvokeAsync(Field(_window, "_framePlayer"), "WarmWorkAsync");
         await InvokeAsync(Field(_window, "_workStage"), "WarmFireAsync");
         var careState = Property(_window, "CareState")!;
         SetProperty(careState, "IsWorking", true);
         Invoke(_behavior, "SetWorkState", true, false);
         await Sample("working-right", "WorkLoop", 90, 0, expected: !baseline);
+        await DistantSamples("working", "WorkLoop");
         SetProperty(careState, "WorkSessionSeconds", 1900d);
         Invoke(_behavior, "SetWorkState", true, true);
         await Sample("busy-left", "BusyLoop", -90, 0, expected: !baseline);
+        await DistantSamples("busy", "BusyLoop");
 
         SetProperty(careState, "IsWorking", false);
         Invoke(_behavior, "SetWorkState", false, false);
         for (int i = 0; i < 400; i++) Invoke(_behavior, "Advance", .05d);
         SetProperty(_settings, "FollowCursor", false);
         await Sample("toggle-disabled", "Idle", 90, 0, false);
+        await DistantGateSample("global-toggle-disabled");
         SetProperty(_settings, "FollowCursor", true);
         SetField(_window, "_nativeDragInProgress", true);
         await Sample("drag-disabled", "Idle", 90, 0, false);
+        await DistantGateSample("global-drag-disabled");
         SetField(_window, "_nativeDragInProgress", false);
         Invoke(_behavior, "SetPaused", true);
         await Sample("paused-disabled", "Idle", 90, 0, false);
@@ -160,15 +167,35 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
         menu.PlacementTarget = _image;
         menu.IsOpen = true;
         await Sample("menu-disabled", "Idle", 90, 0, false);
+        await DistantGateSample("global-menu-disabled");
         menu.IsOpen = false;
         var loafing = Field(_window, "_loafingVisual");
         var loafingKind = _behavior.GetType().Assembly.GetType("DuckDeskPet.Core.LoafingKind")!;
         Invoke(loafing, "Advance", .1d, Enum.Parse(loafingKind, "NosePicking"), true, false);
         await Sample("loafing-disabled", "Idle", 90, 0, false);
+        await DistantGateSample("global-loafing-disabled");
         for (int i = 0; i < 80; i++) Invoke(loafing, "Advance", .1d, Enum.Parse(loafingKind, "None"), true, false);
         await Sample("restored-left", "Idle", -90, 0, true);
-        await Sample("outside-radius", "Idle", 350, 0, false);
+        await Sample("outside-previous-radius", "Idle", 350, 0, !baseline);
+        Check(new[] { "Idle", "WorkLoop", "BusyLoop" }.All(_distantKinds.Contains),
+            "Real cursor beyond the former radius covered in idle, working and busy modes");
         Save();
+    }
+
+    private async Task DistantSamples(string name, string kind)
+    {
+        foreach (var corner in new[] { (false, false), (true, false), (false, true), (true, true) })
+            await Sample($"global-{name}-{(corner.Item1 ? "right" : "left")}-{(corner.Item2 ? "bottom" : "top")}",
+                kind, 0, 0, !baseline, corner);
+    }
+
+    private async Task DistantGateSample(string name)
+    {
+        if (!GetCursorPos(out var cursor)) throw new InvalidOperationException("GetCursorPos failed");
+        var monitor = GetCursorMonitor(cursor);
+        await Sample(name, "Idle", 0, 0, false,
+            (cursor.X < (monitor.Work.Left + monitor.Work.Right) / 2,
+                cursor.Y < (monitor.Work.Top + monitor.Work.Bottom) / 2));
     }
 
     private object MakeSample(string kind)
@@ -180,7 +207,8 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
             kind == "Idle" ? 0d : .25d, ++_sequence)!;
     }
 
-    private async Task Sample(string name, string kind, double offsetX, double offsetY, bool expected)
+    private async Task Sample(string name, string kind, double offsetX, double offsetY, bool expected,
+        (bool Right, bool Bottom)? corner = null)
     {
         var clip = MakeSample(kind);
         JsonElement report = default;
@@ -191,10 +219,25 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
             double contain = Math.Min(_image.ActualWidth / 384, _image.ActualHeight / 346);
             Point anchor = new((_image.ActualWidth - 384 * contain) / 2 + 193 * contain,
                 (_image.ActualHeight - 346 * contain) / 2 + 147 * contain);
-            Point desired = _image.PointToScreen(new Point(anchor.X + offsetX, anchor.Y + offsetY));
             var dpi = VisualTreeHelper.GetDpi(_window!);
-            _window!.Left += (cursor.X - desired.X) / dpi.DpiScaleX;
-            _window.Top += (cursor.Y - desired.Y) / dpi.DpiScaleY;
+            if (corner is { } cornerPosition)
+            {
+                var monitor = GetCursorMonitor(cursor);
+                Point current = _window!.PointToScreen(new Point(0, 0));
+                double screenX = cornerPosition.Right ? monitor.Work.Right - _window.ActualWidth * dpi.DpiScaleX - 8 : monitor.Work.Left + 8;
+                double screenY = cornerPosition.Bottom ? monitor.Work.Bottom - _window.ActualHeight * dpi.DpiScaleY - 8 : monitor.Work.Top + 8;
+                _window.Left += (screenX - current.X) / dpi.DpiScaleX;
+                _window.Top += (screenY - current.Y) / dpi.DpiScaleY;
+                Point localCursor = _image.PointFromScreen(new Point(cursor.X, cursor.Y));
+                offsetX = localCursor.X - anchor.X;
+                offsetY = localCursor.Y - anchor.Y;
+            }
+            else
+            {
+                Point desired = _image.PointToScreen(new Point(anchor.X + offsetX, anchor.Y + offsetY));
+                _window!.Left += (cursor.X - desired.X) / dpi.DpiScaleX;
+                _window.Top += (cursor.Y - desired.Y) / dpi.DpiScaleY;
+            }
             Invoke(_window, "ApplyPresentation", clip, 1d / 60, false);
             foreach (Window owned in _window.OwnedWindows) owned.Opacity = 0;
             await Task.Delay(17);
@@ -205,28 +248,65 @@ internal sealed class Probe(Assembly product, string output, bool baseline)
         var lastDpi = VisualTreeHelper.GetDpi(_window!);
         GetCursorPos(out var position);
         var local = _image.PointFromScreen(new Point(position.X, position.Y));
+        double distance = Math.Sqrt(offsetX * offsetX + offsetY * offsetY);
+        bool distant = corner is not null;
+        bool eligible = !distant || distance > 240;
+        if (distant && eligible) _distantKinds.Add(kind);
+        if (distant) _coverage.Add(new
+        {
+            name, distance, negativeLocalX = local.X < 0, negativeLocalY = local.Y < 0,
+            covered = eligible, limitation = eligible ? null : "Current real cursor is within the former 240-DIP radius at this visible monitor corner"
+        });
         _samples.Add(new
         {
-            name, kind, expected, offsetX, offsetY, actualWidth = _image.ActualWidth, actualHeight = _image.ActualHeight,
+            name, kind, expected, offsetX, offsetY, distance, distant, eligible,
+            actualWidth = _image.ActualWidth, actualHeight = _image.ActualHeight,
             dpiX = lastDpi.DpiScaleX, dpiY = lastDpi.DpiScaleY, localX = local.X, localY = local.Y,
             windowVisible = _window!.IsVisible, imageOpacity = _image.Opacity, report,
             gates = new { followCursor = Property(_settings, "FollowCursor"), interactionUnavailable = Property(_window, "InteractionsUnavailable"),
                 paused = Property(_behavior, "IsPaused"), nativeDrag = Field(_window, "_nativeDragInProgress"),
                 menuOpen = ((ContextMenu)Field(_window, "PetMenu")).IsOpen }
         });
+        if (!eligible) { Save(); return; }
         bool enabled = gaze.GetProperty("input").GetProperty("enabled").GetBoolean();
         Check(enabled == expected, name + " real host sample enabled=" + expected);
         if (expected)
         {
             double x = gaze.GetProperty("headX").GetDouble(), y = gaze.GetProperty("headY").GetDouble();
-            Check(offsetX == 0 || Math.Sign(x) == Math.Sign(offsetX) && Math.Abs(x) > .1, name + " horizontal head follows real screen cursor");
-            Check(offsetY == 0 || Math.Sign(y) == -Math.Sign(offsetY) && Math.Abs(y) > .1, name + " vertical head follows real screen cursor");
+            if (distant)
+            {
+                double inputX = gaze.GetProperty("input").GetProperty("x").GetDouble();
+                double inputY = gaze.GetProperty("input").GetProperty("y").GetDouble();
+                double targetX = Math.Sign(offsetX) * Math.Clamp((Math.Abs(offsetX) - 2) / 38, 0, 1);
+                double targetY = -Math.Sign(offsetY) * Math.Clamp((Math.Abs(offsetY) - 2) / 32, 0, 1);
+                Check(Math.Abs(inputX - targetX) < .05 && Math.Abs(inputY - targetY) < .05,
+                    name + " actual host input preserves clamped direction and per-axis dead zone");
+                Check(Math.Abs(inputX) < .05 || Math.Sign(x) == Math.Sign(inputX) && Math.Abs(x) > .1,
+                    name + " horizontal head follows non-neutral real screen input");
+                Check(Math.Abs(inputY) < .05 || Math.Sign(y) == Math.Sign(inputY) && Math.Abs(y) > .1,
+                    name + " vertical head follows non-neutral real screen input");
+            }
+            else
+            {
+                Check(offsetX == 0 || Math.Sign(x) == Math.Sign(offsetX) && Math.Abs(x) > .1, name + " horizontal head follows real screen cursor");
+                Check(offsetY == 0 || Math.Sign(y) == -Math.Sign(offsetY) && Math.Abs(y) > .1, name + " vertical head follows real screen cursor");
+            }
         }
         await InvokeAsync(_presenter, "CaptureStageAsync", Path.Combine(output, name + ".png"));
         Save();
     }
 
     public void Close() { _window?.Close(); }
+    private static MonitorInfo GetCursorMonitor(NativePoint point)
+    {
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfo(MonitorFromPoint(point, 2), ref info)) throw new InvalidOperationException("GetMonitorInfo failed");
+        return info;
+    }
     [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X; public int Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
+    [StructLayout(LayoutKind.Sequential)] private struct MonitorInfo { public int Size; public NativeRect Monitor; public NativeRect Work; public uint Flags; }
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetCursorPos(out NativePoint point);
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(NativePoint point, uint flags);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
 }
