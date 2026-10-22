@@ -20,6 +20,11 @@ public partial class PetWindow
         Directory.CreateDirectory(output);
         try
         {
+            if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") == "quickaccess")
+            {
+                await RunQuickAccessSmokeAsync(output);
+                return;
+            }
             if (Environment.GetEnvironmentVariable("EAGLE_PET_SMOKE_MODE") is "loafing" or "live2d-loafing")
             {
                 await RunLoafingSmokeAsync(output);

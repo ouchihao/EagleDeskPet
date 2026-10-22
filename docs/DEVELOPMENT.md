@@ -12,7 +12,16 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 .\publish.ps1
 ```
 
-发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.6/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.6-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+发布脚本从主工程版本号读取目录，本预览版为 `dist/v1.12.0-preview.7/`，不纳入 Git。目标必须新建或为空；脚本拒绝覆盖非空目录，重发可用 `-OutputDirectory .\dist\v1.12.0-preview.7-recheck`。成功后自动复制 `THIRD-PARTY-NOTICES.md`，二进制分发应保留。首次构建会从 NuGet 还原锁定依赖。动画 PNG 已包含在仓库中，编译 EXE 不需要重新生成图片。普通 build 输出需要 .NET，只有指定自包含发布配置的包才可免安装运行时分发。下方旧版本命令保留历史测试语境，测试新版时应传入本次真实产物路径。
+
+## preview.7 悬浮快捷栏
+
+```powershell
+dotnet run --project .\tools\QuickAccessSelfTest -c Release
+.\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.7-quick-access\EagleDeskPet.exe -Mode quickaccess
+```
+
+独立策略测试验证停留、离开缓冲、显式关闭和阻塞；真实主程序 smoke 在新建隔离资料中检查五个窗口接线、复用、鼠标坐标转换、Popup 布局、缩放、动画、办公与暂停、遮挡和关闭。只渲染本程序的视觉树，不截桌面、不移动真实鼠标；不把程序化点击当成人工点击或混合 DPI 跨屏验收。可设置 `EAGLE_PET_RENDERER=png` 单独验证兼容后端。
 
 <a id="preview3-摸鱼与光标注视"></a>
 ## preview.3–4 摸鱼与光标注视

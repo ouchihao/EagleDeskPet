@@ -74,6 +74,7 @@ public partial class PetWindow : Window
     {
         StartCare();
         StartReminders();
+        StartQuickAccess();
         try
         {
             await _framePlayer.WarmAsync();
@@ -125,6 +126,7 @@ public partial class PetWindow : Window
         bool shouldShutdown = !_isClosing;
         _isClosing = true;
         UnsubscribeRendering();
+        StopQuickAccess();
         StopReminders();
         StopNotebook();
         StopCare();
@@ -248,6 +250,7 @@ public partial class PetWindow : Window
         // the user's drag on a mixed-DPI desktop.
         _pendingBottomRightMonitor = nint.Zero;
         _nativeDragInProgress = true;
+        HideQuickAccess();
         TickGaze(_behavior.CurrentSample);
         _nativeDragObservedMovement = false;
         long startedAt = Stopwatch.GetTimestamp();
@@ -298,6 +301,7 @@ public partial class PetWindow : Window
 
     private void ContextMenu_OnOpened(object sender, RoutedEventArgs e)
     {
+        HideQuickAccess();
         TouchMenuItem.IsEnabled = FeedMenuItem.IsEnabled = YawnMenuItem.IsEnabled = !InteractionsUnavailable;
         StartWorkMenuItem.IsEnabled = CanStartWork;
         StopWorkMenuItem.IsEnabled = CareState.IsWorking;
