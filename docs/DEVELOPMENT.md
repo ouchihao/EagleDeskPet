@@ -16,6 +16,8 @@ dotnet build .\EagleDeskPet.Mcp\EagleDeskPet.Mcp.csproj -c Release
 
 ## preview.7 悬浮快捷栏
 
+最终本机发布包的双后端 58/58、源代码自测与未测边界见[快捷栏验证记录](VALIDATION-QUICK-ACCESS.md)。
+
 ```powershell
 dotnet run --project .\tools\QuickAccessSelfTest -c Release
 .\tools\run_expansion_smoke.ps1 -Exe .\dist\v1.12.0-preview.7-quick-access\EagleDeskPet.exe -Mode quickaccess
