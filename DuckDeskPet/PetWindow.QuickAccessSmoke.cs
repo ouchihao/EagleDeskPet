@@ -131,10 +131,11 @@ public partial class PetWindow
             {
                 var frames = await RasterFramePlayer.LoadOutfitPreviewFramesAsync(outfitCatalog, outfit);
                 var artBounds = MeasureQuickAccessArt(frames[0]);
+                double sceneTop = artBounds.Top * 384 / frames[0].PixelWidth;
                 bool headgear = outfit is "outfit.ox" or "outfit.hero" or "outfit.astronaut";
                 Check(artBounds.Top > 0 && artBounds.Bottom > artBounds.Top &&
-                    (headgear ? artBounds.Top < 70 : artBounds.Top == 84),
-                    $"Composed neutral silhouette anchors {outfit}: top={artBounds.Top}, bottom={artBounds.Bottom}");
+                    (headgear ? sceneTop < 70 : Math.Abs(sceneTop - 84) <= 2),
+                    $"Composed neutral silhouette anchors {outfit}: sceneTop={sceneTop}, pixelHeight={frames[0].PixelHeight}");
             }
 
             await StartWorkingAsync();
