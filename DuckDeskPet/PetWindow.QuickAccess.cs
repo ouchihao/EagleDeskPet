@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DuckDeskPet.Controls;
 using DuckDeskPet.Core;
@@ -18,6 +19,9 @@ public partial class PetWindow
     private Popup? _quickAccessPopup;
     private QuickAccessBar? _quickAccessBar;
     private bool _quickAccessRevealed;
+    private BitmapSource? _quickAccessAnchorSource;
+    private double _quickAccessArtTop;
+    private double _quickAccessArtBottom;
 
     private void StartQuickAccess()
     {
@@ -44,17 +48,45 @@ public partial class PetWindow
         _quickAccessTimer.Start();
     }
 
-    private static CustomPopupPlacement[] QuickAccessPlacements(Size popup, Size target, Point offset)
+    private CustomPopupPlacement[] QuickAccessPlacements(Size popup, Size target, Point offset)
     {
-        // Both renderers use the 384 x 346 scene; ignore its transparent head/foot padding
-        double scale = Math.Min(target.Width / 384, target.Height / 346);
-        double letterbox = (target.Height - 346 * scale) / 2;
+        BitmapSource art = _framePlayer.NeutralFrame;
+        double scale = Math.Min(target.Width / art.PixelWidth, target.Height / art.PixelHeight);
+        double letterbox = (target.Height - art.PixelHeight * scale) / 2;
         double x = (target.Width - popup.Width) / 2;
         return
         [
-            new(new Point(x, letterbox + 84 * scale - popup.Height + 2), PopupPrimaryAxis.Horizontal),
-            new(new Point(x, letterbox + 336 * scale - 2), PopupPrimaryAxis.Horizontal)
+            new(new Point(x, letterbox + _quickAccessArtTop * scale - popup.Height + 2), PopupPrimaryAxis.Horizontal),
+            new(new Point(x, letterbox + _quickAccessArtBottom * scale - 2), PopupPrimaryAxis.Horizontal)
         ];
+    }
+
+    private void UpdateQuickAccessAnchor()
+    {
+        BitmapSource art = _framePlayer.NeutralFrame;
+        if (ReferenceEquals(art, _quickAccessAnchorSource)) return;
+        (_quickAccessArtTop, _quickAccessArtBottom) = MeasureQuickAccessArt(art);
+        _quickAccessAnchorSource = art;
+    }
+
+    private static (double Top, double Bottom) MeasureQuickAccessArt(BitmapSource art)
+    {
+        BitmapSource pixels = art.Format == PixelFormats.Bgra32 ? art :
+            new FormatConvertedBitmap(art, PixelFormats.Bgra32, null, 0);
+        int stride = pixels.PixelWidth * 4;
+        var data = new byte[stride * pixels.PixelHeight];
+        pixels.CopyPixels(data, stride, 0);
+        int top = pixels.PixelHeight, bottom = 0;
+        for (int y = 0; y < pixels.PixelHeight; y++)
+            for (int x = 0; x < pixels.PixelWidth; x++)
+                if (data[y * stride + x * 4 + 3] > 40)
+                {
+                    top = Math.Min(top, y);
+                    bottom = y + 1;
+                    break;
+                }
+        // Cache the composed neutral outfit once, including horns/helmets, so animation cannot jitter the toolbar
+        return bottom > top ? (top, bottom) : (0, pixels.PixelHeight);
     }
 
     private void QuickAccess_OnTick(object? sender, EventArgs e)
@@ -105,6 +137,7 @@ public partial class PetWindow
         _quickAccessBar.IsHitTestVisible = visible || (animate && _quickAccessPopup.IsOpen);
         if (visible && !_quickAccessPopup.IsOpen)
         {
+            UpdateQuickAccessAnchor();
             _quickAccessBar.Opacity = 0;
             _quickAccessOffset.Y = 4;
             _quickAccessPopup.IsOpen = true;

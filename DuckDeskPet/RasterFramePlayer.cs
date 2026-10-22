@@ -51,6 +51,7 @@ internal sealed class RasterFramePlayer : IDisposable
     }
 
     public string CurrentOutfitId { get; private set; } = OutfitCatalog.DefaultId;
+    internal BitmapSource NeutralFrame => _neutral;
     public string? Warning { get; private set; }
     public bool IsAtSafeOutfitBoundary => _currentKind == ClipKind.Idle && !_disposed;
     internal int DecodedFrameCount => _frames.Values.Sum(x => x.Length);

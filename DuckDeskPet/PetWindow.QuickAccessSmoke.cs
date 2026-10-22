@@ -126,6 +126,17 @@ public partial class PetWindow
             }
             Check(before == ExpansionContentFingerprint(), "Navigation preserves wallet, collection and equipment");
 
+            var outfitCatalog = OutfitCatalog.Load();
+            foreach (string outfit in new[] { "outfit.default", "outfit.office", "outfit.hoodie", "outfit.ox", "outfit.hero", "outfit.astronaut" })
+            {
+                var frames = await RasterFramePlayer.LoadOutfitPreviewFramesAsync(outfitCatalog, outfit);
+                var artBounds = MeasureQuickAccessArt(frames[0]);
+                bool headgear = outfit is "outfit.ox" or "outfit.hero" or "outfit.astronaut";
+                Check(artBounds.Top > 0 && artBounds.Bottom > artBounds.Top &&
+                    (headgear ? artBounds.Top < 70 : artBounds.Top == 84),
+                    $"Composed neutral silhouette anchors {outfit}: top={artBounds.Top}, bottom={artBounds.Bottom}");
+            }
+
             await StartWorkingAsync();
             using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25)))
                 await ExpansionWaitAsync(() => _behavior.CurrentSample.Kind == Core.ClipKind.WorkLoop, timeout.Token, "quick access while working");
